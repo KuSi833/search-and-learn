@@ -1,0 +1,23 @@
+[project]
+dependencies = [
+    "accelerate>=1.6.0",
+    "fastapi>=0.115.12",
+    "hf-transfer>=0.1.9",
+    "isort>=6.0.1",
+    "latex2sympy2==1.9.1",
+    "pebble>=5.1.1",
+    "pytest>=8.3.5",
+    "ruff>=0.11.8",
+    "transformers>=4.51.3",
+    "trl",
+    "vllm==0.6.3",
+    "word2number>=1.1",
+]
+description = "Add your description here"
+name = "search-and-learn"
+readme = "README.md"
+requires-python = ">=3.11"
+version = "0.1.0"
+
+[tool.uv.sources]
+trl = { git = "https://github.com/huggingface/trl.git" }
