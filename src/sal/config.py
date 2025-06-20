@@ -14,7 +14,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Optional
 
 from huggingface_hub import get_full_repo_name
 
@@ -30,21 +30,21 @@ class Config:
     )
     prm_path: str = "RLHFlow/Llama3.1-8B-PRM-Deepseek-Data"
     # Output Related Options
-    output_dir: str = None
-    num_proc: int = None
+    output_dir: Optional[str] = None
+    num_proc: Optional[int] = None
     push_to_hub: bool = False
-    hub_dataset_id: str = None
+    hub_dataset_id: Optional[str] = None
     hub_dataset_private: bool = False
     overwrite_hub_revision: bool = False
     apply_voting: bool = True
 
     # Dataset Related Options
     dataset_name: str = "HuggingFaceH4/MATH-500"
-    dataset_config: str = None
+    dataset_config: Optional[str] = None
     dataset_split: str = "test"
-    dataset_start: int = None
-    dataset_end: int = None
-    num_samples: int = None
+    dataset_start: Optional[int] = None
+    dataset_end: Optional[int] = None
+    num_samples: Optional[int] = None
 
     # Chat template related options
     system_prompt: str = "Solve the following math problem efficiently and clearly:\n\n- For simple problems (2 steps or fewer):\nProvide a concise solution with minimal explanation.\n\n- For complex problems (3 steps or more):\nUse this step-by-step format:\n\n## Step 1: [Concise description]\n[Brief explanation and calculations]\n\n## Step 2: [Concise description]\n[Brief explanation and calculations]\n\n...\n\nRegardless of the approach, always conclude with:\n\nTherefore, the final answer is: $\\boxed{answer}$. I hope it is correct.\n\nWhere [answer] is just the final number or expression that solves the problem."
