@@ -1,0 +1,23 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Pull Data",
+            "type": "shell",
+            "command": "rsync",
+            "args": [
+                "-r",
+                "gpu20:/vol/bitbucket/km1124/search-and-learn/data",
+                "."
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ]
+}
