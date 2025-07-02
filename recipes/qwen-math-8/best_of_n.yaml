@@ -1,6 +1,7 @@
 # refer to src/sal/config.py for more options
 
-model_path: Triangle104/Qwen2.5-Math-7B-Q8_0-GGUF
+# model_path: Triangle104/Qwen2.5-Math-7B-Q8_0-GGUF
+model_path: /vol/bitbucket/km1124/search-and-learn/models/qwen2.5-math-7b-gguf/qwen2.5-math-7b-q8_0.gguf
 approach: best_of_n
 n: 4
 search_batch_size: 25
