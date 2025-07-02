@@ -1,0 +1,12 @@
+# refer to src/sal/config.py for more options
+
+# model_path: Triangle104/Qwen2.5-Math-7B-Q8_0-GGUF
+model_path: /vol/bitbucket/km1124/search-and-learn/models/qwen2.5-math-7b-gguf-q4/qwen2.5-math-7b-q4_k_s.gguf
+approach: best_of_n
+n: 4
+search_batch_size: 25
+sort_completed: true
+filter_duplicates: true
+# num_samples: 10         # REMOVE THIS LINE TO RUN ON THE WHOLE DATASET
+num_samples: 100         # REMOVE THIS LINE TO RUN ON THE WHOLE DATASET
+seed: 0
