@@ -18,7 +18,8 @@ export UV_CACHE_DIR="/vol/bitbucket/km1124/.cache/uv"
 # export CONFIG="recipes/Llama-3.2-1B-Instruct/best_of_n.yaml"
 # export CONFIG="recipes/Llama-3.2-1B-Instruct/beam_search.yaml"
 # export CONFIG="recipes/qwen-math-16/beam_search.yaml"
-export CONFIG="recipes/qwen-math-8/best_of_n.yaml"
+# export CONFIG="recipes/qwen-math-8/best_of_n.yaml"
+export CONFIG="recipes/qwen-math-8/beam_search.yaml"
 
 python scripts/test_time_compute.py $CONFIG
 
