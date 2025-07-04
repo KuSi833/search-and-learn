@@ -48,9 +48,9 @@ def best_of_n(x, config: Config, llm: LLM, prm: PRM):
     completion_tokens = [[] for _ in range(len(x["problem"]))]
 
     sampling_params = SamplingParams(
-        temperature=config.temperature,
-        max_tokens=config.max_tokens,
-        top_p=config.top_p,
+        temperature=config.search_config.temperature,
+        max_tokens=config.search_config.max_tokens,
+        top_p=config.search_config.top_p,
         n=1,  # Since we've already duplicated the prompt_token_ids, we only need to generate 1 completion per prompt
     )
 
@@ -59,7 +59,7 @@ def best_of_n(x, config: Config, llm: LLM, prm: PRM):
         sampling_params=sampling_params,
         use_tqdm=False,
     )
-    if len(responses) != len(x["problem"]) * config.n:
+    if len(responses) != len(x["problem"]) * config.search_config.n:
         raise ValueError(
             f"Generated {len(responses)} responses instead of {len(x['problem'] * config.n)}"
         )
@@ -67,23 +67,30 @@ def best_of_n(x, config: Config, llm: LLM, prm: PRM):
     for i in range(len(completions)):
         completions[i] = [
             output.text
-            for r in responses[i * config.n : (i + 1) * config.n]
+            for r in responses[
+                i * config.search_config.n : (i + 1) * config.search_config.n
+            ]
             for output in r.outputs
         ]
         completion_tokens[i] = [
             len(output.token_ids)
-            for r in responses[i * config.n : (i + 1) * config.n]
+            for r in responses[
+                i * config.search_config.n : (i + 1) * config.search_config.n
+            ]
             for output in r.outputs
         ]
 
     # Check we generated the correct number of completions for each prompt
     for c in completions:
         if len(c) != config.n:
-            raise ValueError(f"Generated {len(c)} completions instead of {config.n}")
+            raise ValueError(
+                f"Generated {len(c)} completions instead of {config.search_config.n}"
+            )
 
     scores = prm.score(x["problem"], completions)
     agg_scores = [
-        [aggregate_scores(s, config.agg_strategy) for s in score] for score in scores
+        [aggregate_scores(s, config.search_config.agg_strategy) for s in score]
+        for score in scores
     ]
 
     # Select the completion with the highest score

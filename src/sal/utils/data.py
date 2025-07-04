@@ -21,12 +21,12 @@ from huggingface_hub import (
     repo_exists,
 )
 
-from sal.config import Config
+from sal.config import DatasetConfig
 
 logger = logging.getLogger()
 
 
-def get_dataset(config: Config) -> Dataset:
+def get_dataset(config: DatasetConfig) -> Dataset:
     dataset = load_dataset(config.dataset_name, split=config.dataset_split)
 
     if config.dataset_start is not None and config.dataset_end is not None:

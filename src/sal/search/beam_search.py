@@ -31,9 +31,9 @@ from sal.utils.score import aggregate_scores
 
 def _beam_search(batch_of_prompts, config: Config, llm: LLM, prm: PRM) -> list[Beam]:
     sampling_params = SamplingParams(
-        temperature=config.temperature,
-        max_tokens=config.max_tokens,
-        top_p=config.top_p,
+        temperature=config.search_config.temperature,
+        max_tokens=config.search_config.max_tokens,
+        top_p=config.search_config.top_p,
         stop=["\n\n"],
         include_stop_str_in_output=True,
         n=1,
@@ -41,7 +41,7 @@ def _beam_search(batch_of_prompts, config: Config, llm: LLM, prm: PRM) -> list[B
 
     beams: list[Beam] = []
     for prompt in batch_of_prompts:
-        for i in range(config.n):
+        for i in range(config.search_config.n):
             beams.append(
                 Beam(
                     prompt=prompt,
@@ -62,33 +62,36 @@ def _beam_search(batch_of_prompts, config: Config, llm: LLM, prm: PRM) -> list[B
 
     completed_beams: list[Beam] = []
 
-    for i in tqdm(range(config.num_iterations), desc="Beam search iterations"):
+    for i in tqdm(
+        range(config.beam_search_config.num_iterations), desc="Beam search iterations"
+    ):
         if i == 0:
             active_beams = [b for b in beams if not b.pruned]
         else:
             active_beams = [b for b in active_beams if not b.pruned]
 
         # Duplicate active beams to ensure that we have config.n beams per iteration
-        if len(active_beams) != config.n:
-            repeats = (config.n // len(active_beams)) + 1
+        if len(active_beams) != config.search_config.n:
+            repeats = (config.search_config.n // len(active_beams)) + 1
             logger.debug(
-                f"Extending active_beams with {repeats} repetitions to reach size {config.n}"
+                f"Extending active_beams with {repeats} repetitions to reach size {config.search_config.n}"
             )
             extended_active_beams = [
-                copy.deepcopy(b) for b in (active_beams * repeats)[: config.n]
+                copy.deepcopy(b)
+                for b in (active_beams * repeats)[: config.search_config.n]
             ]
             active_beams = extended_active_beams
-            if len(active_beams) != config.n:
+            if len(active_beams) != config.search_config.n:
                 raise ValueError(
-                    f"Expected {config.n} active beams, but got {len(active_beams)}"
+                    f"Expected {config.search_config.n} active beams, but got {len(active_beams)}"
                 )
 
-        if i == config.num_iterations - 1:
+        if i == config.beam_search_config.num_iterations - 1:
             # Last iteration, generate to EOS
             sampling_params = SamplingParams(
-                temperature=config.temperature,
-                max_tokens=config.max_tokens,
-                top_p=config.top_p,
+                temperature=config.search_config.temperature,
+                max_tokens=config.search_config.max_tokens,
+                top_p=config.search_config.top_p,
                 n=1,
             )
 
@@ -108,7 +111,11 @@ def _beam_search(batch_of_prompts, config: Config, llm: LLM, prm: PRM) -> list[B
             continue_final_message=continue_final_message,
             tokenize=False,
         )
-        lookahead = 0 if i == config.num_iterations - 1 else config.lookahead
+        lookahead = (
+            0
+            if i == config.beam_search_config.num_iterations - 1
+            else config.beam_search_config.lookahead
+        )
         gen_results = generate_k_steps(
             templated_convs, lookahead, llm, sampling_params, 1
         )
@@ -135,7 +142,7 @@ def _beam_search(batch_of_prompts, config: Config, llm: LLM, prm: PRM) -> list[B
         scores = prm.score(prompts, completions)
 
         agg_scores = [
-            [aggregate_scores(s, config.agg_strategy) for s in score]
+            [aggregate_scores(s, config.search_config.agg_strategy) for s in score]
             for score in scores
         ]
 
@@ -166,7 +173,7 @@ def _beam_search(batch_of_prompts, config: Config, llm: LLM, prm: PRM) -> list[B
 
         # Get indices for top (config.n / config.beam_width) completions
         top_indices = np.argsort(np.array(agg_scores).flatten())[
-            -(config.n // config.beam_width) :
+            -(config.search_config.n // config.beam_search_config.beam_width) :
         ]
 
         for idx, beam in enumerate(active_beams):
@@ -177,20 +184,23 @@ def _beam_search(batch_of_prompts, config: Config, llm: LLM, prm: PRM) -> list[B
     if config.sort_completed:
         completed_beams = sorted(
             completed_beams,
-            key=lambda b: aggregate_scores(b.all_scores, config.agg_strategy),
+            key=lambda b: aggregate_scores(
+                b.all_scores, config.search_config.agg_strategy
+            ),
             reverse=True,
-        )[: config.n]
+        )[: config.search_config.n]
     else:
-        completed_beams = completed_beams[: config.n]
+        completed_beams = completed_beams[: config.search_config.n]
 
-    if len(completed_beams) != config.n:
+    if len(completed_beams) != config.search_config.n:
         # If we don't have enough completed_beams, duplicate until we reach config.n
-        repeats = (config.n // len(completed_beams)) + 1
+        repeats = (config.search_config.n // len(completed_beams)) + 1
         logger.debug(
-            f"Extending completed_beams with {repeats} repetitions to reach size {config.n}"
+            f"Extending completed_beams with {repeats} repetitions to reach size {config.search_config.n}"
         )
         extended_completed_beams = [
-            copy.deepcopy(b) for b in (completed_beams * repeats)[: config.n]
+            copy.deepcopy(b)
+            for b in (completed_beams * repeats)[: config.search_config.n]
         ]
         completed_beams = extended_completed_beams
 
@@ -212,7 +222,8 @@ def beam_search(examples, config: Config, llm: LLM, prm: PRM):
         beams = grouped_results[p]
         completions = [b.current_text for b in beams]
         agg_scores = [
-            aggregate_scores(b.all_scores, config.agg_strategy) for b in beams
+            aggregate_scores(b.all_scores, config.search_config.agg_strategy)
+            for b in beams
         ]
         pred = completions[np.argmax(agg_scores)]
         results["completions"].append(completions)
