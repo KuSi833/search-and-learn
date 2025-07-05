@@ -1,8 +1,11 @@
 from sal.test_time_compute import main
 from sal.config import Config, SearchConfig, DatasetConfig
 
+QWEN_MODELS_PATH = "/vol/bitbucket/km1124/search-and-learn/models/quant_factory"
+QWEN_Q8_PATH = QWEN_MODELS_PATH + "Qwen2.5-Math-7B.Q8_0.gguf"
+
 base_config = Config(
-    model_path="/vol/bitbucket/km1124/search-and-learn/models/qwen2.5-math-7b-gguf-q4/qwen2.5-math-7b-q4_k_s.gguf",
+    model_path=QWEN_Q8_PATH,
     filter_duplicates=True,
     approach="beam_search",
     search_config=SearchConfig(

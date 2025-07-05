@@ -2,15 +2,17 @@
 dependencies = [
   "accelerate>=1.8.0",
   "datasets>=3.6.0",
+  "fabric>=3.2.2",
   "fastapi>=0.115.13",
   "isort>=6.0.1",
   "latex2sympy2>=1.9.1",
   "pebble>=5.1.1",
   "pytest>=8.4.1",
+  "python-dotenv>=1.1.1",
+  "rich>=14.0.0",
   "ruff>=0.12.0",
   "torch>=2.7.0",
   "torchvision>=0.22.0",
-  "vllm>=0.9.1",
   "word2number>=1.1",
 ]
 description = "Add your description here"
