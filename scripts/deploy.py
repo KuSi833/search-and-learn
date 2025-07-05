@@ -1,15 +1,12 @@
-from time import sleep
 import argparse
 import logging
 import os
+from dataclasses import dataclass
+from time import sleep
+
 from dotenv import load_dotenv
 from fabric import Connection
 from rich.console import Console
-from rich.status import Status
-from rich.panel import Panel
-from rich.text import Text
-
-from dataclasses import dataclass
 
 load_dotenv()
 
@@ -23,6 +20,9 @@ logging.getLogger("paramiko").setLevel(logging.WARNING)
 logging.getLogger("invoke").setLevel(logging.WARNING)
 
 console = Console()
+
+HOST_EXCLUDE_LIST = {"gpuvm21", "gpuvm22"}
+HOST_EXCLUDE_LIST_TEXT = ",".join(HOST_EXCLUDE_LIST)
 
 
 @dataclass
@@ -94,7 +94,8 @@ def push_files(connection, config: DeployConfig) -> None:
     ]
     with console.status("[yellow]Pushing files to remote...", spinner="dots"):
         connection.local(
-            f"rsync -avz --exclude='__pycache__' --exclude='*.pyc' {' '.join(paths_to_transfer)} km1124@{config.hostname}:{config.remote_root}"
+            f"rsync -avz --exclude='__pycache__' --exclude='*.pyc' {' '.join(paths_to_transfer)} km1124@{config.hostname}:{config.remote_root}",
+            hide=True,
         )
     console.print(f"[green]✔ Pushed files to remote: {config.hostname}")
 
@@ -107,15 +108,17 @@ def submit_job(config: DeployConfig, tail_output=True):
     push_files(c, config)
 
     with c.cd(config.remote_root):
-        with console.status("[yellow]Submitting job to SLURM...", spinner="dots"):
-            result = c.run("sbatch job.sh")
+        with console.status("[yellow]Submitting job to SLURM...", spinner="dots":
+            console.print(
+                f" - [blue]Excluding the following hosts: {HOST_EXCLUDE_LIST_TEXT}"
+            )
+            result = c.run(f"sbatch --exclude={HOST_EXCLUDE_LIST_TEXT} job.sh")
             job_id = result.stdout.strip().split()[-1]
             console.print(f"[green]✔︎ Job submitted with ID: {job_id}")
 
         if tail_output:
             log_file = f"./logs/slurm-{job_id}.log"
             with console.status("[yellow]Waiting for job to start...", spinner="dots"):
-                # Check periodically if the log file exists
                 while True:
                     result = c.run(
                         f"test -f {log_file} && echo 'exists' || echo 'not found'",
@@ -124,7 +127,7 @@ def submit_job(config: DeployConfig, tail_output=True):
                     if "exists" in result.stdout:
                         break
                     sleep(2)
-            console.print("[green]✔ Log file found, tailing output")
+            console.print("[green]✔ Job started. Tailing log file...")
             c.run(f"tail -f {log_file}")
 
 

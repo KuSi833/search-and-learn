@@ -1,7 +1,7 @@
 from sal.test_time_compute import main
 from sal.config import Config, SearchConfig, DatasetConfig
 
-QWEN_MODELS_PATH = "/vol/bitbucket/km1124/search-and-learn/models/quant_factory"
+QWEN_MODELS_PATH = "/vol/bitbucket/km1124/search-and-learn/models/quant_factory/"
 QWEN_Q8_PATH = QWEN_MODELS_PATH + "Qwen2.5-Math-7B.Q8_0.gguf"
 
 base_config = Config(

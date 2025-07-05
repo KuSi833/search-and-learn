@@ -18,6 +18,44 @@
                 "panel": "shared"
             },
             "problemMatcher": []
+        },
+        {
+            "label": "Submit Job",
+            "type": "shell",
+            "command": "${command:python.interpreterPath}",
+            "args": [
+                "scripts/deploy.py",
+                "--action",
+                "submit"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+            },
+            "icon": {
+                "color": "terminal.ansiBlue",
+                "id": "cloud-upload",
+            }
+        },
+        {
+            "label": "Cancel Job",
+            "type": "shell",
+            "command": "${command:python.interpreterPath}",
+            "args": [
+                "scripts/deploy.py",
+                "--action",
+                "cancel"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+            },
+            "icon": {
+                "color": "terminal.ansiRed",
+                "id": "x-two",
+            }
         }
     ]
 }
