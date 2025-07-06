@@ -3,6 +3,7 @@ import logging
 import os
 from dataclasses import dataclass
 from time import sleep
+from typing import Set
 
 from dotenv import load_dotenv
 from fabric import Connection
@@ -21,21 +22,22 @@ logging.getLogger("invoke").setLevel(logging.WARNING)
 
 console = Console()
 
-HOST_EXCLUDE_LIST = {"gpuvm21", "gpuvm22"}
-HOST_EXCLUDE_LIST_TEXT = ",".join(HOST_EXCLUDE_LIST)
-
 
 @dataclass
 class DeployConfig:
     username: str
     hostname: str
     remote_root: str
+    remotes_to_exclude: Set[str] = {"gpuvm21", "gpuvm22"}
+
+    def get_remotes_to_exclude(self) -> str:
+        return ",".join(self.remotes_to_exclude)
 
 
 def main():
     args = parse_args()
 
-    with console.status("[yellow]Validating environment...", spinner="dots"):
+    with console.status("[yellow]Validating env variables...", spinner="dots"):
         username = os.getenv("USERNAME")
         if username is None:
             raise ValueError("USERNAME environment variable is not set")
@@ -47,7 +49,7 @@ def main():
             raise ValueError("REMOTE_ROOT environment variable is not set")
 
         config = DeployConfig(username, hostname, remote_root)
-    console.print("[green]✔ Environment validated")
+    console.print("[green]✔ Env variables validated")
 
     if args.action == "submit":
         submit_job(config)
@@ -108,11 +110,11 @@ def submit_job(config: DeployConfig, tail_output=True):
     push_files(c, config)
 
     with c.cd(config.remote_root):
-        with console.status("[yellow]Submitting job to SLURM...", spinner="dots":
+        with console.status("[yellow]Submitting job to SLURM...", spinner="dots"):
             console.print(
-                f" - [blue]Excluding the following hosts: {HOST_EXCLUDE_LIST_TEXT}"
+                f" - [blue]Excluding the following hosts: {config.get_remotes_to_exclude()}"
             )
-            result = c.run(f"sbatch --exclude={HOST_EXCLUDE_LIST_TEXT} job.sh")
+            result = c.run(f"sbatch --exclude={config.get_remotes_to_exclude()} job.sh")
             job_id = result.stdout.strip().split()[-1]
             console.print(f"[green]✔︎ Job submitted with ID: {job_id}")
 

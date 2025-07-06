@@ -14,6 +14,7 @@ import logging
 import time
 from pathlib import Path
 
+from sal.config import Config
 from datasets import Dataset, load_dataset
 from huggingface_hub import (
     create_branch,
@@ -37,8 +38,8 @@ def get_dataset(config: DatasetConfig) -> Dataset:
     return dataset
 
 
-def save_dataset(dataset, config):
-    if config.push_to_hub:
+def save_dataset(dataset, config: Config):
+    if config.output_config.push_to_hub:
         # Since concurrent pushes can get rejected by the Hub, we make several attempts to push the dataset with try/except
         for _ in range(20):
             try:
@@ -59,7 +60,7 @@ def save_dataset(dataset, config):
                     config.hub_dataset_id,
                     revision=config.revision,
                     split="train",
-                    private=config.hub_dataset_private,
+                    private=config.output_config.hub_dataset_private,
                     commit_message=f"Add {config.revision}",
                 )
                 break
@@ -68,12 +69,13 @@ def save_dataset(dataset, config):
                 time.sleep(5)
         logger.info(f"Pushed dataset to {url}")
     else:
-        if config.output_dir is None:
-            config.output_dir = f"data/{config.model_path}"
-        Path(config.output_dir).mkdir(parents=True, exist_ok=True)
+        if config.output_config.output_dir is None:
+            config.output_config.output_dir = f"data/{config.model_path}"
+        Path(config.output_config.output_dir).mkdir(parents=True, exist_ok=True)
         dataset.to_json(
-            f"{config.output_dir}/{config.approach}_completions.jsonl", lines=True
+            f"{config.output_config.output_dir}/{config.approach}_completions.jsonl",
+            lines=True,
         )
         logger.info(
-            f"Saved completions to {config.output_dir}/{config.approach}_completions.jsonl"
+            f"Saved completions to {config.output_config.output_dir}/{config.approach}_completions.jsonl"
         )

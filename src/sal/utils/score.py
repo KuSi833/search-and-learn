@@ -47,36 +47,38 @@ def score(dataset: Dataset, config: Config) -> Dataset:
     dataset = dataset.map(
         lambda x: {"agg_scores": [aggregate_scores(s, "last") for s in x["scores"]]}
     )
-    subsets = [2**i for i in range(config.n) if 2**i <= config.n]
+    subsets = [
+        2**i for i in range(config.search_config.n) if 2**i <= config.search_config.n
+    ]
     for n in tqdm(subsets, desc="Computing majority & weighted predictions"):
         dataset = dataset.map(
             subsample_completions,
             fn_kwargs={"n": n},
-            num_proc=config.num_proc,
+            num_proc=config.output_config.num_proc,
             desc=f"Subsample {n}",
         )
         dataset = dataset.map(
             extract_completion_answers,
             fn_kwargs={"n": n},
-            num_proc=config.num_proc,
+            num_proc=config.output_config.num_proc,
             desc=f"Extract answers {n}",
         )
         dataset = dataset.map(
             compute_weighted_pred,
             fn_kwargs={"n": n},
-            num_proc=config.num_proc,
+            num_proc=config.output_config.num_proc,
             desc=f"Compute weighted pred {n}",
         )
         dataset = dataset.map(
             compute_maj_pred,
             fn_kwargs={"n": n},
-            num_proc=config.num_proc,
+            num_proc=config.output_config.num_proc,
             desc=f"Compute majority pred {n}",
         )
         dataset = dataset.map(
             compute_naive_pred,
             fn_kwargs={"n": n},
-            num_proc=config.num_proc,
+            num_proc=config.output_config.num_proc,
             desc=f"Compute naive pred {n}",
         )
         # Nuke unused columns to keep dataset lean
