@@ -93,6 +93,7 @@ def push_files(connection, config: DeployConfig) -> None:
         "experiments",
         "job.sh",
         ".env",
+        "pyproject.toml",
     ]
     with console.status("[yellow]Pushing files to remote...", spinner="dots"):
         connection.local(

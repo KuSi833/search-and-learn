@@ -15,6 +15,7 @@
 
 import logging
 
+import wandb
 import torch
 from vllm import LLM
 
@@ -23,6 +24,8 @@ from sal.models.reward_models import load_prm
 from sal.search import beam_search, best_of_n, dvts
 from sal.utils.data import get_dataset, save_dataset
 from sal.utils.score import score
+from sal.utils.env import get_dotenv_or_throw
+from dataclasses import asdict
 
 logging.basicConfig(level=logging.INFO)
 
@@ -38,29 +41,36 @@ APPROACHES = {
 
 
 def main(config: Config):
-    approach_fn = APPROACHES[config.approach]
+    wandb.login(key=get_dotenv_or_throw("WANDB_API_KEY"))
 
-    num_gpus = torch.cuda.device_count()
-    llm = LLM(
-        model=config.model_path,
-        gpu_memory_utilization=config.gpu_memory_utilization,
-        enable_prefix_caching=True,
-        seed=config.search_config.seed,
-        tensor_parallel_size=num_gpus,
-    )
-    prm = load_prm(config)
+    with wandb.init(
+        project=config.wandb_config.project,
+        config=asdict(config),
+        tags=list(config.wandb_config.tags),
+    ) as run:
+        approach_fn = APPROACHES[config.approach]
 
-    dataset = get_dataset(config.dataset_config)
-    dataset = dataset.map(
-        approach_fn,
-        batched=True,
-        batch_size=config.search_config.search_batch_size,
-        fn_kwargs={"config": config, "llm": llm, "prm": prm},
-        desc="Running search",
-        load_from_cache_file=False,
-    )
+        num_gpus = torch.cuda.device_count()
+        llm = LLM(
+            model=config.generator_config.get_model_path(),
+            gpu_memory_utilization=config.gpu_memory_utilization,
+            enable_prefix_caching=True,
+            seed=config.search_config.seed,
+            tensor_parallel_size=num_gpus,
+        )
+        prm = load_prm(config.prm_config)
 
-    dataset = score(dataset, config)
+        dataset = get_dataset(config.dataset_config)
+        dataset = dataset.map(
+            approach_fn,
+            batched=True,
+            batch_size=config.search_config.search_batch_size,
+            fn_kwargs={"config": config, "llm": llm, "prm": prm},
+            desc="Running search",
+            load_from_cache_file=False,
+        )
 
-    save_dataset(dataset, config)
-    logger.info("Done 🔥!")
+        dataset = score(dataset, config)
+
+        save_dataset(dataset, config, run.id)
+        logger.info("Done 🔥!")

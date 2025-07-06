@@ -1,6 +1,11 @@
-from sal.test_time_compute import main
+import wandb
 from sal.config import Config, SearchConfig, DatasetConfig, GeneratorConfig, PRMConfig
-from dataclasses import replace
+from dataclasses import asdict, replace
+from sal.utils.env import get_dotenv_or_throw
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 MODEL_BASE_PATH = "/vol/bitbucket/km1124/search-and-learn/models/"
 
@@ -38,10 +43,21 @@ BEST_OF_N_CONFIG = Config(
         seed=0,
     ),
     dataset_config=DatasetConfig(
-        num_samples=1,
-        # num_samples=100,
+        num_samples=100,
     ),
 )
+
+
+def main(config: Config):
+    wandb.login(key=get_dotenv_or_throw("WANDB_API_KEY"))
+
+    with wandb.init(
+        project=config.wandb_config.project,
+        config=asdict(config),
+        tags=list(config.wandb_config.tags),
+    ) as run:
+        print(run.name)
+
 
 if __name__ == "__main__":
     config = replace(BEST_OF_N_CONFIG, generator_config=Q8_MODEL)

@@ -25,7 +25,7 @@ from transformers import (
     PreTrainedTokenizer,
 )
 
-from sal.config import Config
+from sal.config import PRMConfig
 from sal.models.skywork_o1_prm.io_utils import (
     derive_step_rewards,
     prepare_batch_input_for_model,
@@ -424,20 +424,20 @@ class Qwen_2_5_Math_7B(Qwen_2_5_Math):
         return Qwen_2_5_Math._load_model_and_tokenizer(prm_model_path, **model_kwargs)
 
 
-def load_prm(config: Config) -> PRM:
-    if config.prm_path == "peiyi9979/math-shepherd-mistral-7b-prm":
-        return MathShepherd(config)
+def load_prm(prm_config: PRMConfig) -> PRM:
+    if prm_config.path == "peiyi9979/math-shepherd-mistral-7b-prm":
+        return MathShepherd(prm_config)
 
-    if config.prm_path == "RLHFlow/Llama3.1-8B-PRM-Deepseek-Data":
-        return RLHFFlow(config)
+    if prm_config.path == "RLHFlow/Llama3.1-8B-PRM-Deepseek-Data":
+        return RLHFFlow(prm_config)
 
-    if config.prm_path == "Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B":
-        return SkyworkO1_1_5B(config)
+    if prm_config.path == "Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B":
+        return SkyworkO1_1_5B(prm_config)
 
-    if config.prm_path == "Skywork/Skywork-o1-Open-PRM-Qwen-2.5-7B":
-        return SkyworkO1_7B(config)
+    if prm_config.path == "Skywork/Skywork-o1-Open-PRM-Qwen-2.5-7B":
+        return SkyworkO1_7B(prm_config)
 
-    if config.prm_path == "Qwen/Qwen2.5-Math-PRM-7B":
-        return Qwen_2_5_Math_7B(config)
+    if prm_config.path == "Qwen/Qwen2.5-Math-PRM-7B":
+        return Qwen_2_5_Math_7B(prm_config)
 
-    raise NotImplementedError(f"PRM {config.prm_path} not implemented")
+    raise NotImplementedError(f"PRM {prm_config.path} not implemented")

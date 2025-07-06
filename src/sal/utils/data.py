@@ -12,6 +12,7 @@
 
 import logging
 import time
+import wandb
 from pathlib import Path
 
 from sal.config import Config
@@ -38,7 +39,7 @@ def get_dataset(config: DatasetConfig) -> Dataset:
     return dataset
 
 
-def save_dataset(dataset, config: Config):
+def save_dataset(dataset, config: Config, run_id: str) -> None:
     if config.output_config.push_to_hub:
         # Since concurrent pushes can get rejected by the Hub, we make several attempts to push the dataset with try/except
         for _ in range(20):
@@ -70,12 +71,13 @@ def save_dataset(dataset, config: Config):
         logger.info(f"Pushed dataset to {url}")
     else:
         if config.output_config.output_dir is None:
-            config.output_config.output_dir = f"data/{config.model_path}"
+            config.output_config.output_dir = (
+                f"data/{config.generator_config.name}/{run_id}"
+            )
         Path(config.output_config.output_dir).mkdir(parents=True, exist_ok=True)
-        dataset.to_json(
-            f"{config.output_config.output_dir}/{config.approach}_completions.jsonl",
-            lines=True,
-        )
+        result_path = f"{config.output_config.output_dir}/result.jsonl"
+        dataset.to_json(result_path, lines=True)
+        wandb.save(result_path)
         logger.info(
             f"Saved completions to {config.output_config.output_dir}/{config.approach}_completions.jsonl"
         )

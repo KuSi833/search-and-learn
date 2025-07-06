@@ -14,11 +14,29 @@
 # limitations under the License.
 
 from dataclasses import dataclass, field
-from typing import Literal, Optional
+from typing import Literal, Optional, Set
 
 from huggingface_hub import get_full_repo_name
 
 from sal.utils.hub import get_dataset_revisions
+
+
+@dataclass
+class GeneratorConfig:
+    base_path: Optional[str] = None  # when set to empty string it assumes hfhub
+    name: str = "meta-llama/Llama-3.2-1B-Instruct"
+    parameter_count: Optional[str] = None
+    quantisation: Optional[str] = None
+
+    def get_model_path(self) -> str:
+        if self.base_path is not None:
+            return f"{self.base_path}/{self.name}"
+        return self.name
+
+
+@dataclass
+class PRMConfig:
+    path: str = "RLHFlow/Llama3.1-8B-PRM-Deepseek-Data"
 
 
 @dataclass
@@ -62,18 +80,27 @@ class BeamSearchConfig:
 
 
 @dataclass
+class WandbConfig:
+    project: str = "qtts"
+    tags: Set[str] = field(default_factory=lambda: set())
+
+
+@dataclass
 class Config:
     dataset_config: DatasetConfig = field(default_factory=DatasetConfig)
     output_config: OutputConfig = field(default_factory=OutputConfig)
+    wandb_config: WandbConfig = field(default_factory=WandbConfig)
+
     search_config: SearchConfig = field(default_factory=SearchConfig)
     beam_search_config: BeamSearchConfig = field(default_factory=BeamSearchConfig)
 
+    generator_config: GeneratorConfig = field(default_factory=GeneratorConfig)
+    prm_config: PRMConfig = field(default_factory=PRMConfig)
+
     approach: Literal["best_of_n", "beam_search", "dvts"] = "best_of_n"
-    model_path: str = "meta-llama/Llama-3.2-1B-Instruct"
     gpu_memory_utilization: float = (
         0.5  # vllm is allocated 0.5 of GPU memory, the PRM uses the rest
     )
-    prm_path: str = "RLHFlow/Llama3.1-8B-PRM-Deepseek-Data"
 
     # Chat template related options
     system_prompt: str = "Solve the following math problem efficiently and clearly:\n\n- For simple problems (2 steps or fewer):\nProvide a concise solution with minimal explanation.\n\n- For complex problems (3 steps or more):\nUse this step-by-step format:\n\n## Step 1: [Concise description]\n[Brief explanation and calculations]\n\n## Step 2: [Concise description]\n[Brief explanation and calculations]\n\n...\n\nRegardless of the approach, always conclude with:\n\nTherefore, the final answer is: $\\boxed{answer}$. I hope it is correct.\n\nWhere [answer] is just the final number or expression that solves the problem."
