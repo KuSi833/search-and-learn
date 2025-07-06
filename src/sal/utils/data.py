@@ -39,7 +39,7 @@ def get_dataset(config: DatasetConfig) -> Dataset:
     return dataset
 
 
-def save_dataset(dataset, config: Config, run_id: str) -> None:
+def save_dataset(dataset, config: Config, run_id: str) -> Path:
     if config.output_config.push_to_hub:
         # Since concurrent pushes can get rejected by the Hub, we make several attempts to push the dataset with try/except
         for _ in range(20):
@@ -77,7 +77,7 @@ def save_dataset(dataset, config: Config, run_id: str) -> None:
         Path(config.output_config.output_dir).mkdir(parents=True, exist_ok=True)
         result_path = f"{config.output_config.output_dir}/result.jsonl"
         dataset.to_json(result_path, lines=True)
-        wandb.save(result_path)
         logger.info(
             f"Saved completions to {config.output_config.output_dir}/{config.approach}_completions.jsonl"
         )
+        return Path(result_path)

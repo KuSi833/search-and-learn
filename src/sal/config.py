@@ -86,8 +86,15 @@ class WandbConfig:
 
 
 @dataclass
+class EvaluationConfig:
+    benchmark: str = "math"
+    dataset_col: str = "pred"
+
+
+@dataclass
 class Config:
     dataset_config: DatasetConfig = field(default_factory=DatasetConfig)
+    evaluation_config: EvaluationConfig = field(default_factory=EvaluationConfig)
     output_config: OutputConfig = field(default_factory=OutputConfig)
     wandb_config: WandbConfig = field(default_factory=WandbConfig)
 

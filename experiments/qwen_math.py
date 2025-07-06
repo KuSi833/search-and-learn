@@ -12,6 +12,8 @@ Q8_MODEL = GeneratorConfig(
 )
 
 PRM_CONFIG = PRMConfig(path="RLHFlow/Llama3.1-8B-PRM-Deepseek-Data")
+# DATASET_CONFIG = DatasetConfig(num_samples=100)
+DATASET_CONFIG = DatasetConfig(num_samples=10)
 
 BEAM_SEARCH_CONFIG = Config(
     prm_config=PRM_CONFIG,
@@ -22,9 +24,7 @@ BEAM_SEARCH_CONFIG = Config(
         search_batch_size=1,
         seed=0,
     ),
-    dataset_config=DatasetConfig(
-        num_samples=100,
-    ),
+    dataset_config=DATASET_CONFIG,
 )
 
 BEST_OF_N_CONFIG = Config(
@@ -37,10 +37,7 @@ BEST_OF_N_CONFIG = Config(
         search_batch_size=25,
         seed=0,
     ),
-    dataset_config=DatasetConfig(
-        num_samples=1,
-        # num_samples=100,
-    ),
+    dataset_config=DATASET_CONFIG,
 )
 
 if __name__ == "__main__":

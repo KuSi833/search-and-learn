@@ -17,6 +17,7 @@ import logging
 
 import wandb
 import torch
+from pathlib import Path
 from vllm import LLM
 
 from sal.config import Config
@@ -25,6 +26,7 @@ from sal.search import beam_search, best_of_n, dvts
 from sal.utils.data import get_dataset, save_dataset
 from sal.utils.score import score
 from sal.utils.env import get_dotenv_or_throw
+from sal.evaluation.evaluate import evaluate
 from dataclasses import asdict
 from dotenv import load_dotenv
 
@@ -75,5 +77,13 @@ def main(config: Config):
 
         dataset = score(dataset, config)
 
-        save_dataset(dataset, config, run.id)
+        dataset_path = save_dataset(dataset, config, run.id)
+        output_file: Path = dataset_path.parent / "score.jsonl"
+
+        evaluate(
+            benchmark=config.evaluation_config.benchmark,
+            dataset_path=dataset_path,
+            dataset_col=config.evaluation_config.dataset_col,
+            output_file=output_file,
+        )
         logger.info("Done 🔥!")

@@ -65,6 +65,7 @@ def main():
         cancel_job(job_id, config)
     elif args.action == "configure_environment":
         c = Connection(config.hostname)
+        push_files(c, config)
         configure_environment(c, config)
 
     # if args.action == "run_remote":
@@ -117,8 +118,9 @@ def push_files(connection, config: DeployConfig) -> None:
 
 def configure_environment(connection, config: DeployConfig) -> None:
     with console.status("[yellow]Configuring environment...", spinner="dots"):
-        connection.run(f"{config.uv_path} sync --group deploy")
-        connection.run(f'{config.uv_path} pip install -e "."')
+        with connection.cd(config.remote_root):
+            connection.run(f"{config.uv_path} sync --group deploy")
+            connection.run(f'{config.uv_path} pip install -e "."')
     console.print("[green]✔ Configured environment")
 
 
