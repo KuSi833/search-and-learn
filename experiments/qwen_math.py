@@ -40,5 +40,6 @@ BEST_OF_N_CONFIG = Config(
 )
 
 if __name__ == "__main__":
-    config = replace(BEST_OF_N_CONFIG, generator_config=Q8_MODEL)
+    # config = replace(BEST_OF_N_CONFIG, generator_config=Q8_MODEL)
+    config = replace(BEAM_SEARCH_CONFIG, generator_config=Q8_MODEL)
     main(config)
