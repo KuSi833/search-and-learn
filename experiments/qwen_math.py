@@ -10,6 +10,12 @@ Q8_MODEL = GeneratorConfig(
     parameter_count="7B",
     quantisation="Q8_0",
 )
+Q4_MODEL = GeneratorConfig(
+    base_path=MODEL_BASE_PATH,
+    name="quant_factory/Qwen2.5-Math-7B.Q4_0.gguf",
+    parameter_count="7B",
+    quantisation="Q4_0",
+)
 
 PRM_CONFIG = PRMConfig(path="RLHFlow/Llama3.1-8B-PRM-Deepseek-Data")
 DATASET_CONFIG = DatasetConfig(num_samples=100)
@@ -41,5 +47,7 @@ BEST_OF_N_CONFIG = Config(
 
 if __name__ == "__main__":
     # config = replace(BEST_OF_N_CONFIG, generator_config=Q8_MODEL)
-    config = replace(BEAM_SEARCH_CONFIG, generator_config=Q8_MODEL)
+    # config = replace(BEAM_SEARCH_CONFIG, generator_config=Q8_MODEL)
+    config = replace(BEST_OF_N_CONFIG, generator_config=Q4_MODEL)
+    # config = replace(BEAM_SEARCH_CONFIG, generator_config=Q8_MODEL)
     main(config)
