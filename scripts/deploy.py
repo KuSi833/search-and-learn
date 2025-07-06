@@ -1,7 +1,7 @@
 import argparse
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from time import sleep
 from typing import Set
 
@@ -28,7 +28,7 @@ class DeployConfig:
     username: str
     hostname: str
     remote_root: str
-    remotes_to_exclude: Set[str] = {"gpuvm21", "gpuvm22"}
+    remotes_to_exclude: Set[str] = field(default_factory=lambda: {"gpuvm21", "gpuvm22"})
 
     def get_remotes_to_exclude(self) -> str:
         return ",".join(self.remotes_to_exclude)
