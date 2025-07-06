@@ -4,6 +4,10 @@ from dataclasses import replace
 
 MODEL_BASE_PATH = "/vol/bitbucket/km1124/search-and-learn/models"
 
+BASE_MODEL = GeneratorConfig(
+    name="Qwen/Qwen2.5-Math-7B",
+    parameter_count="7B",
+)
 Q8_MODEL = GeneratorConfig(
     base_path=MODEL_BASE_PATH,
     name="quant_factory/Qwen2.5-Math-7B.Q8_0.gguf",
@@ -49,5 +53,7 @@ if __name__ == "__main__":
     # config = replace(BEST_OF_N_CONFIG, generator_config=Q8_MODEL)
     # config = replace(BEAM_SEARCH_CONFIG, generator_config=Q8_MODEL)
     # config = replace(BEST_OF_N_CONFIG, generator_config=Q4_MODEL)
-    config = replace(BEAM_SEARCH_CONFIG, generator_config=Q4_MODEL)
+    # config = replace(BEAM_SEARCH_CONFIG, generator_config=Q4_MODEL)
+    config = replace(BEST_OF_N_CONFIG, generator_config=BASE_MODEL)
+    # config = replace(BEAM_SEARCH_CONFIG, generator_config=BASE_MODEL)
     main(config)
