@@ -132,9 +132,7 @@ def submit_job(config: DeployConfig, tail_output=True):
     push_files(c, config)
     with c.cd(config.remote_root):
         with console.status("[yellow]Submitting job to SLURM...", spinner="dots"):
-            console.print(
-                f" - [blue]Excluding the following hosts: {config.get_remotes_to_exclude()}"
-            )
+            console.print(f" - [blue]Excluded hosts: {config.get_remotes_to_exclude()}")
             result = c.run(f"sbatch --exclude={config.get_remotes_to_exclude()} job.sh")
             job_id = result.stdout.strip().split()[-1]
             console.print(f"[green]✔︎ Job submitted with ID: {job_id}")

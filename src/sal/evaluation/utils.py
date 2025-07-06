@@ -7,7 +7,7 @@ import numpy as np
 from pathlib import Path
 from typing import Iterable, Union, Any
 
-from examples import get_examples
+from sal.evaluation.examples import get_examples
 
 
 def set_seed(seed: int = 42) -> None:
@@ -152,7 +152,7 @@ PROMPT_TEMPLATES = {
     ),
     "internlm-math-fs": ("Question:{input}\nAnswer:", "{output}", "\n"),
     "internlm-math-chat": (
-        "<|im_start|>user\n{input}<|im_end|>\n" "<|im_start|>assistant\n",
+        "<|im_start|>user\n{input}<|im_end|>\n<|im_start|>assistant\n",
         "{output}",
         "\n\n",
     ),

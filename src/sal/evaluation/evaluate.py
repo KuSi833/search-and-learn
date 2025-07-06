@@ -1,3 +1,4 @@
+import wandb
 import argparse
 import numpy as np
 from tqdm import tqdm
@@ -192,6 +193,7 @@ def evaluate_single_dataset(
             "voting_ns": voting_ns,
             "avg_acc": avg_acc,
         }
+        wandb.log(result_json)
 
     else:
         # Regular evaluation
