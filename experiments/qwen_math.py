@@ -12,8 +12,7 @@ Q8_MODEL = GeneratorConfig(
 )
 
 PRM_CONFIG = PRMConfig(path="RLHFlow/Llama3.1-8B-PRM-Deepseek-Data")
-# DATASET_CONFIG = DatasetConfig(num_samples=100)
-DATASET_CONFIG = DatasetConfig(num_samples=10)
+DATASET_CONFIG = DatasetConfig(num_samples=100)
 
 BEAM_SEARCH_CONFIG = Config(
     prm_config=PRM_CONFIG,
