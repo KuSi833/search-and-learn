@@ -16,6 +16,7 @@ dependencies = [
   "wandb>=0.21.0",
   "word2number>=1.1",
 ]
+
 description = "Add your description here"
 name = "search-and-learn"
 readme = "README.md"
@@ -23,4 +24,10 @@ requires-python = ">=3.11"
 version = "0.1.0"
 
 [tool.uv.sources]
+search-and-learn = {workspace = true}
 trl = {git = "https://github.com/huggingface/trl.git"}
+
+[dependency-groups]
+deploy = [
+  "vllm",
+]

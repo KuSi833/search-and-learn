@@ -28,6 +28,7 @@ class DeployConfig:
     username: str
     hostname: str
     remote_root: str
+    uv_path: str = "/homes/km1124/.local/bin/uv"
     remotes_to_exclude: Set[str] = field(default_factory=lambda: {"gpuvm21", "gpuvm22"})
 
     def get_remotes_to_exclude(self) -> str:
@@ -62,6 +63,10 @@ def main():
         else:
             job_id = args.job_id
         cancel_job(job_id, config)
+    elif args.action == "configure_environment":
+        c = Connection(config.hostname)
+        configure_environment(c, config)
+
     # if args.action == "run_remote":
     #     if args.hostname is not None:
     #         cfg.remote.hostname = args.hostname
@@ -75,7 +80,14 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Remote job management")
     parser.add_argument(
         "--action",
-        choices=["submit", "cancel", "run_remote", "push_files", "pull_files"],
+        choices=[
+            "submit",
+            "cancel",
+            "run_remote",
+            "push_files",
+            "pull_files",
+            "configure_environment",
+        ],
         required=True,
         help="Action to perform: submit a new job or cancel an existing job",
     )
@@ -103,13 +115,19 @@ def push_files(connection, config: DeployConfig) -> None:
     console.print(f"[green]✔ Pushed files to remote: {config.hostname}")
 
 
+def configure_environment(connection, config: DeployConfig) -> None:
+    with console.status("[yellow]Configuring environment...", spinner="dots"):
+        connection.run(f"{config.uv_path} sync --group deploy")
+        connection.run(f'{config.uv_path} pip install -e "."')
+    console.print("[green]✔ Configured environment")
+
+
 def submit_job(config: DeployConfig, tail_output=True):
     with console.status("[yellow]Connecting to remote...", spinner="dots"):
         c = Connection(config.hostname)
-    console.print("︎[green]✔︎ Connected to ", config.hostname)
+    console.print(f"︎[green]✔︎ Connected to {config.hostname}")
 
     push_files(c, config)
-
     with c.cd(config.remote_root):
         with console.status("[yellow]Submitting job to SLURM...", spinner="dots"):
             console.print(

@@ -26,6 +26,9 @@ from sal.utils.data import get_dataset, save_dataset
 from sal.utils.score import score
 from sal.utils.env import get_dotenv_or_throw
 from dataclasses import asdict
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 

@@ -56,6 +56,25 @@
                 "color": "terminal.ansiRed",
                 "id": "x-two",
             }
-        }
+        },
+        {
+            "label": "Push",
+            "type": "shell",
+            "command": "${command:python.interpreterPath}",
+            "args": [
+                "scripts/deploy.py",
+                "--action",
+                "push_files"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+            },
+            "icon": {
+                "color": "terminal.ansiCyan",
+                "id": "repo-push",
+            }
+        },
     ]
 }

@@ -2,7 +2,7 @@ from sal.test_time_compute import main
 from sal.config import Config, SearchConfig, DatasetConfig, GeneratorConfig, PRMConfig
 from dataclasses import replace
 
-MODEL_BASE_PATH = "/vol/bitbucket/km1124/search-and-learn/models/"
+MODEL_BASE_PATH = "/vol/bitbucket/km1124/search-and-learn/models"
 
 Q8_MODEL = GeneratorConfig(
     base_path=MODEL_BASE_PATH,

@@ -41,7 +41,9 @@ def best_of_n(x, config: Config, llm: LLM, prm: PRM):
 
     # Duplicate convs to generate config.n completions per prompt so we can do continous batching
     # This makes [p1, p2, p3, p4] become [p1, p1, p2, p2, p3, p3, p4, p4] for e.g. config.n=2
-    templated_convs = [c for conv in templated_convs for c in [conv] * config.n]
+    templated_convs = [
+        c for conv in templated_convs for c in [conv] * config.search_config.n
+    ]
 
     # Initialize empty lists for completions and completion tokens
     completions = [[] for _ in range(len(x["problem"]))]
@@ -82,7 +84,7 @@ def best_of_n(x, config: Config, llm: LLM, prm: PRM):
 
     # Check we generated the correct number of completions for each prompt
     for c in completions:
-        if len(c) != config.n:
+        if len(c) != config.search_config.n:
             raise ValueError(
                 f"Generated {len(c)} completions instead of {config.search_config.n}"
             )

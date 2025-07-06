@@ -25,7 +25,7 @@ from transformers import (
     PreTrainedTokenizer,
 )
 
-from sal.config import PRMConfig
+from sal.config import Config, PRMConfig
 from sal.models.skywork_o1_prm.io_utils import (
     derive_step_rewards,
     prepare_batch_input_for_model,
