@@ -27,6 +27,7 @@ from sal.utils.data import get_dataset, save_dataset
 from sal.utils.score import score
 from sal.utils.env import get_dotenv_or_throw
 from sal.evaluation.evaluate import evaluate
+from sal.profiler import get_profiler
 from dataclasses import asdict
 from dotenv import load_dotenv
 
@@ -53,6 +54,7 @@ def main(config: Config):
         config=asdict(config),
         tags=list(config.wandb_config.tags),
     ) as run:
+        # with get_profiler(config.profiler_config.enabled) as prof:
         approach_fn = APPROACHES[config.approach]
 
         num_gpus = torch.cuda.device_count()
@@ -63,7 +65,13 @@ def main(config: Config):
             seed=config.search_config.seed,
             tensor_parallel_size=num_gpus,
         )
+        # prof.step()
+
         prm = load_prm(config.prm_config)
+        # prof.step()
+
+        # prof.export_chrome_trace("trace.json")
+        # exit()
 
         dataset = get_dataset(config.dataset_config)
         dataset = dataset.map(

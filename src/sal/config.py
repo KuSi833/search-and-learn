@@ -35,6 +35,11 @@ class GeneratorConfig:
 
 
 @dataclass
+class ProfilerConfig:
+    enabled: bool = True
+
+
+@dataclass
 class PRMConfig:
     path: str = "RLHFlow/Llama3.1-8B-PRM-Deepseek-Data"
 
@@ -97,6 +102,7 @@ class Config:
     evaluation_config: EvaluationConfig = field(default_factory=EvaluationConfig)
     output_config: OutputConfig = field(default_factory=OutputConfig)
     wandb_config: WandbConfig = field(default_factory=WandbConfig)
+    profiler_config: ProfilerConfig = field(default_factory=ProfilerConfig)
 
     search_config: SearchConfig = field(default_factory=SearchConfig)
     beam_search_config: BeamSearchConfig = field(default_factory=BeamSearchConfig)
