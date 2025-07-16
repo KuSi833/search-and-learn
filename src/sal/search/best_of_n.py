@@ -96,21 +96,18 @@ def best_of_n(x, config: Config, llm: LLM, prm: PRM):
                 f"Generated {len(c)} completions instead of {config.search_config.n}"
             )
 
-    with record_function("prm_scoring"):
-        scores = prm.score(x["problem"], completions)
+    scores = prm.score(x["problem"], completions)
+    agg_scores = [
+        [aggregate_scores(s, config.search_config.agg_strategy) for s in score]
+        for score in scores
+    ]
 
-    with record_function("score_aggregation_and_selection"):
-        agg_scores = [
-            [aggregate_scores(s, config.search_config.agg_strategy) for s in score]
-            for score in scores
-        ]
-        # Select the completion with the highest score
-        pred = [
-            completion[np.argmax(s)] for completion, s in zip(completions, agg_scores)
-        ]
-        x["completions"] = completions
-        x["scores"] = scores
-        x["pred"] = pred
-        x["completion_tokens"] = completion_tokens
+    # Select the completion with the highest score
+    pred = [completion[np.argmax(s)] for completion, s in zip(completions, agg_scores)]
+
+    x["completions"] = completions
+    x["scores"] = scores
+    x["pred"] = pred
+    x["completion_tokens"] = completion_tokens
 
     return x

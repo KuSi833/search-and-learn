@@ -22,11 +22,9 @@
         {
             "label": "Submit Job",
             "type": "shell",
-            "command": "${command:python.interpreterPath}",
+            "command": "bash",
             "args": [
-                "scripts/deploy.py",
-                "--action",
-                "submit"
+                "scripts/submit_job.sh"
             ],
             "presentation": {
                 "echo": true,
