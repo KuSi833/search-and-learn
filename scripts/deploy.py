@@ -178,6 +178,11 @@ source /vol/cuda/12.0.0/setup.sh
 
 source .venv/bin/activate
 
+git reset --hard HEAD
+git clean -fd
+git fetch
+git checkout $COMMIT_HASH
+
 export UV_PYTHON_INSTALL_DIR="/vol/bitbucket/km1124/.cache/python"
 export HF_HOME="/vol/bitbucket/km1124/.cache/huggingface"
 export UV_CACHE_DIR="/vol/bitbucket/km1124/.cache/uv"
@@ -194,26 +199,12 @@ python experiments/qwen_math.py
     console.print("[green]✔ Job script written to remote")
 
 
-def checkout_commit(connection, config: DeployConfig) -> None:
-    commit_hash = config.run_config.commit_hash
-    with console.status(
-        f"[yellow]Checking out commit with hash: {commit_hash}", spinner="dots"
-    ):
-        with connection.cd(config.remote_config.remote_root):
-            connection.run(
-                f"git reset --hard HEAD && git fetch && git checkout {commit_hash}",
-                hide=True,
-            )
-    console.print(f"[green]✔ Checked out commit with hash: {commit_hash}")
-
-
 def submit_job(config: DeployConfig, tail_output=True):
     with console.status("[yellow]Connecting to remote...", spinner="dots"):
         c = Connection(config.remote_config.hostname)
     console.print(f"︎[green]✔︎ Connected to {config.remote_config.hostname}")
 
     write_jobscript(c, config)
-    checkout_commit(c, config)
 
     with c.cd(config.remote_config.remote_root):
         with console.status("[yellow]Submitting job to SLURM...", spinner="dots"):
