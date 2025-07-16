@@ -172,7 +172,7 @@ def write_jobscript(connection, config: DeployConfig) -> None:
 #SBATCH --job-name={sc.job_name}
 #SBATCH --output={sc.output}
 #SBATCH --cpus-per-task={sc.cpus_per_task}
-#SBATCH --gres=gpu:{sc.gres}
+#SBATCH --gres={sc.gres}
 
 source /vol/cuda/12.0.0/setup.sh
 
