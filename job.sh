@@ -1,13 +1,14 @@
 #!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --partition=AMD7-A100-T
+#SBATCH --partition=gpgpuB
 #SBATCH --job-name=qtts
 #SBATCH --output=./logs/slurm-%j.log
 #SBATCH --cpus-per-task=1
 #SBATCH --gres=gpu:1  # Request 1 GPU
 
 source /vol/cuda/12.0.0/setup.sh
+#AMD7-A100-T
 
 source .venv/bin/activate
 

@@ -30,7 +30,10 @@ class DeployConfig:
     remote_root: str
     uv_path: str = "/homes/km1124/.local/bin/uv"
     remotes_to_exclude: Set[str] = field(
-        default_factory=lambda: {"gpuvm21", "gpuvm22", "merlin"}
+        default_factory=lambda: {
+            "gpuvm21",
+            "gpuvm22",
+        }
     )
 
     def get_remotes_to_exclude(self) -> str:

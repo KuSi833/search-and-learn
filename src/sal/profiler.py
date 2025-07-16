@@ -14,10 +14,11 @@ def get_profiler(enabled):
     if enabled:
         return torch.profiler.profile(
             activities=[
-                torch.profiler.ProfilerActivity.CPU,
+                # torch.profiler.ProfilerActivity.CPU,
                 torch.profiler.ProfilerActivity.CUDA,
             ],
             profile_memory=True,
             record_shapes=True,
+            with_stack=True,
         )
     return NoOpProfiler()

@@ -15,6 +15,8 @@
 
 import numpy as np
 from vllm import LLM, SamplingParams
+from torch.profiler import record_function
+
 
 from sal.config import Config
 from sal.models.reward_models import PRM
@@ -31,7 +33,7 @@ def best_of_n(x, config: Config, llm: LLM, prm: PRM):
         ]
         for prompt in x["problem"]
     ]
-    tokenizer = llm.get_tokenizer()
+
     # TODO: set the augmented template from a file
     if config.custom_chat_template is not None:
         tokenizer.chat_template = config.custom_chat_template
@@ -56,11 +58,16 @@ def best_of_n(x, config: Config, llm: LLM, prm: PRM):
         n=1,  # Since we've already duplicated the prompt_token_ids, we only need to generate 1 completion per prompt
     )
 
+    print("Starting profile")
+    llm.start_profile()
     responses = llm.generate(
         templated_convs,
         sampling_params=sampling_params,
-        use_tqdm=False,
+        use_tqdm=True,
     )
+    llm.stop_profile()
+    print("Stopped profile")
+
     if len(responses) != len(x["problem"]) * config.search_config.n:
         raise ValueError(
             f"Generated {len(responses)} responses instead of {len(x['problem'] * config.n)}"
@@ -89,18 +96,21 @@ def best_of_n(x, config: Config, llm: LLM, prm: PRM):
                 f"Generated {len(c)} completions instead of {config.search_config.n}"
             )
 
-    scores = prm.score(x["problem"], completions)
-    agg_scores = [
-        [aggregate_scores(s, config.search_config.agg_strategy) for s in score]
-        for score in scores
-    ]
+    with record_function("prm_scoring"):
+        scores = prm.score(x["problem"], completions)
 
-    # Select the completion with the highest score
-    pred = [completion[np.argmax(s)] for completion, s in zip(completions, agg_scores)]
-
-    x["completions"] = completions
-    x["scores"] = scores
-    x["pred"] = pred
-    x["completion_tokens"] = completion_tokens
+    with record_function("score_aggregation_and_selection"):
+        agg_scores = [
+            [aggregate_scores(s, config.search_config.agg_strategy) for s in score]
+            for score in scores
+        ]
+        # Select the completion with the highest score
+        pred = [
+            completion[np.argmax(s)] for completion, s in zip(completions, agg_scores)
+        ]
+        x["completions"] = completions
+        x["scores"] = scores
+        x["pred"] = pred
+        x["completion_tokens"] = completion_tokens
 
     return x
