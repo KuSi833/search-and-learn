@@ -179,7 +179,6 @@ source /vol/cuda/12.0.0/setup.sh
 source .venv/bin/activate
 
 git reset --hard HEAD
-git clean -fd
 git fetch
 git checkout $COMMIT_HASH
 

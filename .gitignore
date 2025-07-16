@@ -166,3 +166,4 @@ data-organised/
 models/
 wandb/
 job.sh
+traces/
