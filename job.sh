@@ -16,5 +16,9 @@ export UV_PYTHON_INSTALL_DIR="/vol/bitbucket/km1124/.cache/python"
 export HF_HOME="/vol/bitbucket/km1124/.cache/huggingface"
 export UV_CACHE_DIR="/vol/bitbucket/km1124/.cache/uv"
 
+# Set VLLM profiling and logging configuration
+export VLLM_TORCH_PROFILER_DIR="./trace/"
+export VLLM_LOGGING_LEVEL="DEBUG"
+
 python experiments/qwen_math.py
 

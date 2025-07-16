@@ -1,7 +1,7 @@
 import wandb
 from sal.config import Config, SearchConfig, DatasetConfig, GeneratorConfig, PRMConfig
 from dataclasses import asdict, replace
-from sal.utils.env import get_dotenv_or_throw
+from sal.utils.env import get_env_or_throw
 
 from dotenv import load_dotenv
 
@@ -49,7 +49,7 @@ BEST_OF_N_CONFIG = Config(
 
 
 def main(config: Config):
-    wandb.login(key=get_dotenv_or_throw("WANDB_API_KEY"))
+    wandb.login(key=get_env_or_throw("WANDB_API_KEY"))
 
     with wandb.init(
         project=config.wandb_config.project,

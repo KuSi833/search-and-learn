@@ -17,7 +17,6 @@ import logging
 
 import wandb
 import torch
-from torch.profiler import record_function
 from pathlib import Path
 from vllm import LLM
 
@@ -26,12 +25,9 @@ from sal.models.reward_models import load_prm
 from sal.search import beam_search, best_of_n, dvts
 from sal.utils.data import get_dataset, save_dataset
 from sal.utils.score import score
-from sal.utils.env import get_dotenv_or_throw
+from sal.utils.env import get_env_or_throw
 from sal.evaluation.evaluate import evaluate
 from dataclasses import asdict
-from dotenv import load_dotenv
-
-load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 
@@ -47,7 +43,7 @@ APPROACHES = {
 
 
 def main(config: Config):
-    wandb.login(key=get_dotenv_or_throw("WANDB_API_KEY"))
+    wandb.login(key=get_env_or_throw("WANDB_API_KEY"))
 
     with wandb.init(
         project=config.wandb_config.project,
