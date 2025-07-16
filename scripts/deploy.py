@@ -196,7 +196,9 @@ python experiments/qwen_math.py
         connection.put(
             StringIO(job_script_content), f"{config.remote_config.remote_root}/job.sh"
         )
-    console.print("[green]✔ Job script written to remote")
+    console.print(
+        f"[green]✔ Job script with commit hash {config.run_config.commit_hash} written to remote"
+    )
 
 
 def submit_job(config: DeployConfig, tail_output=True):

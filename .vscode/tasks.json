@@ -20,7 +20,7 @@
             "problemMatcher": []
         },
         {
-            "label": "Submit Job",
+            "label": "Submit latest commit as job",
             "type": "shell",
             "command": "bash",
             "args": [
