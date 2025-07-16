@@ -165,3 +165,4 @@ data/
 data-organised/
 models/
 wandb/
+job.sh

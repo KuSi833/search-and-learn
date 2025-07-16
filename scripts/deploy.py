@@ -200,8 +200,8 @@ def checkout_commit(connection, config: DeployConfig) -> None:
         f"[yellow]Checking out commit with hash: {commit_hash}", spinner="dots"
     ):
         with connection.cd(config.remote_config.remote_root):
-            connection.run(f"git fetch && git checkout {commit_hash}")
-    console.print(f"[green]Checked out commit with hash: {commit_hash}")
+            connection.run(f"git fetch && git checkout {commit_hash}", hide=True)
+    console.print(f"[green]✔ Checked out commit with hash: {commit_hash}")
 
 
 def submit_job(config: DeployConfig, tail_output=True):
