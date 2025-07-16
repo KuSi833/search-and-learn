@@ -174,10 +174,11 @@ def write_jobscript(connection, config: DeployConfig) -> None:
 #SBATCH --cpus-per-task={sc.cpus_per_task}
 #SBATCH --gres={sc.gres}
 
+echo "Launching jobscript"
 source /vol/cuda/12.0.0/setup.sh
-
 source .venv/bin/activate
 
+echo "Fetching commit with hash $COMMIT_HASH"
 git reset --hard HEAD
 git fetch
 git checkout $COMMIT_HASH
@@ -190,6 +191,7 @@ export UV_CACHE_DIR="/vol/bitbucket/km1124/.cache/uv"
 export VLLM_TORCH_PROFILER_DIR="./trace/"
 export VLLM_LOGGING_LEVEL="DEBUG"
 
+echo "Running main file"
 python experiments/qwen_math.py
 """
         connection.put(
