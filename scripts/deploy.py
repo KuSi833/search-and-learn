@@ -1,13 +1,14 @@
 import argparse
 import logging
 from dataclasses import dataclass, field
+from io import StringIO
 from time import sleep
 from typing import Set
-from io import StringIO
 
 from dotenv import load_dotenv
 from fabric import Connection
 from rich.console import Console
+
 from sal.utils.env import get_env_or_throw
 
 load_dotenv()
@@ -188,7 +189,7 @@ export HF_HOME="/vol/bitbucket/km1124/.cache/huggingface"
 export UV_CACHE_DIR="/vol/bitbucket/km1124/.cache/uv"
 
 # Set VLLM profiling and logging configuration
-export VLLM_TORCH_PROFILER_DIR="./trace/"
+# export VLLM_TORCH_PROFILER_DIR="./trace/"
 export VLLM_LOGGING_LEVEL="DEBUG"
 
 echo "Running main file"

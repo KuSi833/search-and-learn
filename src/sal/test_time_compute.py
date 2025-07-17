@@ -14,20 +14,21 @@
 # limitations under the License.
 
 import logging
-
-import wandb
-import torch
+from dataclasses import asdict
 from pathlib import Path
+from typing import Any, Dict
+
+import torch
+import wandb
 from vllm import LLM
 
 from sal.config import Config
+from sal.evaluation.evaluate import evaluate
 from sal.models.reward_models import load_prm
 from sal.search import beam_search, best_of_n, dvts
 from sal.utils.data import get_dataset, save_dataset
-from sal.utils.score import score
 from sal.utils.env import get_env_or_throw
-from sal.evaluation.evaluate import evaluate
-from dataclasses import asdict
+from sal.utils.score import score
 
 logging.basicConfig(level=logging.INFO)
 
@@ -42,17 +43,26 @@ APPROACHES = {
 }
 
 
+def get_gpu_memory_gb():
+    return torch.cuda.memory_allocated() / 1e9
+
+
 def main(config: Config):
     wandb.login(key=get_env_or_throw("WANDB_API_KEY"))
-
     with wandb.init(
         project=config.wandb_config.project,
         config=asdict(config),
         tags=list(config.wandb_config.tags),
     ) as run:
-        approach_fn = APPROACHES[config.approach]
+        torch.cuda.empty_cache()
+        torch.cuda.reset_peak_memory_stats()
 
+        baseline = get_gpu_memory_gb()
+
+        # Load models
+        approach_fn = APPROACHES[config.approach]
         num_gpus = torch.cuda.device_count()
+
         llm = LLM(
             model=config.generator_config.get_model_path(),
             gpu_memory_utilization=config.gpu_memory_utilization,
@@ -60,10 +70,16 @@ def main(config: Config):
             seed=config.search_config.seed,
             tensor_parallel_size=num_gpus,
         )
+        llm_memory = get_gpu_memory_gb() - baseline
 
         prm = load_prm(config.prm_config)
+        prm_memory = get_gpu_memory_gb() - baseline - llm_memory
 
         dataset = get_dataset(config.dataset_config)
+
+        # Reset peak tracking for inference
+        torch.cuda.reset_peak_memory_stats()
+        pre_inference = get_gpu_memory_gb()
 
         dataset = dataset.map(
             approach_fn,
@@ -73,13 +89,28 @@ def main(config: Config):
             desc="Running search",
             load_from_cache_file=False,
         )
-        logger.info("Starting to stop profile")
+
+        inference_overhead = torch.cuda.max_memory_allocated() / 1e9 - pre_inference
 
         dataset = score(dataset, config)
 
+        # Log everything once
+        run.log(
+            {
+                "memory/llm_gb": llm_memory,
+                "memory/prm_gb": prm_memory,
+                "memory/inference_overhead_gb": inference_overhead,
+                "memory/peak_gb": torch.cuda.max_memory_allocated() / 1e9,
+                "memory/final_gb": get_gpu_memory_gb(),
+            }
+        )
+
+        logger.info(
+            f"Memory - LLM: {llm_memory:.2f}GB, PRM: {prm_memory:.2f}GB, Inference: {inference_overhead:.2f}GB"
+        )
+
         dataset_path = save_dataset(dataset, config, run.id)
         output_file: Path = dataset_path.parent / "score.jsonl"
-
         evaluate(
             benchmark=config.evaluation_config.benchmark,
             dataset_path=dataset_path,
