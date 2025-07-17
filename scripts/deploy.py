@@ -241,7 +241,7 @@ def submit_job(config: DeployConfig, tail_output=True):
                 f"sbatch --exclude={config.remote_config.get_remotes_to_exclude()} "
                 "--export="
                 f"WANDB_API_KEY='{config.run_config.wandb_api_key}',"
-                f"GITHUB_TOKEN='{config.run_config.github_token}' "
+                f"GITHUB_TOKEN='{config.run_config.github_token}',"
                 f"COMMIT_HASH='{config.run_config.commit_hash}' "
                 "job.sh"
             )
