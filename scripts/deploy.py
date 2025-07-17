@@ -46,7 +46,8 @@ class RemoteConfig:
 class SlurmJobConfig:
     nodes: int = 1
     ntasks: int = 1
-    partition: str = "gpgpuB"
+    partition: str = "AMD7-A100-T"
+    # partition: str = "gpgpuB"
     job_name: str = "qtts"
     output: str = "./logs/slurm-%j.log"
     cpus_per_task: int = 1
