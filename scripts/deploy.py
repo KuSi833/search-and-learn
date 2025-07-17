@@ -58,6 +58,7 @@ class RunConfig:
     "Config params passed to a run instance"
 
     wandb_api_key: str
+    github_token: str
     commit_hash: str
 
 
@@ -83,6 +84,7 @@ def main():
             ),
             run_config=RunConfig(
                 wandb_api_key=get_env_or_throw("WANDB_API_KEY"),
+                github_token=get_env_or_throw("GITHUB_TOKEN"),
                 commit_hash=args.commit_hash,
             ),
         )
@@ -185,6 +187,7 @@ source .venv/bin/activate
 echo "Fetching commit with hash $COMMIT_HASH"
 git reset --hard HEAD
 
+git remote set-url origin https://$GITHUB_TOKEN@github.com/KuSi833/search-and-learn.git
 # Fetch with error handling
 echo "Fetching latest changes..."
 if ! git fetch; then
@@ -238,6 +241,7 @@ def submit_job(config: DeployConfig, tail_output=True):
                 f"sbatch --exclude={config.remote_config.get_remotes_to_exclude()} "
                 "--export="
                 f"WANDB_API_KEY='{config.run_config.wandb_api_key}',"
+                f"GITHUB_TOKEN='{config.run_config.github_token}' "
                 f"COMMIT_HASH='{config.run_config.commit_hash}' "
                 "job.sh"
             )
