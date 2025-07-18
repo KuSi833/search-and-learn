@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import numpy as np
+import torch.profiler
 from torch.profiler import record_function
 from vllm import LLM, SamplingParams
 
@@ -57,15 +58,18 @@ def best_of_n(x, config: Config, llm: LLM, prm: PRM):
         n=1,  # Since we've already duplicated the prompt_token_ids, we only need to generate 1 completion per prompt
     )
 
-    print("Starting profile")
-    llm.start_profile()
-    responses = llm.generate(
-        templated_convs,
-        sampling_params=sampling_params,
-        use_tqdm=True,
-    )
-    llm.stop_profile()
-    print("Stopping profile")
+    with torch.profiler.profile(
+        activities=[torch.profiler.ProfilerActivity.CUDA],
+        profile_memory=True,
+        record_shapes=False,  # Don't need shapes for memory
+        with_stack=False,  # No stack traces
+    ) as prof:
+        responses = llm.generate(
+            templated_convs,
+            sampling_params=sampling_params,
+            use_tqdm=True,
+        )
+        prof.export_chrome_trace("./trace/memory_trace.json")
 
     if len(responses) != len(x["problem"]) * config.search_config.n:
         raise ValueError(
