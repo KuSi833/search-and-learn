@@ -65,8 +65,8 @@ def main(config: Config):
                 torch.profiler.ProfilerActivity.CUDA,
             ],
             profile_memory=True,
-            record_shapes=False,
-            with_stack=False,
+            record_shapes=True,
+            with_stack=True,
             schedule=torch.profiler.schedule(wait=0, warmup=0, active=1, repeat=1),
             on_trace_ready=trace_handler,
         ) as prof:
