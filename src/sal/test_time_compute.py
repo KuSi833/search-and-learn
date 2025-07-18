@@ -90,13 +90,16 @@ def main(config: Config):
                     enforce_eager=True,
                 )
                 # llm_memory = get_gpu_memory_gb() - baseline
+            prof.step()
 
             with record_function("load_prm"):
                 prm = load_prm(config.prm_config)
                 # prm_memory = get_gpu_memory_gb() - baseline - llm_memory
+            prof.step()
 
             with record_function("load_dataset"):
                 dataset = get_dataset(config.dataset_config)
+            prof.step()
 
             # Reset peak tracking for inference
             # torch.cuda.reset_peak_memory_stats()
@@ -115,6 +118,7 @@ def main(config: Config):
                 # inference_overhead = (
                 #     torch.cuda.max_memory_allocated() / 1e9 - pre_inference
                 # )
+            prof.step()
 
             with record_function("scoring"):
                 dataset = score(dataset, config)
