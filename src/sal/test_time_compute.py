@@ -69,6 +69,7 @@ def main(config: Config):
             enable_prefix_caching=True,
             seed=config.search_config.seed,
             tensor_parallel_size=num_gpus,
+            enforce_eager=True,
         )
         llm_memory = get_gpu_memory_gb() - baseline
 
