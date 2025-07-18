@@ -69,6 +69,7 @@ def best_of_n(x, config: Config, llm: LLM, prm: PRM):
             sampling_params=sampling_params,
             use_tqdm=True,
         )
+        prof.step()
         prof.export_chrome_trace("./trace/memory_trace.json")
 
     if len(responses) != len(x["problem"]) * config.search_config.n:
