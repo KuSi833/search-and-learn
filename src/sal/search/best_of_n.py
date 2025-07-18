@@ -57,15 +57,15 @@ def best_of_n(x, config: Config, llm: LLM, prm: PRM):
         n=1,  # Since we've already duplicated the prompt_token_ids, we only need to generate 1 completion per prompt
     )
 
-    # print("Starting profile")
-    # llm.start_profile()
+    print("Starting profile")
+    llm.start_profile()
     responses = llm.generate(
         templated_convs,
         sampling_params=sampling_params,
         use_tqdm=True,
     )
-    # llm.stop_profile()
-    # print("Stopped profile")
+    llm.stop_profile()
+    print("Stopped profile")
 
     if len(responses) != len(x["problem"]) * config.search_config.n:
         raise ValueError(
