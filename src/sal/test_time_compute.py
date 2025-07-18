@@ -56,8 +56,9 @@ def main(config: Config):
         tags=list(config.wandb_config.tags),
     ) as run:
         torch.cuda.memory._record_memory_history()
-        torch.cuda.empty_cache()
-        torch.cuda.reset_peak_memory_stats()
+        device = torch.cuda.current_device()
+        # torch.cuda.reset_peak_memory_stats(device=device)
+        # torch.cuda.empty_cache()
 
         # baseline = get_gpu_memory_gb()
 
@@ -75,16 +76,16 @@ def main(config: Config):
                 enforce_eager=True,
             )
             # llm_memory = get_gpu_memory_gb() - baseline
-        torch.cuda.memory._snapshot()
+        torch.cuda.memory._snapshot(device=device)
 
         with record_function("load_prm"):
             prm = load_prm(config.prm_config)
             # prm_memory = get_gpu_memory_gb() - baseline - llm_memory
-        torch.cuda.memory._snapshot()
+        torch.cuda.memory._snapshot(device=device)
 
         with record_function("load_dataset"):
             dataset = get_dataset(config.dataset_config)
-        torch.cuda.memory._snapshot()
+        torch.cuda.memory._snapshot(device=device)
 
         # Reset peak tracking for inference
         # torch.cuda.reset_peak_memory_stats()
