@@ -64,8 +64,8 @@ def best_of_n(x, config: Config, llm: LLM, prm: PRM):
         sampling_params=sampling_params,
         use_tqdm=True,
     )
-    # llm.stop_profile()
-    print("Done generating")
+    llm.stop_profile()
+    print("Stopping profile")
 
     if len(responses) != len(x["problem"]) * config.search_config.n:
         raise ValueError(
