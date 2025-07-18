@@ -57,6 +57,7 @@ def main(config: Config):
     ) as run:
 
         def trace_handler(prof):
+            print("Exporting memory profile...")
             prof.export_memory_timeline("./trace/memory_timeline.html", device="cuda:0")
 
         with torch.profiler.profile(
