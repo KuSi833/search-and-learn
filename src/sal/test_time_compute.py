@@ -122,6 +122,8 @@ def main(config: Config):
             with record_function("scoring"):
                 dataset = score(dataset, config)
 
+            prof.export_memory_timeline("trace/memory_bruh.html", device="cuda:0")
+
             # Log everything once
             run.log(
                 {
