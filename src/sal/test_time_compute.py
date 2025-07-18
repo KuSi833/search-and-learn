@@ -57,8 +57,12 @@ def main(config: Config):
     ) as run:
 
         def trace_handler(prof):
+            # Export Chrome trace format
             prof.export_chrome_trace("./trace/memory_trace.json")
-            print("Trace exported successfully")
+            # Export for TensorBoard
+            prof.export_stacks("./trace/profiler_stacks.txt", "self_cuda_time_total")
+            prof.export_nsys_timeline("./trace/nsys_timeline.nsys-rep")
+            print("Trace exported successfully for Chrome and TensorBoard")
 
         with torch.profiler.profile(
             activities=[
@@ -69,7 +73,7 @@ def main(config: Config):
             record_shapes=True,
             with_stack=True,
             schedule=torch.profiler.schedule(wait=0, warmup=0, active=1, repeat=1),
-            on_trace_ready=trace_handler,
+            on_trace_ready=torch.profiler.tensorboard_trace_handler("./trace"),
         ) as prof:
             torch.cuda.empty_cache()
             torch.cuda.reset_peak_memory_stats()
