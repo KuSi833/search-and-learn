@@ -1,6 +1,7 @@
-from sal.test_time_compute import main
-from sal.config import Config, SearchConfig, DatasetConfig, GeneratorConfig, PRMConfig
 from dataclasses import replace
+
+from sal.config import Config, DatasetConfig, GeneratorConfig, PRMConfig, SearchConfig
+from sal.test_time_compute import main
 
 MODEL_BASE_PATH = "/vol/bitbucket/km1124/search-and-learn/models"
 
@@ -57,10 +58,10 @@ BEST_OF_N_CONFIG = Config(
 if __name__ == "__main__":
     # config = replace(BEST_OF_N_CONFIG, generator_config=Q8_MODEL)
     # config = replace(BEAM_SEARCH_CONFIG, generator_config=Q8_MODEL)
-    config = replace(BEST_OF_N_CONFIG, generator_config=Q4_MODEL)
+    # config = replace(BEST_OF_N_CONFIG, generator_config=Q4_MODEL)
     # config = replace(BEAM_SEARCH_CONFIG, generator_config=Q4_MODEL)
     # config = replace(BEST_OF_N_CONFIG, generator_config=BASE_MODEL)
     # config = replace(BEAM_SEARCH_CONFIG, generator_config=BASE_MODEL)
-    # config = replace(BEST_OF_N_CONFIG, generator_config=INSTRUCT_MODEL)
+    config = replace(BEST_OF_N_CONFIG, generator_config=INSTRUCT_MODEL)
     # config = replace(BEAM_SEARCH_CONFIG, generator_config=INSTRUCT_MODEL)
     main(config)
