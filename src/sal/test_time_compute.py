@@ -78,7 +78,7 @@ def main(config: Config):
             torch.cuda.empty_cache()
             torch.cuda.reset_peak_memory_stats()
 
-            baseline = get_gpu_memory_gb()
+            # baseline = get_gpu_memory_gb()
 
             # Load models
             approach_fn = APPROACHES[config.approach]
@@ -92,18 +92,18 @@ def main(config: Config):
                     tensor_parallel_size=1,
                     enforce_eager=True,
                 )
-                llm_memory = get_gpu_memory_gb() - baseline
+                # llm_memory = get_gpu_memory_gb() - baseline
 
             with record_function("load_prm"):
                 prm = load_prm(config.prm_config)
-                prm_memory = get_gpu_memory_gb() - baseline - llm_memory
+                # prm_memory = get_gpu_memory_gb() - baseline - llm_memory
 
             with record_function("load_dataset"):
                 dataset = get_dataset(config.dataset_config)
 
             # Reset peak tracking for inference
-            torch.cuda.reset_peak_memory_stats()
-            pre_inference = get_gpu_memory_gb()
+            # torch.cuda.reset_peak_memory_stats()
+            # pre_inference = get_gpu_memory_gb()
 
             with record_function("inference"):
                 dataset = dataset.map(
@@ -115,29 +115,29 @@ def main(config: Config):
                     load_from_cache_file=False,
                 )
 
-                inference_overhead = (
-                    torch.cuda.max_memory_allocated() / 1e9 - pre_inference
-                )
+                # inference_overhead = (
+                #     torch.cuda.max_memory_allocated() / 1e9 - pre_inference
+                # )
 
             with record_function("scoring"):
                 dataset = score(dataset, config)
 
-            prof.export_memory_timeline("trace/memory_bruh.html", device="cuda:0")
+            # prof.export_memory_timeline("trace/memory_bruh.html", device="cuda:0")
 
             # Log everything once
-            run.log(
-                {
-                    "memory/llm_gb": llm_memory,
-                    "memory/prm_gb": prm_memory,
-                    "memory/inference_overhead_gb": inference_overhead,
-                    "memory/peak_gb": torch.cuda.max_memory_allocated() / 1e9,
-                    "memory/final_gb": get_gpu_memory_gb(),
-                }
-            )
+            # run.log(
+            #     {
+            #         "memory/llm_gb": llm_memory,
+            #         "memory/prm_gb": prm_memory,
+            #         "memory/inference_overhead_gb": inference_overhead,
+            #         "memory/peak_gb": torch.cuda.max_memory_allocated() / 1e9,
+            #         "memory/final_gb": get_gpu_memory_gb(),
+            #     }
+            # )
 
-            logger.info(
-                f"Memory - LLM: {llm_memory:.2f}GB, PRM: {prm_memory:.2f}GB, Inference: {inference_overhead:.2f}GB"
-            )
+            # logger.info(
+            #     f"Memory - LLM: {llm_memory:.2f}GB, PRM: {prm_memory:.2f}GB, Inference: {inference_overhead:.2f}GB"
+            # )
 
             dataset_path = save_dataset(dataset, config, run.id)
             output_file: Path = dataset_path.parent / "score.jsonl"
