@@ -59,6 +59,7 @@ def main(config: Config):
         def trace_handler(prof):
             print("Exporting memory profile...")
             prof.export_memory_timeline("./trace/memory_timeline.html", device="cuda:0")
+            torch.cuda.memory._dump_snapshot("./trace/my_snapshot.pickle")
 
         with torch.profiler.profile(
             activities=[
@@ -71,7 +72,7 @@ def main(config: Config):
             schedule=torch.profiler.schedule(wait=0, warmup=0, active=1, repeat=1),
             on_trace_ready=trace_handler,
         ) as prof:
-            prof.step()
+            torch.cuda.memory._record_memory_history()
             torch.cuda.empty_cache()
             torch.cuda.reset_peak_memory_stats()
 
@@ -80,6 +81,8 @@ def main(config: Config):
             # Load models
             approach_fn = APPROACHES[config.approach]
 
+            prof.step()
+            torch.cuda.memory._snapshot()
             with record_function("load_llm"):
                 llm = LLM(
                     model=config.generator_config.get_model_path(),
@@ -91,15 +94,18 @@ def main(config: Config):
                 )
                 # llm_memory = get_gpu_memory_gb() - baseline
             prof.step()
+            torch.cuda.memory._snapshot()
 
             with record_function("load_prm"):
                 prm = load_prm(config.prm_config)
                 # prm_memory = get_gpu_memory_gb() - baseline - llm_memory
             prof.step()
+            torch.cuda.memory._snapshot()
 
             with record_function("load_dataset"):
                 dataset = get_dataset(config.dataset_config)
             prof.step()
+            torch.cuda.memory._snapshot()
 
             # Reset peak tracking for inference
             # torch.cuda.reset_peak_memory_stats()
@@ -119,6 +125,7 @@ def main(config: Config):
                 #     torch.cuda.max_memory_allocated() / 1e9 - pre_inference
                 # )
             prof.step()
+            torch.cuda.memory._snapshot()
 
             with record_function("scoring"):
                 dataset = score(dataset, config)
