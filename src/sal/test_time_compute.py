@@ -61,14 +61,13 @@ def main(config: Config):
 
         # Load models
         approach_fn = APPROACHES[config.approach]
-        num_gpus = torch.cuda.device_count()
 
         llm = LLM(
             model=config.generator_config.get_model_path(),
             gpu_memory_utilization=config.gpu_memory_utilization,
             enable_prefix_caching=True,
             seed=config.search_config.seed,
-            tensor_parallel_size=num_gpus,
+            tensor_parallel_size=1,
             enforce_eager=True,
         )
         llm_memory = get_gpu_memory_gb() - baseline
