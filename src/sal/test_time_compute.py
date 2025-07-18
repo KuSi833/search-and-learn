@@ -20,6 +20,7 @@ from typing import Any, Dict
 
 import torch
 import wandb
+from torch.profiler import record_function
 from vllm import LLM
 
 from sal.config import Config
@@ -78,37 +79,44 @@ def main(config: Config):
             # Load models
             approach_fn = APPROACHES[config.approach]
 
-            llm = LLM(
-                model=config.generator_config.get_model_path(),
-                gpu_memory_utilization=config.gpu_memory_utilization,
-                enable_prefix_caching=True,
-                seed=config.search_config.seed,
-                tensor_parallel_size=1,
-                enforce_eager=True,
-            )
-            llm_memory = get_gpu_memory_gb() - baseline
+            with record_function("load_llm"):
+                llm = LLM(
+                    model=config.generator_config.get_model_path(),
+                    gpu_memory_utilization=config.gpu_memory_utilization,
+                    enable_prefix_caching=True,
+                    seed=config.search_config.seed,
+                    tensor_parallel_size=1,
+                    enforce_eager=True,
+                )
+                llm_memory = get_gpu_memory_gb() - baseline
 
-            prm = load_prm(config.prm_config)
-            prm_memory = get_gpu_memory_gb() - baseline - llm_memory
+            with record_function("load_prm"):
+                prm = load_prm(config.prm_config)
+                prm_memory = get_gpu_memory_gb() - baseline - llm_memory
 
-            dataset = get_dataset(config.dataset_config)
+            with record_function("load_dataset"):
+                dataset = get_dataset(config.dataset_config)
 
             # Reset peak tracking for inference
             torch.cuda.reset_peak_memory_stats()
             pre_inference = get_gpu_memory_gb()
 
-            dataset = dataset.map(
-                approach_fn,
-                batched=True,
-                batch_size=config.search_config.search_batch_size,
-                fn_kwargs={"config": config, "llm": llm, "prm": prm},
-                desc="Running search",
-                load_from_cache_file=False,
-            )
+            with record_function("inference"):
+                dataset = dataset.map(
+                    approach_fn,
+                    batched=True,
+                    batch_size=config.search_config.search_batch_size,
+                    fn_kwargs={"config": config, "llm": llm, "prm": prm},
+                    desc="Running search",
+                    load_from_cache_file=False,
+                )
 
-            inference_overhead = torch.cuda.max_memory_allocated() / 1e9 - pre_inference
+                inference_overhead = (
+                    torch.cuda.max_memory_allocated() / 1e9 - pre_inference
+                )
 
-            dataset = score(dataset, config)
+            with record_function("scoring"):
+                dataset = score(dataset, config)
 
             # Log everything once
             run.log(
