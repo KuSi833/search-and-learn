@@ -58,27 +58,11 @@ def best_of_n(x, config: Config, llm: LLM, prm: PRM):
         n=1,  # Since we've already duplicated the prompt_token_ids, we only need to generate 1 completion per prompt
     )
 
-    def trace_handler(prof):
-        prof.export_chrome_trace("./trace/memory_trace.json")
-        print("Trace exported successfully")
-
-    with torch.profiler.profile(
-        activities=[
-            torch.profiler.ProfilerActivity.CPU,
-            torch.profiler.ProfilerActivity.CUDA,
-        ],
-        profile_memory=True,
-        record_shapes=False,
-        with_stack=False,
-        schedule=torch.profiler.schedule(wait=0, warmup=0, active=1, repeat=1),
-        on_trace_ready=trace_handler,
-    ) as prof:
-        responses = llm.generate(
-            templated_convs,
-            sampling_params=sampling_params,
-            use_tqdm=True,
-        )
-        prof.step()  # This step() is needed with schedule
+    responses = llm.generate(
+        templated_convs,
+        sampling_params=sampling_params,
+        use_tqdm=True,
+    )
 
     if len(responses) != len(x["problem"]) * config.search_config.n:
         raise ValueError(
