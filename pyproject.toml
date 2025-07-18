@@ -31,5 +31,6 @@ trl = {git = "https://github.com/huggingface/trl.git"}
 
 [dependency-groups]
 deploy = [
+  "matplotlib>=3.10.3",
   "vllm",
 ]
