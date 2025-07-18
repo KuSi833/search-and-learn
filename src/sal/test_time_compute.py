@@ -56,7 +56,6 @@ def main(config: Config):
         tags=list(config.wandb_config.tags),
     ) as run:
         torch.cuda.memory._record_memory_history()
-        device = torch.cuda.current_device()
         # torch.cuda.reset_peak_memory_stats(device=device)
         # torch.cuda.empty_cache()
 
@@ -65,7 +64,6 @@ def main(config: Config):
         # Load models
         approach_fn = APPROACHES[config.approach]
 
-        torch.cuda.memory._snapshot()
         with record_function("load_llm"):
             llm = LLM(
                 model=config.generator_config.get_model_path(),
@@ -76,16 +74,13 @@ def main(config: Config):
                 enforce_eager=True,
             )
             # llm_memory = get_gpu_memory_gb() - baseline
-        torch.cuda.memory._snapshot(device=device)
 
         with record_function("load_prm"):
             prm = load_prm(config.prm_config)
             # prm_memory = get_gpu_memory_gb() - baseline - llm_memory
-        torch.cuda.memory._snapshot(device=device)
 
         with record_function("load_dataset"):
             dataset = get_dataset(config.dataset_config)
-        torch.cuda.memory._snapshot(device=device)
 
         # Reset peak tracking for inference
         # torch.cuda.reset_peak_memory_stats()
@@ -105,6 +100,7 @@ def main(config: Config):
             #     torch.cuda.max_memory_allocated() / 1e9 - pre_inference
             # )
         torch.cuda.memory._dump_snapshot("./trace/my_snapshot.pickle")
+        torch.cuda.memory._record_memory_history(enabled=None)
 
         with record_function("scoring"):
             dataset = score(dataset, config)
