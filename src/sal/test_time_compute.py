@@ -55,7 +55,7 @@ def main(config: Config):
         config=asdict(config),
         tags=list(config.wandb_config.tags),
     ) as run:
-        torch.cuda.memory._record_memory_history()
+        torch.cuda.memory._record_memory_history(max_entries=10000)
         # torch.cuda.reset_peak_memory_stats(device=device)
         # torch.cuda.empty_cache()
 
