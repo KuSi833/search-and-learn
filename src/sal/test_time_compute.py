@@ -45,11 +45,11 @@ APPROACHES = {
 }
 
 
-# def get_gpu_memory_gb():
-#     return torch.cuda.memory_allocated() / 1e9
-
-
 def get_gpu_memory_gb():
+    return torch.cuda.memory_allocated() / 1e9
+
+
+def get_total_gpu_memory_gb():
     pynvml.nvmlInit()
     handle = pynvml.nvmlDeviceGetHandleByIndex(0)
     info = pynvml.nvmlDeviceGetMemoryInfo(handle)
@@ -69,7 +69,7 @@ def main(config: Config):
     ) as run:
         torch.cuda.reset_peak_memory_stats()
 
-        baseline = get_gpu_memory_gb()
+        baseline = get_total_gpu_memory_gb()
 
         # Load models
         approach_fn = APPROACHES[config.approach]
@@ -82,10 +82,15 @@ def main(config: Config):
             tensor_parallel_size=1,
             enforce_eager=True,
         )
-        llm_memory = get_gpu_memory_gb() - baseline
+        model_size = (
+            llm.llm_engine.model_executor.driver_worker.model_runner.model_memory_usage
+        )
+        print(f"BLOODY MODEL SIZE: {model_size}")
+        exit()
+        llm_memory = get_total_gpu_memory_gb() - baseline
 
         prm = load_prm(config.prm_config)
-        prm_memory = get_gpu_memory_gb() - baseline - llm_memory
+        prm_memory = get_total_gpu_memory_gb() - baseline - llm_memory
 
         dataset = get_dataset(config.dataset_config)
 
