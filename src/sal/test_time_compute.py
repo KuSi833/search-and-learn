@@ -18,6 +18,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict
 
+import pynvml
 import torch
 import wandb
 from torch.profiler import record_function
@@ -44,8 +45,15 @@ APPROACHES = {
 }
 
 
+# def get_gpu_memory_gb():
+#     return torch.cuda.memory_allocated() / 1e9
+
+
 def get_gpu_memory_gb():
-    return torch.cuda.memory_allocated() / 1e9
+    pynvml.nvmlInit()
+    handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+    info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+    return (info.total - info.free) / 1e9
 
 
 def get_peak_gpu_memory_gb():
