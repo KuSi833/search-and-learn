@@ -82,11 +82,6 @@ def main(config: Config):
             tensor_parallel_size=1,
             enforce_eager=True,
         )
-        model_size = (
-            llm.llm_engine.model_executor.driver_worker.model_runner.model_memory_usage
-        )
-        print(f"BLOODY MODEL SIZE: {model_size}")
-        exit()
         llm_memory = get_total_gpu_memory_gb() - baseline
 
         prm = load_prm(config.prm_config)
