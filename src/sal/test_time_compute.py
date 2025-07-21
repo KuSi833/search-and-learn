@@ -80,7 +80,7 @@ def main(config: Config):
             enable_prefix_caching=True,
             seed=config.search_config.seed,
             tensor_parallel_size=1,
-            max_model_len=5000,
+            max_model_len=config.generator_config.max_model_len,
             enforce_eager=True,
         )
         llm_memory = get_total_gpu_memory_gb() - baseline

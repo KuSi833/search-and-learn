@@ -27,6 +27,7 @@ class GeneratorConfig:
     name: str = "meta-llama/Llama-3.2-1B-Instruct"
     parameter_count: Optional[str] = None
     quantisation: Optional[str] = None
+    max_model_len: int = 6144
 
     def get_model_path(self) -> str:
         if self.base_path is not None:

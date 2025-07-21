@@ -214,6 +214,7 @@ export UV_CACHE_DIR="/vol/bitbucket/km1124/.cache/uv"
 # Set VLLM profiling and logging configuration
 export VLLM_TORCH_PROFILER_DIR="./trace"
 export VLLM_LOGGING_LEVEL="DEBUG"
+export VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
 export NCCL_P2P_DISABLE=1
 
 echo "Running main file"
