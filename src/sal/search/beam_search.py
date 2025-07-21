@@ -22,11 +22,11 @@ from vllm import LLM, SamplingParams
 
 from sal.config import Config
 from sal.models.reward_models import PRM
+from sal.utils.score import aggregate_scores
 
 from .utils import Beam, build_conv, generate_k_steps, last
 
 logger = logging.getLogger()
-from sal.utils.score import aggregate_scores
 
 
 def _beam_search(batch_of_prompts, config: Config, llm: LLM, prm: PRM) -> list[Beam]:
