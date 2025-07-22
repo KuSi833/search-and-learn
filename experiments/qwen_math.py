@@ -25,11 +25,19 @@ Q4_MODEL = GeneratorConfig(
     parameter_count="7B",
     quantisation="Q4_0",
 )
+SMALLEST_MODEL = GeneratorConfig(
+    base_path=MODEL_BASE_PATH,
+    name="Qwen/Qwen2-Math-1.5B-Instruct",
+    parameter_count="1.5B",
+)
+
 
 # PRM_CONFIG = PRMConfig(path="RLHFlow/Llama3.1-8B-PRM-Deepseek-Data")
-PRM_CONFIG = PRMConfig(path="Qwen/Qwen2.5-Math-PRM-7B")
-DATASET_CONFIG = DatasetConfig(num_samples=100)
-# DATASET_CONFIG = DatasetConfig(num_samples=1)
+# PRM_CONFIG = PRMConfig(path="Qwen/Qwen2.5-Math-PRM-7B")
+PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
+
+# DATASET_CONFIG = DatasetConfig(num_samples=100)
+DATASET_CONFIG = DatasetConfig(num_samples=1)
 
 BEAM_SEARCH_CONFIG = Config(
     prm_config=PRM_CONFIG,
@@ -44,6 +52,7 @@ BEAM_SEARCH_CONFIG = Config(
 )
 
 BEST_OF_N_CONFIG = Config(
+    # prm_config=PRM_CONFIG,
     prm_config=PRM_CONFIG,
     filter_duplicates=True,
     sort_completed=True,
@@ -64,5 +73,7 @@ if __name__ == "__main__":
     # config = replace(BEST_OF_N_CONFIG, generator_config=BASE_MODEL)
     # config = replace(BEAM_SEARCH_CONFIG, generator_config=BASE_MODEL)
     # config = replace(BEST_OF_N_CONFIG, generator_config=INSTRUCT_MODEL)
-    config = replace(BEAM_SEARCH_CONFIG, generator_config=INSTRUCT_MODEL)
+    # config = replace(BEAM_SEARCH_CONFIG, generator_config=INSTRUCT_MODEL)
+
+    config = replace(BEAM_SEARCH_CONFIG, generator_config=SMALLEST_MODEL)
     main(config)
