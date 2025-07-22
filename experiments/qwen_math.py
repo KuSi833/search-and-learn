@@ -26,7 +26,6 @@ Q4_MODEL = GeneratorConfig(
     quantisation="Q4_0",
 )
 SMALLEST_MODEL = GeneratorConfig(
-    base_path=MODEL_BASE_PATH,
     name="Qwen/Qwen2-Math-1.5B-Instruct",
     parameter_count="1.5B",
 )
