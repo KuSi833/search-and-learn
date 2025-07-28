@@ -119,6 +119,7 @@ def _beam_search(batch_of_prompts, config: Config, llm: LLM, prm: PRM) -> list[B
         gen_results = generate_k_steps(
             templated_convs, lookahead, llm, sampling_params, 1
         )
+        # FIXME: generate_k_steps doesn't take beam_width parameter?
 
         prompts, completions = [], []
         for beam, gen_result in zip(active_beams, gen_results, strict=True):

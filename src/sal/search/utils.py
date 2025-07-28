@@ -86,7 +86,7 @@ def generate_k_steps(
 ) -> list[Beam]:
     gen_results = []
     for i, text in enumerate(templated_convs):
-        for j in range(beam_width):
+        for _ in range(beam_width):
             gen_result = GenResult(
                 index=i,
                 initial_prompt=text,
@@ -133,7 +133,7 @@ def generate_k_steps(
         next_texts = []
         stop_reasons = []
         lookahead_texts = []
-        for j in range(beam_width):
+        for _ in range(beam_width):
             gen_result = gen_results[counter]
             next_texts.append(gen_result.first_step_text)
             lookahead_texts.append(gen_result.lookahead_text)
