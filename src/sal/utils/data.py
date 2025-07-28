@@ -11,19 +11,11 @@
 # limitations under the License.
 
 import logging
-import time
-import wandb
 from pathlib import Path
 
-from sal.config import Config
 from datasets import Dataset, load_dataset
-from huggingface_hub import (
-    create_branch,
-    list_repo_commits,
-    repo_exists,
-)
 
-from sal.config import DatasetConfig
+from sal.config import Config, DatasetConfig
 
 logger = logging.getLogger()
 
@@ -39,45 +31,6 @@ def get_dataset(config: DatasetConfig) -> Dataset:
     return dataset
 
 
-def save_dataset(dataset, config: Config, run_id: str) -> Path:
-    if config.output_config.push_to_hub:
-        # Since concurrent pushes can get rejected by the Hub, we make several attempts to push the dataset with try/except
-        for _ in range(20):
-            try:
-                # Create branch from the repo's initial commit.
-                # This is needed to avoid branching from a commit on main that already has data
-                if repo_exists(config.hub_dataset_id, repo_type="dataset"):
-                    initial_commit = list_repo_commits(
-                        config.hub_dataset_id, repo_type="dataset"
-                    )[-1]
-                    create_branch(
-                        repo_id=config.hub_dataset_id,
-                        branch=config.revision,
-                        revision=initial_commit.commit_id,
-                        exist_ok=True,
-                        repo_type="dataset",
-                    )
-                url = dataset.push_to_hub(
-                    config.hub_dataset_id,
-                    revision=config.revision,
-                    split="train",
-                    private=config.output_config.hub_dataset_private,
-                    commit_message=f"Add {config.revision}",
-                )
-                break
-            except Exception as e:
-                logger.error(f"Error pushing dataset to the Hub: {e}")
-                time.sleep(5)
-        logger.info(f"Pushed dataset to {url}")
-    else:
-        if config.output_config.output_dir is None:
-            config.output_config.output_dir = (
-                f"data/{config.generator_config.name}/{run_id}"
-            )
-        Path(config.output_config.output_dir).mkdir(parents=True, exist_ok=True)
-        result_path = f"{config.output_config.output_dir}/result.jsonl"
-        dataset.to_json(result_path, lines=True)
-        logger.info(
-            f"Saved completions to {config.output_config.output_dir}/{config.approach}_completions.jsonl"
-        )
-        return Path(result_path)
+def save_inference_output(dataset, result_file_path):
+    dataset.to_json(result_file_path, lines=True)
+    logger.info(f"Saved completions to {result_file_path}")

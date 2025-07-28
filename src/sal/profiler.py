@@ -1,5 +1,9 @@
-import torch
 from contextlib import nullcontext
+from pathlib import Path
+
+import torch
+
+from .config import ProfilerConfig
 
 
 class NoOpProfiler(nullcontext):
@@ -22,3 +26,18 @@ def get_profiler(enabled):
             with_stack=True,
         )
     return NoOpProfiler()
+
+
+class Profiler:
+    def __init__(self, config: ProfilerConfig, output_dir: Path):
+        self.config = config
+        self.memory_snapshot_path = output_dir / "trace" / "memory_snapshot.pickle"
+
+    def start_profiling(self):
+        if self.config.profile_memory:
+            torch.cuda.memory._record_memory_history(max_entries=10000)
+
+    def finish_profiling(self):
+        if self.config.profile_memory:
+            torch.cuda.memory._dump_snapshot(str(self.memory_snapshot_path))
+            torch.cuda.memory._record_memory_history(enabled=None)

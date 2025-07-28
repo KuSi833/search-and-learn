@@ -167,3 +167,4 @@ models/
 wandb/
 job.sh
 trace/
+outputs/

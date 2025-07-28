@@ -37,7 +37,7 @@ class GeneratorConfig:
 
 @dataclass
 class ProfilerConfig:
-    enabled: bool = True
+    profile_memory: bool = False
 
 
 @dataclass
@@ -59,11 +59,11 @@ class DatasetConfig:
 class OutputConfig:
     output_dir: Optional[str] = None
     num_proc: Optional[int] = None
-    push_to_hub: bool = False
-    hub_dataset_id: Optional[str] = None
-    hub_dataset_private: bool = False
-    overwrite_hub_revision: bool = False
     apply_voting: bool = True
+    # contains the generated output, PRM scores and voting results
+    inference_output_file: str = "inference_output.jsonl"
+    # contans score on evaluation datasets
+    evaluation_score_file: str = "evaluation_score.jsonl"
 
 
 @dataclass
@@ -133,33 +133,3 @@ class Config:
             # TODO: implemented a batched version
             if self.search_config.search_batch_size != 1:
                 raise ValueError("search_batch_size should be 1 for beam_search")
-
-        # Setting up push to hub dataset
-        if self.output_config.push_to_hub:
-            model_name = self.model_path.split("/")[-1]
-            if self.hub_dataset_id is None:
-                # Set default based on model name. We prepend the username for compatibility with the repo checks below.
-                self.hub_dataset_id = get_full_repo_name(
-                    f"{model_name}-{self.approach}-prm-completions"
-                )
-            revisions = get_dataset_revisions(self.hub_dataset_id)
-
-            if self.approach == "beam_search" or self.approach == "dvts":
-                self.revision = f"{self.dataset_config.dataset_name.replace('/', '_')}--T-{self.search_config.temperature}--top_p-{self.search_config.top_p}--n-{self.search_config.n}--m-{self.beam_search_config.beam_width}--iters-{self.beam_search_config.num_iterations}--look-{self.beam_search_config.lookahead}--seed-{self.search_config.seed}--agg_strategy--{self.search_config.agg_strategy}"
-            elif self.approach == "best_of_n":
-                self.revision = f"{self.dataset_config.dataset_name.replace('/', '_')}--T-{self.search_config.temperature}--top_p-{self.search_config.top_p}--n-{self.search_config.n}--seed-{self.search_config.seed}--agg_strategy-{self.search_config.agg_strategy}"
-            else:
-                raise ValueError(f"Unknown approach {self.approach}")
-            if (
-                self.dataset_config.dataset_start is not None
-                and self.dataset_config.dataset_end is not None
-            ):
-                self.revision = f"{self.revision}--chunk-{self.dataset_config.dataset_start}_{self.dataset_config.dataset_end}"
-
-            # Early exit if the revision on the Hub already exists
-            if (
-                not self.output_config.overwrite_hub_revision
-                and self.revision in revisions
-            ):
-                # logger.info(f"Revision {revision} already exists on the Hub. Exiting.")
-                exit()

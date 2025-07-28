@@ -7,6 +7,7 @@ dependencies = [
   "isort>=6.0.1",
   "latex2sympy2>=1.9.1",
   "pebble>=5.1.1",
+  "pyrootutils>=1.0.4",
   "pytest>=8.4.1",
   "python-dotenv>=1.1.1",
   "regex>=2024.11.6",

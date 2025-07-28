@@ -19,20 +19,24 @@ from pathlib import Path
 from typing import Any, Dict
 
 import pynvml
+import pyrootutils
 import torch
 import wandb
 from torch.profiler import record_function
 from vllm import LLM
 
-from sal.config import Config
+from sal.config import Config, OutputConfig
 from sal.evaluation.evaluate import evaluate
 from sal.models.reward_models import load_prm
+from sal.profiler import Profiler
 from sal.search import beam_search, best_of_n, dvts
-from sal.utils.data import get_dataset, save_dataset
+from sal.utils.data import get_dataset, save_inference_output
 from sal.utils.env import get_env_or_throw
 from sal.utils.score import score
 
 logging.basicConfig(level=logging.INFO)
+
+root = pyrootutils.find_root(indicator="pyproject.toml")
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -60,6 +64,16 @@ def get_peak_gpu_memory_gb():
     return torch.cuda.max_memory_allocated() / 1e9
 
 
+def _set_up_output_dir(output_config: OutputConfig, run_id: str) -> Path:
+    if output_config.output_dir is None:
+        output_dir = root / f"outputs/{run_id}"
+    else:
+        output_dir = Path(output_config.output_dir)
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    return output_dir
+
+
 def main(config: Config):
     wandb.login(key=get_env_or_throw("WANDB_API_KEY"))
     with wandb.init(
@@ -67,47 +81,57 @@ def main(config: Config):
         config=asdict(config),
         tags=list(config.wandb_config.tags),
     ) as run:
-        torch.cuda.reset_peak_memory_stats()
+        output_dir = _set_up_output_dir(config.output_config, run.id)
+        inference_output_path = output_dir / config.output_config.inference_output_file
+        evaluation_score_path = output_dir / config.output_config.evaluation_score_file
 
+        profiler = Profiler(config=config.profiler_config, output_dir=output_dir)
+
+        profiler.start_profiling()
+        torch.cuda.reset_peak_memory_stats()
         baseline = get_total_gpu_memory_gb()
 
-        # Load models
         approach_fn = APPROACHES[config.approach]
 
-        llm = LLM(
-            model=config.generator_config.get_model_path(),
-            gpu_memory_utilization=config.gpu_memory_utilization,
-            enable_prefix_caching=True,
-            seed=config.search_config.seed,
-            tensor_parallel_size=1,
-            max_model_len=config.generator_config.max_model_len,
-            enforce_eager=True,
-        )
-        llm_memory = get_total_gpu_memory_gb() - baseline
+        with record_function("load_llm"):
+            llm = LLM(
+                model=config.generator_config.get_model_path(),
+                gpu_memory_utilization=config.gpu_memory_utilization,
+                enable_prefix_caching=True,
+                seed=config.search_config.seed,
+                tensor_parallel_size=1,
+                max_model_len=config.generator_config.max_model_len,
+                enforce_eager=True,
+            )
+            llm_memory = get_total_gpu_memory_gb() - baseline
 
-        prm = load_prm(config.prm_config)
-        prm_memory = get_total_gpu_memory_gb() - baseline - llm_memory
+        with record_function("load_prm"):
+            prm = load_prm(config.prm_config)
+            prm_memory = get_total_gpu_memory_gb() - baseline - llm_memory
 
-        dataset = get_dataset(config.dataset_config)
+        with record_function("load_dataset"):
+            dataset = get_dataset(config.dataset_config)
 
         # Reset peak tracking for inference
         torch.cuda.reset_peak_memory_stats()
         pre_inference = get_gpu_memory_gb()
 
-        dataset = dataset.map(
-            approach_fn,
-            batched=True,
-            batch_size=config.search_config.search_batch_size,
-            fn_kwargs={"config": config, "llm": llm, "prm": prm},
-            desc="Running search",
-            load_from_cache_file=False,
-        )
+        with record_function("inference"):
+            dataset = dataset.map(
+                approach_fn,
+                batched=True,
+                batch_size=config.search_config.search_batch_size,
+                fn_kwargs={"config": config, "llm": llm, "prm": prm},
+                desc="Running search",
+                load_from_cache_file=False,
+            )
 
-        inference_overhead = get_peak_gpu_memory_gb() - pre_inference
+            inference_overhead = get_peak_gpu_memory_gb() - pre_inference
 
-        dataset = score(dataset, config)
+        with record_function("scoring"):
+            dataset = score(dataset, config)
+            save_inference_output(dataset, inference_output_path)
 
-        # Log everything once
         run.log(
             {
                 "memory/llm_gb": llm_memory,
@@ -115,17 +139,16 @@ def main(config: Config):
                 "memory/inference_overhead_gb": inference_overhead,
             }
         )
-
         logger.info(
             f"Memory - LLM: {llm_memory:.2f}GB, PRM: {prm_memory:.2f}GB, Inference: {inference_overhead:.2f}GB"
         )
 
-        dataset_path = save_dataset(dataset, config, run.id)
-        output_file: Path = dataset_path.parent / "score.jsonl"
+        profiler.finish_profiling()
+
         evaluate(
             benchmark=config.evaluation_config.benchmark,
-            dataset_path=dataset_path,
+            dataset_path=inference_output_path,
             dataset_col=config.evaluation_config.dataset_col,
-            output_file=output_file,
+            output_file=evaluation_score_path,
         )
         logger.info("Done 🔥!")
