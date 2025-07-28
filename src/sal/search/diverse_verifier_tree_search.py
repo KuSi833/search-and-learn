@@ -32,9 +32,9 @@ logger = logging.getLogger()
 
 def _dvts(batch_of_prompts: list[str], config: Config, llm: LLM, prm: PRM):
     sampling_params = SamplingParams(
-        temperature=config.temperature,
+        temperature=config.search_config.temperature,
         max_tokens=2048,
-        top_p=config.top_p,
+        top_p=config.search_config.top_p,
         stop=[
             "\n\n"
         ],  # we consider that a step in the problem is indicated by a double newline
@@ -61,18 +61,20 @@ def _dvts(batch_of_prompts: list[str], config: Config, llm: LLM, prm: PRM):
                 )
             )
 
-    for i in tqdm(range(config.num_iterations), desc="Beam search iterations"):
+    for i in tqdm(
+        range(config.beam_search_config.num_iterations), desc="Beam search iterations"
+    ):
         # generation
         gen_beams = [b for b in beams if not b.pruned]
         if len(gen_beams) == 0:
             break
 
-        if i == config.num_iterations - 1:
+        if i == config.beam_search_config.num_iterations - 1:
             # last iteration, generate to EOS
             sampling_params = SamplingParams(
-                temperature=config.temperature,
+                temperature=config.search_config.temperature,
                 max_tokens=2048,
-                top_p=config.top_p,
+                top_p=config.search_config.top_p,
                 n=1,
             )
 
@@ -93,9 +95,17 @@ def _dvts(batch_of_prompts: list[str], config: Config, llm: LLM, prm: PRM):
             continue_final_message=continue_final_message,
             tokenize=False,
         )
-        lookahead = 0 if i == config.num_iterations - 1 else config.lookahead
+        lookahead = (
+            0
+            if i == config.beam_search_config.num_iterations - 1
+            else config.beam_search_config.lookahead
+        )
         gen_results = generate_k_steps(
-            templated_convs, lookahead, llm, sampling_params, config.beam_width
+            templated_convs,
+            lookahead,
+            llm,
+            sampling_params,
+            config.beam_search_config.beam_width,
         )
 
         prompts, completions = [], []
@@ -103,7 +113,7 @@ def _dvts(batch_of_prompts: list[str], config: Config, llm: LLM, prm: PRM):
             beam.next_texts = gen_result.next_texts
             beam.stop_reasons = gen_result.stop_reasons
             beam.lookahead_texts = gen_result.lookahead_texts
-            if len(beam.next_texts) != config.beam_width:
+            if len(beam.next_texts) != config.beam_search_config.beam_width:
                 beam.pruned = True
                 # rarely ~1/1000 the model will generate few beams than expected. #TODO: investigate why
                 logger.warning(
@@ -117,7 +127,9 @@ def _dvts(batch_of_prompts: list[str], config: Config, llm: LLM, prm: PRM):
         all_scores = prm.score(prompts, completions)
 
         for beam, scores in zip(gen_beams, all_scores, strict=True):
-            agg_scores = [aggregate_scores(s, config.agg_strategy) for s in scores]
+            agg_scores = [
+                aggregate_scores(s, config.search_config.agg_strategy) for s in scores
+            ]
             best_score_ind = np.argmax(agg_scores)
             beam.all_scores = scores
             beam.previous_text = beam.current_text
@@ -139,7 +151,7 @@ def _dvts(batch_of_prompts: list[str], config: Config, llm: LLM, prm: PRM):
     # we need to copy the results from the last iteration in to beam_width beams as otherwise we would only have n/m results
     output: list[Beam] = []
     for beam in beams:
-        for i in range(config.beam_width):
+        for i in range(config.beam_search_config.beam_width):
             output.append(
                 Beam(
                     prompt=beam.prompt,
