@@ -65,11 +65,7 @@ def get_peak_gpu_memory_gb():
 
 
 def _set_up_output_dir(output_config: OutputConfig, run_id: str) -> Path:
-    if output_config.output_dir is None:
-        output_dir = root / f"outputs/{run_id}"
-    else:
-        output_dir = Path(output_config.output_dir)
-
+    output_dir = root / output_config.output_dir_base / run_id
     output_dir.mkdir(parents=True, exist_ok=True)
     return output_dir
 

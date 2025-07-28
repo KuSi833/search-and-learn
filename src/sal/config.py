@@ -57,7 +57,7 @@ class DatasetConfig:
 
 @dataclass
 class OutputConfig:
-    output_dir: Optional[str] = None
+    output_dir_base: str = "output"
     num_proc: Optional[int] = None
     apply_voting: bool = True
     # contains the generated output, PRM scores and voting results
