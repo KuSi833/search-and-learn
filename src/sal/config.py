@@ -37,7 +37,7 @@ class GeneratorConfig:
 
 @dataclass
 class ProfilerConfig:
-    profile_memory: bool = False
+    profile_memory: bool = True
 
 
 @dataclass
