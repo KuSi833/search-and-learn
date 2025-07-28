@@ -34,5 +34,5 @@ trl = {git = "https://github.com/huggingface/trl.git"}
 deploy = [
   "matplotlib>=3.10.3",
   "nvidia-ml-py>=12.575.51",
-  "vllm",
+  "vllm>=0.10.0",
 ]
