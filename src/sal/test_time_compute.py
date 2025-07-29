@@ -71,7 +71,7 @@ class TestTimeComputeRunner:
     def run(self):
         self.profiler.start_memory_profiling()
         with self.profiler.get_pytorch_profiler() as prof:
-            self._run_inference()
+            self._run_inference(prof)
             prof.export_chrome_trace(self.config.profiler_config.operations_trace_file)
         self.profiler.finish_memory_profiling()
 
@@ -92,10 +92,11 @@ class TestTimeComputeRunner:
             output_file=self.evaluation_score_path,
         )
 
-    def _run_inference(self):
+    def _run_inference(self, prof):
         torch.cuda.reset_peak_memory_stats()
         baseline = self.profiler.get_total_gpu_memory_gb()
 
+        prof.step()
         with record_function("load_llm"):
             logger.info("Loading LLM...")
             llm = LLM(
@@ -109,11 +110,13 @@ class TestTimeComputeRunner:
             )
             llm_memory = self.profiler.get_total_gpu_memory_gb() - baseline
 
+        prof.step()
         with record_function("load_prm"):
             logger.info("Loading PRM...")
             prm = load_prm(self.config.prm_config)
             prm_memory = self.profiler.get_total_gpu_memory_gb() - baseline - llm_memory
 
+        prof.step()
         with record_function("load_dataset"):
             logger.info("Loading dataset...")
             dataset = get_dataset(self.config.dataset_config)
@@ -122,6 +125,7 @@ class TestTimeComputeRunner:
         torch.cuda.reset_peak_memory_stats()
         pre_inference = self.profiler.get_gpu_memory_gb()
 
+        prof.step()
         with record_function("inference"):
             logger.info("Running inference...")
             approach_fn = APPROACHES[self.config.approach]
@@ -137,6 +141,7 @@ class TestTimeComputeRunner:
 
             inference_overhead = self.profiler.get_peak_gpu_memory_gb() - pre_inference
 
+        prof.step()
         with record_function("scoring"):
             logger.info("Scoring...")
             dataset = score(dataset, self.config)
@@ -152,8 +157,6 @@ class TestTimeComputeRunner:
         logger.info(
             f"Memory - LLM: {llm_memory:.2f}GB, PRM: {prm_memory:.2f}GB, Inference: {inference_overhead:.2f}GB"
         )
-
-        self.profiler.finish_memory_profiling()
 
     def _finish(self):
         logger.info("Done 🔥!")
