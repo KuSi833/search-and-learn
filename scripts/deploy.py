@@ -133,15 +133,21 @@ def submit(
 def _prompt_commit_info(commit_hash: str) -> None:
     commit_info = (
         subprocess.check_output(
-            ["git", "show", "-s", "--format=%cd %h", commit_hash],
+            [
+                "git",
+                "log",
+                "-1",
+                "--pretty=format:%cd - %s",
+                "--date=format:%Y-%m-%d %H:%M:%S",
+                commit_hash,
+            ],
             stderr=subprocess.STDOUT,
         )
         .strip()
         .decode("utf-8")
     )
-    from rich import print
 
-    print(f"Commit info: [green]{commit_info}[/green]")
+    console.print(f"Commit info: [green]{commit_info}[/green]")
 
     user_confirmation = input("Do you want to continue with this commit? (yes/no): ")
     if user_confirmation.lower() in ["no", "n"]:
@@ -149,7 +155,7 @@ def _prompt_commit_info(commit_hash: str) -> None:
 
 
 def _get_latest_commit_hash() -> str:
-    print(
+    console.print(
         "No commit hash was provided. The latest commit hash will be used by default."
     )
     try:
@@ -161,7 +167,9 @@ def _get_latest_commit_hash() -> str:
             .decode("utf-8")
         )
     except subprocess.CalledProcessError as e:
-        print(f"Error retrieving the latest commit hash: {e.output.decode('utf-8')}")
+        console.print(
+            f"Error retrieving the latest commit hash: {e.output.decode('utf-8')}"
+        )
         raise SystemExit("Failed to retrieve the latest commit hash.")
 
     return latest_commit_hash
