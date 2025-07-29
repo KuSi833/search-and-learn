@@ -72,7 +72,6 @@ class TestTimeComputeRunner:
         self.profiler.start_memory_profiling()
         with self.profiler.get_pytorch_profiler() as prof:
             self._run_inference(prof)
-            prof.export_chrome_trace(self.config.profiler_config.operations_trace_file)
         self.profiler.finish_memory_profiling()
 
         self._evaluate_score()

@@ -19,6 +19,7 @@ class Profiler:
     def __init__(self, config: ProfilerConfig, output_dir: Path):
         self.config = config
         self.memory_snapshot_path = output_dir / self.config.memory_snapshot_file
+        self.trace_dir = output_dir / "trace"
 
     def start_memory_profiling(self):
         if self.config.profile_memory:
@@ -31,11 +32,10 @@ class Profiler:
 
     def get_pytorch_profiler(self):
         if self.config.profile_operations:
-
-            def trace_handler(prof):
-                prof.export_chrome_trace(
-                    self.config.operations_trace_file, device="cuda:0"
-                )
+            # def trace_handler(prof):
+            #     prof.export_chrome_trace(
+            #         self.config.operations_trace_file, device="cuda:0"
+            #     )
 
             return torch.profiler.profile(
                 activities=[
@@ -46,7 +46,9 @@ class Profiler:
                 record_shapes=True,
                 with_stack=True,
                 schedule=torch.profiler.schedule(wait=0, warmup=0, active=1, repeat=1),
-                on_trace_ready=torch.profiler.tensorboard_trace_handler("./trace"),
+                on_trace_ready=torch.profiler.tensorboard_trace_handler(
+                    str(self.trace_dir)
+                ),
             )
         return NoOpProfiler()
 
