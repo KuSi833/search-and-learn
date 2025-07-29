@@ -69,11 +69,11 @@ class TestTimeComputeRunner:
         self.profiler = Profiler(config.profiler_config, self.output_dir)
 
     def run(self):
-        self.profiler.start_profiling()
+        self.profiler.start_memory_profiling()
         with self.profiler.get_pytorch_profiler() as prof:
             self._run_inference()
             prof.export_chrome_trace(self.config.profiler_config.operations_trace_file)
-        self.profiler.finish_profiling()
+        self.profiler.finish_memory_profiling()
 
         self._evaluate_score()
         self._finish()
@@ -153,11 +153,11 @@ class TestTimeComputeRunner:
             f"Memory - LLM: {llm_memory:.2f}GB, PRM: {prm_memory:.2f}GB, Inference: {inference_overhead:.2f}GB"
         )
 
-        self.profiler.finish_profiling()
+        self.profiler.finish_memory_profiling()
 
     def _finish(self):
-        self.wandb_run.finish()
         logger.info("Done 🔥!")
+        self.wandb_run.finish()
 
 
 def run(config: Config):

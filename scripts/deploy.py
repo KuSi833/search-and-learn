@@ -1,10 +1,11 @@
-import argparse
 import logging
+import subprocess
 from dataclasses import dataclass, field
 from io import StringIO
 from time import sleep
-from typing import Set
+from typing import Optional, Set
 
+import click
 from dotenv import load_dotenv
 from fabric import Connection
 from rich.console import Console
@@ -46,8 +47,7 @@ class RemoteConfig:
 class SlurmJobConfig:
     nodes: int = 1
     ntasks: int = 1
-    partition: str = "AMD7-A100-T"
-    # partition: str = "gpgpuB"
+    partition: str = "gpgpuB"  # Default Tesla A30 24GB
     job_name: str = "qtts"
     output: str = "./logs/slurm-%j.log"
     cpus_per_task: int = 1
@@ -70,76 +70,130 @@ class DeployConfig:
     slurm_config: SlurmJobConfig = field(default_factory=SlurmJobConfig)
 
 
-def main():
-    args = parse_args()
-
-    if args.commit_hash is None:
-        raise RuntimeError("Missing commit hash!")
-
+def get_base_config() -> tuple[RemoteConfig, RunConfig]:
+    """Get base configuration from environment variables."""
     with console.status("[yellow]Validating env variables...", spinner="dots"):
-        config = DeployConfig(
-            remote_config=RemoteConfig(
-                username=get_env_or_throw("USERNAME"),
-                hostname=get_env_or_throw("HOSTNAME"),
-                remote_root=get_env_or_throw("REMOTE_ROOT"),
-            ),
-            run_config=RunConfig(
-                wandb_api_key=get_env_or_throw("WANDB_API_KEY"),
-                github_token=get_env_or_throw("GITHUB_TOKEN"),
-                commit_hash=args.commit_hash,
-            ),
+        remote_config = RemoteConfig(
+            username=get_env_or_throw("USERNAME"),
+            hostname=get_env_or_throw("HOSTNAME"),
+            remote_root=get_env_or_throw("REMOTE_ROOT"),
+        )
+        run_config = RunConfig(
+            wandb_api_key=get_env_or_throw("WANDB_API_KEY"),
+            github_token=get_env_or_throw("GITHUB_TOKEN"),
+            commit_hash="",  # Will be set by commands that need it
         )
     console.print("[green]✔ Env variables validated")
-
-    if args.action == "submit":
-        submit_job(config)
-    elif args.action == "push_files":
-        c = Connection(config.remote_config.hostname)
-        push_files(c, config.remote_config)
-    elif args.action == "cancel":
-        if not args.job_id:
-            job_id = input("Enter the job id: ")
-        else:
-            job_id = args.job_id
-        cancel_job(job_id, config.remote_config)
-    elif args.action == "configure_environment":
-        c = Connection(config.remote_config.hostname)
-        push_files(c, config.remote_config)
-        configure_environment(c, config.remote_config)
-
-    # if args.action == "run_remote":
-    #     if args.hostname is not None:
-    #         cfg.remote.hostname = args.hostname
-    #     run_remote(cfg, args.run_name)
-    # elif args.action == "pull_files":
-    #     c = Connection(cfg.remote.hostname)
-    #     pull_files(cfg)
+    return remote_config, run_config
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Remote job management")
-    parser.add_argument(
-        "--action",
-        choices=[
-            "submit",
-            "cancel",
-            "run_remote",
-            "push_files",
-            "pull_files",
-            "configure_environment",
-        ],
-        required=True,
-        help="Action to perform: submit a new job or cancel an existing job",
+@click.group()
+def cli():
+    """Remote job management tool."""
+    pass
+
+
+PARTITION_MAP = {
+    "A30": "gpgpuB",  # Tesla A30 24GB (20)
+    "A100": "AMD7-A100-T",  # Tesla A100 80GB (28)
+}
+
+
+@cli.command()
+@click.option(
+    "--partition",
+    default="A100",
+    help="SLURM partition to use (default: A100)",
+    type=click.Choice(PARTITION_MAP.keys()),
+)
+@click.option("--commit-hash", required=False, help="Hash of commit to submit as a job")
+@click.option("--tail/--no-tail", default=True, help="Whether to tail the output log")
+def submit(
+    commit_hash: str,
+    partition: str,
+    tail: bool,
+):
+    """Submit a new SLURM job."""
+    remote_config, run_config = get_base_config()
+    run_config.commit_hash = commit_hash if commit_hash else _get_latest_commit_hash()
+
+    _prompt_commit_info(run_config.commit_hash)
+
+    slurm_config = SlurmJobConfig(partition=PARTITION_MAP[partition])
+
+    config = DeployConfig(
+        run_config=run_config,
+        remote_config=remote_config,
+        slurm_config=slurm_config,
     )
-    parser.add_argument("--run_name", type=str, help="Override the experiment run name")
-    parser.add_argument("--hostname", type=str, help="Remote hostname")
-    parser.add_argument(
-        "--job-id", type=str, help="Job ID to cancel (required for cancel action)"
+
+    submit_job(config, tail_output=tail)
+
+
+def _prompt_commit_info(commit_hash: str) -> None:
+    commit_info = (
+        subprocess.check_output(
+            ["git", "show", "-s", "--format=%cd %h", commit_hash],
+            stderr=subprocess.STDOUT,
+        )
+        .strip()
+        .decode("utf-8")
     )
-    parser.add_argument(
-        "--commit-hash", type=str, help="Hash of commit to submit as a job"
+    from rich import print
+
+    print(f"Commit info: [green]{commit_info}[/green]")
+
+    user_confirmation = input("Do you want to continue with this commit? (yes/no): ")
+    if user_confirmation.lower() in ["no", "n"]:
+        raise SystemExit("Operation cancelled by the user.")
+
+
+def _get_latest_commit_hash() -> str:
+    print(
+        "No commit hash was provided. The latest commit hash will be used by default."
     )
-    return parser.parse_args()
+    try:
+        latest_commit_hash = (
+            subprocess.check_output(
+                ["git", "rev-parse", "HEAD"], stderr=subprocess.STDOUT
+            )
+            .strip()
+            .decode("utf-8")
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"Error retrieving the latest commit hash: {e.output.decode('utf-8')}")
+        raise SystemExit("Failed to retrieve the latest commit hash.")
+
+    return latest_commit_hash
+
+
+@cli.command()
+@click.option("--job-id", help="Job ID to cancel")
+def cancel(job_id: Optional[str]):
+    """Cancel a SLURM job."""
+    remote_config, _ = get_base_config()
+
+    if not job_id:
+        job_id = click.prompt("Enter the job ID")
+
+    cancel_job(job_id, remote_config)
+
+
+@cli.command("push-files")
+def push_files_cmd():
+    """Push files to remote server."""
+    remote_config, _ = get_base_config()
+    c = Connection(remote_config.hostname)
+    push_files(c, remote_config)
+
+
+@cli.command("configure-environment")
+def configure_environment_cmd():
+    """Configure the remote environment."""
+    remote_config, _ = get_base_config()
+    c = Connection(remote_config.hostname)
+    push_files(c, remote_config)
+    configure_environment(c, remote_config)
 
 
 def push_files(connection, config: RemoteConfig) -> None:
@@ -276,16 +330,5 @@ def cancel_job(job_id, config: RemoteConfig):
         console.print(f"[green]Job {job_id} cancellation request sent")
 
 
-# def pull_files(config: DictConfig):
-#     logger = logging.getLogger(__name__)
-#     c = Connection(config.remote.hostname)
-
-#     logger.info("Copying logs from remote to local...")
-#     c.local(
-#         f"rsync -avz km1124@{config.remote.hostname}:{config.remote.content_dir}/res/ {ROOT / 'res'}"
-#     )
-#     logger.info("Res copied successfully")
-
-
 if __name__ == "__main__":
-    main()
+    cli()
