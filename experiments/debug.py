@@ -1,8 +1,16 @@
-from dotenv import load_dotenv
 from dataclasses import replace
 
-from sal.config import Config, DatasetConfig, GeneratorConfig, PRMConfig, SearchConfig, WandbConfig
-from sal.test_time_compute import main
+from dotenv import load_dotenv
+
+from sal.config import (
+    Config,
+    DatasetConfig,
+    GeneratorConfig,
+    PRMConfig,
+    SearchConfig,
+    WandbConfig,
+)
+from sal.test_time_compute import run
 
 TINY_GENERATOR = GeneratorConfig(
     name="Qwen/Qwen2-Math-1.5B-Instruct",
@@ -13,9 +21,7 @@ TINY_PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
 TINY_DATASET_CONFIG = DatasetConfig(num_samples=1)
 
-WANDB_CONFIG = WandbConfig(
-    tags = set(["debug"])
-)
+WANDB_CONFIG = WandbConfig(tags=set(["debug"]))
 
 BEAM_SEARCH_CONFIG = Config(
     prm_config=TINY_PRM_CONFIG,
@@ -48,4 +54,4 @@ if __name__ == "__main__":
     load_dotenv()
 
     config = replace(BEAM_SEARCH_CONFIG, generator_config=TINY_GENERATOR)
-    main(config)
+    run(config)

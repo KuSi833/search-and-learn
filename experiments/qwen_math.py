@@ -1,7 +1,7 @@
 from dataclasses import replace
 
 from sal.config import Config, DatasetConfig, GeneratorConfig, PRMConfig, SearchConfig
-from sal.test_time_compute import main
+from sal.test_time_compute import run
 
 MODEL_BASE_PATH = "/vol/bitbucket/km1124/search-and-learn/models"
 
@@ -31,9 +31,9 @@ SMALLEST_MODEL = GeneratorConfig(
 )
 
 
-PRM_CONFIG = PRMConfig(path="RLHFlow/Llama3.1-8B-PRM-Deepseek-Data")
+# PRM_CONFIG = PRMConfig(path="RLHFlow/Llama3.1-8B-PRM-Deepseek-Data")
 # PRM_CONFIG = PRMConfig(path="Qwen/Qwen2.5-Math-PRM-7B")
-# PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
+PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
 # DATASET_CONFIG = DatasetConfig(num_samples=100)
 DATASET_CONFIG = DatasetConfig(num_samples=1)
@@ -71,8 +71,8 @@ if __name__ == "__main__":
     # config = replace(BEAM_SEARCH_CONFIG, generator_config=Q4_MODEL)
     # config = replace(BEST_OF_N_CONFIG, generator_config=BASE_MODEL)
     # config = replace(BEAM_SEARCH_CONFIG, generator_config=BASE_MODEL)
-    config = replace(BEST_OF_N_CONFIG, generator_config=INSTRUCT_MODEL)
+    # config = replace(BEST_OF_N_CONFIG, generator_config=INSTRUCT_MODEL)
     # config = replace(BEAM_SEARCH_CONFIG, generator_config=INSTRUCT_MODEL)
 
-    # config = replace(BEAM_SEARCH_CONFIG, generator_config=SMALLEST_MODEL)
-    main(config)
+    config = replace(BEAM_SEARCH_CONFIG, generator_config=SMALLEST_MODEL)
+    run(config)
