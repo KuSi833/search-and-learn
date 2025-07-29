@@ -94,8 +94,12 @@ def cli():
 
 
 PARTITION_MAP = {
+    "A40": "gpgpu",  # Tesla A40 48GB (7)
     "A30": "gpgpuB",  # Tesla A30 24GB (20)
+    "T4": "gpgpuC",  # Tesla T4 16GB GPUs (16)
+    "T4D": "gpgpuD",  # Tesla T4 16GB GPUs (26)
     "A100": "AMD7-A100-T",  # Tesla A100 80GB (28)
+    "A16": "a16gpu",  # Tesla A16 16GB GPUs (28)
 }
 
 
