@@ -14,7 +14,7 @@ TINY_PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 TINY_DATASET_CONFIG = DatasetConfig(num_samples=1)
 
 WANDB_CONFIG = WandbConfig(
-    tags = set("debug")
+    tags = set(["debug"])
 )
 
 BEAM_SEARCH_CONFIG = Config(

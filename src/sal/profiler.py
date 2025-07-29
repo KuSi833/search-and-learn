@@ -31,7 +31,7 @@ def get_profiler(enabled):
 class Profiler:
     def __init__(self, config: ProfilerConfig, output_dir: Path):
         self.config = config
-        self.memory_snapshot_path = output_dir / "trace" / "memory_snapshot.pickle"
+        self.memory_snapshot_path = output_dir / "memory_snapshot.pickle"
 
     def start_profiling(self):
         if self.config.profile_memory:

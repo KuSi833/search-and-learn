@@ -31,9 +31,9 @@ SMALLEST_MODEL = GeneratorConfig(
 )
 
 
-# PRM_CONFIG = PRMConfig(path="RLHFlow/Llama3.1-8B-PRM-Deepseek-Data")
+PRM_CONFIG = PRMConfig(path="RLHFlow/Llama3.1-8B-PRM-Deepseek-Data")
 # PRM_CONFIG = PRMConfig(path="Qwen/Qwen2.5-Math-PRM-7B")
-PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
+# PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
 # DATASET_CONFIG = DatasetConfig(num_samples=100)
 DATASET_CONFIG = DatasetConfig(num_samples=1)
