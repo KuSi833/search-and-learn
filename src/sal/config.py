@@ -16,10 +16,6 @@
 from dataclasses import dataclass, field
 from typing import Literal, Optional, Set
 
-from huggingface_hub import get_full_repo_name
-
-from sal.utils.hub import get_dataset_revisions
-
 
 @dataclass
 class GeneratorConfig:
@@ -38,6 +34,9 @@ class GeneratorConfig:
 @dataclass
 class ProfilerConfig:
     profile_memory: bool = True
+    memory_snapshot_file: str = "memory_snapshot.pickle"
+    profile_operations: bool = True
+    operations_trace_file: str = "trace.json"
 
 
 @dataclass

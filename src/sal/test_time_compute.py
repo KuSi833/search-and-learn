@@ -70,8 +70,10 @@ class TestTimeComputeRunner:
 
     def run(self):
         self.profiler.start_profiling()
-        self._run_inference()
-        self.profiler.start_profiling()
+        with self.profiler.get_pytorch_profiler() as prof:
+            self._run_inference()
+            prof.export_chrome_trace(self.config.profiler_config.operations_trace_file)
+        self.profiler.finish_profiling()
 
         self._evaluate_score()
         self._finish()

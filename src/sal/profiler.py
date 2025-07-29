@@ -15,24 +15,10 @@ class NoOpProfiler(nullcontext):
         pass
 
 
-def get_profiler(enabled):
-    if enabled:
-        return torch.profiler.profile(
-            activities=[
-                # torch.profiler.ProfilerActivity.CPU,
-                torch.profiler.ProfilerActivity.CUDA,
-            ],
-            profile_memory=True,
-            record_shapes=True,
-            with_stack=True,
-        )
-    return NoOpProfiler()
-
-
 class Profiler:
     def __init__(self, config: ProfilerConfig, output_dir: Path):
         self.config = config
-        self.memory_snapshot_path = output_dir / "memory_snapshot.pickle"
+        self.memory_snapshot_path = output_dir / self.config.memory_snapshot_file
 
     def start_profiling(self):
         if self.config.profile_memory:
@@ -42,6 +28,19 @@ class Profiler:
         if self.config.profile_memory:
             torch.cuda.memory._dump_snapshot(str(self.memory_snapshot_path))
             torch.cuda.memory._record_memory_history(enabled=None)
+
+    def get_pytorch_profiler(self):
+        if self.config.profile_operations:
+            return torch.profiler.profile(
+                activities=[
+                    # torch.profiler.ProfilerActivity.CPU,
+                    torch.profiler.ProfilerActivity.CUDA,
+                ],
+                profile_memory=True,
+                record_shapes=True,
+                with_stack=True,
+            )
+        return NoOpProfiler()
 
     @staticmethod
     def get_gpu_memory_gb():
