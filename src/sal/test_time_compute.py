@@ -27,7 +27,7 @@ from sal.config import Config
 from sal.evaluation.evaluate import evaluate
 from sal.models.reward_models import load_prm
 from sal.profiler import Profiler
-from sal.search import beam_search, best_of_n, dvts
+from sal.search import beam_search, best_of_n, dvts, qcts
 from sal.utils.data import get_dataset, save_inference_output
 from sal.utils.env import get_env_or_throw
 from sal.utils.score import score
@@ -44,6 +44,7 @@ APPROACHES = {
     "beam_search": beam_search,
     "dvts": dvts,
     "best_of_n": best_of_n,
+    "qcts": qcts,
 }
 
 
@@ -107,6 +108,17 @@ class TestTimeComputeRunner:
                 max_model_len=self.config.generator_config.max_model_len,
                 enforce_eager=True,
             )
+            if self.config.draft_config is not None:
+                draft_llm = LLM(
+                    model=self.config.generator_config.get_model_path(),
+                    gpu_memory_utilization=self.config.gpu_memory_utilization,
+                    enable_prefix_caching=True,
+                    seed=self.config.search_config.seed,
+                    tensor_parallel_size=1,
+                    max_model_len=self.config.generator_config.max_model_len,
+                    enforce_eager=True,
+                )
+
             llm_memory = self.profiler.get_total_gpu_memory_gb() - baseline
 
         prof.step()
@@ -129,11 +141,16 @@ class TestTimeComputeRunner:
             logger.info("Running inference...")
             approach_fn = APPROACHES[self.config.approach]
 
+            fn_kwargs = {"config": self.config, "prm": prm}
+            if self.config.draft_config is not None:
+                fn_kwargs.update({"target_llm": llm, "draft_llm": draft_llm})
+            else:
+                fn_kwargs["llm"] = llm
             dataset = dataset.map(
                 approach_fn,
                 batched=True,
                 batch_size=self.config.search_config.search_batch_size,
-                fn_kwargs={"config": self.config, "llm": llm, "prm": prm},
+                fn_kwargs=fn_kwargs,
                 desc="Running search",
                 load_from_cache_file=False,
             )

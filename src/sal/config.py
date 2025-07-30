@@ -88,6 +88,12 @@ class BeamSearchConfig:
 
 
 @dataclass
+class QCConfig:
+    high_threshold: float = 0.8
+    low_threshold: float = 0.3
+
+
+@dataclass
 class WandbConfig:
     project: str = "qtts"
     tags: Set[str] = field(default_factory=lambda: set())
@@ -109,11 +115,13 @@ class Config:
 
     search_config: SearchConfig = field(default_factory=SearchConfig)
     beam_search_config: BeamSearchConfig = field(default_factory=BeamSearchConfig)
+    qcconfig: QCConfig = field(default_factory=QCConfig)
 
     generator_config: GeneratorConfig = field(default_factory=GeneratorConfig)
+    draft_config: Optional[GeneratorConfig] = None
     prm_config: PRMConfig = field(default_factory=PRMConfig)
 
-    approach: Literal["best_of_n", "beam_search", "dvts"] = "best_of_n"
+    approach: Literal["best_of_n", "beam_search", "dvts", "qcts"] = "best_of_n"
     gpu_memory_utilization: float = (
         0.5  # vllm is allocated 0.5 of GPU memory, the PRM uses the rest
     )
