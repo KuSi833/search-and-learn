@@ -98,7 +98,7 @@ class TestTimeComputeRunner:
 
         prof.step()
         with record_function("load_llm"):
-            logger.info("Loading LLM...")
+            logger.info("Loading LLM(s)...")
             llm = LLM(
                 model=self.config.generator_config.get_model_path(),
                 gpu_memory_utilization=self.config.gpu_memory_utilization,
@@ -109,13 +109,14 @@ class TestTimeComputeRunner:
                 enforce_eager=True,
             )
             if self.config.draft_config is not None:
+                logger.info("Loading draft LLM...")
                 draft_llm = LLM(
-                    model=self.config.generator_config.get_model_path(),
+                    model=self.config.draft_config.get_model_path(),
                     gpu_memory_utilization=self.config.gpu_memory_utilization,
                     enable_prefix_caching=True,
                     seed=self.config.search_config.seed,
                     tensor_parallel_size=1,
-                    max_model_len=self.config.generator_config.max_model_len,
+                    max_model_len=self.config.draft_config.max_model_len,
                     enforce_eager=True,
                 )
 
