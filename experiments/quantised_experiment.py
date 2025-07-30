@@ -45,6 +45,8 @@ DATASET_CONFIG = DatasetConfig(num_samples=100)
 
 QC_CONFIG = Config(
     prm_config=PRM_CONFIG,
+    generator_config=Q8_MODEL,
+    draft_config=Q4_MODEL,
     filter_duplicates=True,
     approach="qcts",
     search_config=SearchConfig(
