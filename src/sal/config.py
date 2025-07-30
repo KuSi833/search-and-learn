@@ -33,10 +33,13 @@ class GeneratorConfig:
 
 @dataclass
 class ProfilerConfig:
+    # memory profiling
     profile_memory: bool = True
     memory_snapshot_file: str = "memory_snapshot.pickle"
+    memory_max_entries: int = 10000
+    # operation profiling
     profile_operations: bool = True
-    operations_trace_file: str = "trace.json"
+    operations_trace_dir: str = "trace"
 
 
 @dataclass

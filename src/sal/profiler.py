@@ -19,11 +19,13 @@ class Profiler:
     def __init__(self, config: ProfilerConfig, output_dir: Path):
         self.config = config
         self.memory_snapshot_path = output_dir / self.config.memory_snapshot_file
-        self.trace_dir = output_dir / "trace"
+        self.trace_dir = output_dir / self.config.operations_trace_dir
 
     def start_memory_profiling(self):
         if self.config.profile_memory:
-            torch.cuda.memory._record_memory_history(max_entries=10000)
+            torch.cuda.memory._record_memory_history(
+                max_entries=self.config.memory_max_entries
+            )
 
     def finish_memory_profiling(self):
         if self.config.profile_memory:
@@ -32,11 +34,6 @@ class Profiler:
 
     def get_pytorch_profiler(self):
         if self.config.profile_operations:
-            # def trace_handler(prof):
-            #     prof.export_chrome_trace(
-            #         self.config.operations_trace_file, device="cuda:0"
-            #     )
-
             return torch.profiler.profile(
                 activities=[
                     torch.profiler.ProfilerActivity.CPU,
