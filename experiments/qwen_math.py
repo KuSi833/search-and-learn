@@ -45,7 +45,7 @@ SMALLEST_MODEL = GeneratorConfig(
 PRM_CONFIG = PRMConfig(path="Qwen/Qwen2.5-Math-PRM-7B")
 # PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
-WANDB_CONFIG = WandbConfig(tags=set(["qwen_math"]))
+WANDB_CONFIG = WandbConfig(tags=set([]))
 
 BASE_CONFIG = BaseConfig(
     prm_config=PRM_CONFIG,
