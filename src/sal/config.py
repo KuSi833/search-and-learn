@@ -118,7 +118,7 @@ class BaseConfig:
     generator_config: GeneratorConfig = field(default_factory=GeneratorConfig)
     draft_config: Optional[GeneratorConfig] = None
     prm_config: PRMConfig = field(default_factory=PRMConfig)
-    seed: int = 42
+    seed: int = 0
 
 
 @dataclass

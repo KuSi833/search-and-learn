@@ -72,7 +72,6 @@ QC_CONFIG = ExperimentConfig(
     search_config=SearchConfig(
         n=4,
         search_batch_size=1,
-        seed=0,
     ),
 )
 

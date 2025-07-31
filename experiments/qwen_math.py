@@ -51,7 +51,6 @@ BASE_CONFIG = BaseConfig(
     prm_config=PRM_CONFIG,
     generator_config=Q8_MODEL,
     dataset_config=DatasetConfig(num_samples=100),
-    seed=0,
 )
 
 BEAM_SEARCH_CONFIG = ExperimentConfig(

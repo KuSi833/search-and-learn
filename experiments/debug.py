@@ -27,7 +27,6 @@ BASE_CONFIG = BaseConfig(
     prm_config=TINY_PRM_CONFIG,
     generator_config=TINY_GENERATOR,
     dataset_config=DatasetConfig(num_samples=1),
-    seed=0,
 )
 
 BEAM_SEARCH_CONFIG = ExperimentConfig(
