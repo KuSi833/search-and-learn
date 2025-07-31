@@ -16,15 +16,13 @@
 import logging
 from dataclasses import asdict
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import pyrootutils
 import torch
 import wandb
-from datasets import Dataset
 from torch.profiler import record_function
 from vllm import LLM
-from wandb import Run
 
 from sal.config import (
     BaseConfig,
@@ -34,7 +32,7 @@ from sal.config import (
     PRMConfig,
 )
 from sal.evaluation.evaluate import evaluate
-from sal.models.reward_models import PRM, load_prm
+from sal.models.reward_models import load_prm
 from sal.profiler import Profiler
 from sal.search import beam_search, best_of_n, dvts, qcts
 from sal.utils.data import get_dataset, save_inference_output
@@ -80,10 +78,7 @@ class ExperimentRunner:
         with wandb.init(
             project=experiment_config.wandb_config.project,
             tags=list(experiment_config.wandb_config.tags),
-            config={
-                "base_config": asdict(self.base_config),
-                "experiment_config": asdict(experiment_config),
-            },
+            config=asdict(self.base_config) | asdict(experiment_config),
         ) as run:
             output_dir = self._set_up_output_dir(run.id)
             inference_output_path = (
@@ -188,7 +183,6 @@ class ExperimentRunner:
         pytorch_profiler,
         inference_output_path: Path,
     ):
-        # Reset peak tracking for inference
         torch.cuda.reset_peak_memory_stats()
         pre_inference = self.profiler.get_gpu_memory_gb()
 
