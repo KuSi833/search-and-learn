@@ -1,11 +1,15 @@
-from dataclasses import replace
+from typing import List
+
+from dotenv import load_dotenv
 
 from sal.config import (
+    BaseConfig,
     DatasetConfig,
     ExperimentConfig,
     GeneratorConfig,
     PRMConfig,
     SearchConfig,
+    WandbConfig,
 )
 from sal.test_time_compute import run
 
@@ -38,47 +42,45 @@ SMALLEST_MODEL = GeneratorConfig(
 
 
 # PRM_CONFIG = PRMConfig(path="RLHFlow/Llama3.1-8B-PRM-Deepseek-Data")
-# PRM_CONFIG = PRMConfig(path="Qwen/Qwen2.5-Math-PRM-7B")
-PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
+PRM_CONFIG = PRMConfig(path="Qwen/Qwen2.5-Math-PRM-7B")
+# PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
-# DATASET_CONFIG = DatasetConfig(num_samples=100)
-DATASET_CONFIG = DatasetConfig(num_samples=1)
+WANDB_CONFIG = WandbConfig(tags=set(["qwen_math"]))
+
+BASE_CONFIG = BaseConfig(
+    prm_config=PRM_CONFIG,
+    generator_config=Q8_MODEL,
+    dataset_config=DatasetConfig(num_samples=100),
+    seed=0,
+)
 
 BEAM_SEARCH_CONFIG = ExperimentConfig(
-    prm_config=PRM_CONFIG,
     filter_duplicates=True,
     approach="beam_search",
     search_config=SearchConfig(
         n=4,
         search_batch_size=1,
-        seed=0,
     ),
-    dataset_config=DATASET_CONFIG,
+    wandb_config=WANDB_CONFIG,
 )
 
 BEST_OF_N_CONFIG = ExperimentConfig(
-    # prm_config=PRM_CONFIG,
-    prm_config=PRM_CONFIG,
     filter_duplicates=True,
     sort_completed=True,
     approach="best_of_n",
     search_config=SearchConfig(
         n=4,
         search_batch_size=25,
-        seed=0,
     ),
-    dataset_config=DATASET_CONFIG,
+    wandb_config=WANDB_CONFIG,
 )
 
 if __name__ == "__main__":
-    # config = replace(BEST_OF_N_CONFIG, generator_config=Q8_MODEL)
-    # config = replace(BEAM_SEARCH_CONFIG, generator_config=Q8_MODEL)
-    # config = replace(BEST_OF_N_CONFIG, generator_config=Q4_MODEL)
-    # config = replace(BEAM_SEARCH_CONFIG, generator_config=Q4_MODEL)
-    # config = replace(BEST_OF_N_CONFIG, generator_config=BASE_MODEL)
-    # config = replace(BEAM_SEARCH_CONFIG, generator_config=BASE_MODEL)
-    # config = replace(BEST_OF_N_CONFIG, generator_config=INSTRUCT_MODEL)
-    # config = replace(BEAM_SEARCH_CONFIG, generator_config=INSTRUCT_MODEL)
+    load_dotenv()
 
-    config = replace(BEAM_SEARCH_CONFIG, generator_config=SMALLEST_MODEL)
-    run(config)
+    experiment_configs: List[ExperimentConfig] = []
+
+    experiment_configs.append(BEST_OF_N_CONFIG)
+    experiment_configs.append(BEAM_SEARCH_CONFIG)
+
+    run(BASE_CONFIG, experiment_configs)
