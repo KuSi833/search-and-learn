@@ -1,6 +1,12 @@
 from dataclasses import replace
 
-from sal.config import Config, DatasetConfig, GeneratorConfig, PRMConfig, SearchConfig
+from sal.config import (
+    DatasetConfig,
+    ExperimentConfig,
+    GeneratorConfig,
+    PRMConfig,
+    SearchConfig,
+)
 from sal.test_time_compute import run
 
 MODEL_BASE_PATH = "/vol/bitbucket/km1124/search-and-learn/models"
@@ -38,7 +44,7 @@ PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 # DATASET_CONFIG = DatasetConfig(num_samples=100)
 DATASET_CONFIG = DatasetConfig(num_samples=1)
 
-BEAM_SEARCH_CONFIG = Config(
+BEAM_SEARCH_CONFIG = ExperimentConfig(
     prm_config=PRM_CONFIG,
     filter_duplicates=True,
     approach="beam_search",
@@ -50,7 +56,7 @@ BEAM_SEARCH_CONFIG = Config(
     dataset_config=DATASET_CONFIG,
 )
 
-BEST_OF_N_CONFIG = Config(
+BEST_OF_N_CONFIG = ExperimentConfig(
     # prm_config=PRM_CONFIG,
     prm_config=PRM_CONFIG,
     filter_duplicates=True,

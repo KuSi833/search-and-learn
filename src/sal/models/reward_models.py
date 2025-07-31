@@ -25,7 +25,7 @@ from transformers import (
     PreTrainedTokenizer,
 )
 
-from sal.config import Config, PRMConfig
+from sal.config import ExperimentConfig, PRMConfig
 from sal.models.skywork_o1_prm.io_utils import (
     derive_step_rewards,
     prepare_batch_input_for_model,
@@ -72,7 +72,7 @@ def batched_math_shepherd_inference(
 
 
 class PRM:
-    def __init__(self, search_config: Config, **model_kwargs):
+    def __init__(self, search_config: ExperimentConfig, **model_kwargs):
         self.search_config = search_config
         self.model, self.tokenizer = self.load_model_and_tokenizer(**model_kwargs)
 

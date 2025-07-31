@@ -16,16 +16,25 @@
 import logging
 from dataclasses import asdict
 from pathlib import Path
+from typing import Dict, List, Optional
 
 import pyrootutils
 import torch
 import wandb
+from datasets import Dataset
 from torch.profiler import record_function
 from vllm import LLM
+from wandb import Run
 
-from sal.config import Config
+from sal.config import (
+    BaseConfig,
+    DatasetConfig,
+    ExperimentConfig,
+    GeneratorConfig,
+    PRMConfig,
+)
 from sal.evaluation.evaluate import evaluate
-from sal.models.reward_models import load_prm
+from sal.models.reward_models import PRM, load_prm
 from sal.profiler import Profiler
 from sal.search import beam_search, best_of_n, dvts, qcts
 from sal.utils.data import get_dataset, save_inference_output
@@ -48,138 +57,183 @@ APPROACHES = {
 }
 
 
-class TestTimeComputeRunner:
-    def __init__(self, config: Config):
-        self.config = config
+class ExperimentRunner:
+    def __init__(self, base_config: BaseConfig):
+        self.base_config = base_config
 
         wandb.login(key=get_env_or_throw("WANDB_API_KEY"))
-        self.wandb_run = wandb.init(
-            project=config.wandb_config.project,
-            config=asdict(config),
-            tags=list(config.wandb_config.tags),
-        )
+        self.profiler = Profiler(base_config.profiler_config)
 
-        self.output_dir = self._set_up_output_dir(self.wandb_run.id)
-        self.inference_output_path = (
-            self.output_dir / config.output_config.inference_output_file
-        )
-        self.evaluation_score_path = (
-            self.output_dir / config.output_config.evaluation_score_file
-        )
+    def run_experiments(self, experiment_configs: List[ExperimentConfig]):
+        self.llm = self._load_llm(self.base_config.generator_config)
+        self.maybe_draft_llm = self._maybe_load_draft_llm(self.base_config.draft_config)
+        self.prm = self._load_prm(self.base_config.prm_config)
+        self.dataset = self._load_dataset(self.base_config.dataset_config)
 
-        self.profiler = Profiler(config.profiler_config, self.output_dir)
+        for experiment_config in experiment_configs:
+            self._run_single_experiment(experiment_config)
 
-    def run(self):
-        self.profiler.start_memory_profiling()
-        with self.profiler.get_pytorch_profiler() as prof:
-            self._run_inference(prof)
-        self.profiler.finish_memory_profiling()
+    def _run_single_experiment(
+        self,
+        experiment_config: ExperimentConfig,
+    ):
+        with wandb.init(
+            project=experiment_config.wandb_config.project,
+            tags=list(experiment_config.wandb_config.tags),
+            config={
+                "base_config": asdict(self.base_config),
+                "experiment_config": asdict(experiment_config),
+            },
+        ) as run:
+            output_dir = self._set_up_output_dir(run.id)
+            inference_output_path = (
+                output_dir / self.base_config.output_config.inference_output_file
+            )
+            evaluation_score_path = (
+                output_dir / self.base_config.output_config.evaluation_score_file
+            )
 
-        self._evaluate_score()
-        self._finish()
+            self.profiler.start_memory_profiling()
+            with self.profiler.get_pytorch_profiler() as pytorch_profiler:
+                self._run_inference(
+                    experiment_config,
+                    pytorch_profiler,
+                    inference_output_path,
+                )
+            self.profiler.finish_memory_profiling(run)
 
-    def _set_up_output_dir(self, run_id: str) -> Path:
-        output_dir = root / self.config.output_config.output_dir_base / run_id
-        output_dir.mkdir(parents=True, exist_ok=True)
-        return output_dir
+            self._evaluate_score(inference_output_path, evaluation_score_path)
+            logger.info("Done 🔥!")
 
-    def _evaluate_score(self):
-        logger.info("Evaluating...")
-        evaluate(
-            benchmark=self.config.evaluation_config.benchmark,
-            dataset_path=self.inference_output_path,
-            dataset_col=self.config.evaluation_config.dataset_col,
-            output_file=self.evaluation_score_path,
-        )
+    def _load_llm(self, generator_config: GeneratorConfig):
+        logger.info("Loading LLM...")
 
-    def _run_inference(self, prof):
         torch.cuda.reset_peak_memory_stats()
         baseline = self.profiler.get_total_gpu_memory_gb()
 
-        prof.step()
         with record_function("load_llm"):
-            logger.info("Loading LLM(s)...")
             llm = LLM(
-                model=self.config.generator_config.get_model_path(),
-                gpu_memory_utilization=self.config.generator_config.gpu_memory_utilization,
+                model=generator_config.get_model_path(),
+                gpu_memory_utilization=generator_config.gpu_memory_utilization,
                 enable_prefix_caching=True,
-                seed=self.config.search_config.seed,
+                seed=self.base_config.seed,
                 tensor_parallel_size=1,
-                max_model_len=self.config.generator_config.max_model_len,
+                max_model_len=generator_config.max_model_len,
                 enforce_eager=True,
             )
-            if self.config.draft_config is not None:
-                logger.info("Loading draft LLM...")
-                draft_llm = LLM(
-                    model=self.config.draft_config.get_model_path(),
-                    gpu_memory_utilization=self.config.draft_config.gpu_memory_utilization,
-                    enable_prefix_caching=True,
-                    seed=self.config.search_config.seed,
-                    tensor_parallel_size=1,
-                    max_model_len=self.config.draft_config.max_model_len,
-                    enforce_eager=True,
-                )
+            self.profiler.memory_metrics.baseline_gb = baseline
+            self.profiler.memory_metrics.llm_memory_gb = (
+                self.profiler.get_total_gpu_memory_gb() - baseline
+            )
+        return llm
 
-            llm_memory = self.profiler.get_total_gpu_memory_gb() - baseline
+    def _maybe_load_draft_llm(
+        self, draft_config: Optional[GeneratorConfig]
+    ) -> Optional[LLM]:
+        if draft_config is None:
+            return None
 
-        prof.step()
+        logger.info("Loading draft LLM...")
+        with record_function("load_draft_llm"):
+            draft_llm = LLM(
+                model=draft_config.get_model_path(),
+                gpu_memory_utilization=draft_config.gpu_memory_utilization,
+                enable_prefix_caching=True,
+                seed=self.base_config.seed,
+                tensor_parallel_size=1,
+                max_model_len=draft_config.max_model_len,
+                enforce_eager=True,
+            )
+
+            baseline = (
+                self.profiler.memory_metrics.baseline_gb
+                + self.profiler.memory_metrics.llm_memory_gb
+            )
+            self.profiler.memory_metrics.draft_llm_memory_gb = (
+                self.profiler.get_total_gpu_memory_gb() - baseline
+            )
+        return draft_llm
+
+    def _load_prm(self, prm_config: PRMConfig):
         with record_function("load_prm"):
             logger.info("Loading PRM...")
-            prm = load_prm(self.config.prm_config)
-            prm_memory = self.profiler.get_total_gpu_memory_gb() - baseline - llm_memory
+            prm = load_prm(prm_config)
 
-        prof.step()
+            baseline = (
+                self.profiler.memory_metrics.baseline_gb
+                + self.profiler.memory_metrics.llm_memory_gb
+            )
+            if self.profiler.memory_metrics.draft_llm_memory_gb is not None:
+                baseline += self.profiler.memory_metrics.draft_llm_memory_gb
+
+            self.profiler.memory_metrics.prm_memory_gb = (
+                self.profiler.get_total_gpu_memory_gb() - baseline
+            )
+
+        return prm
+
+    def _load_dataset(self, dataset_config: DatasetConfig):
         with record_function("load_dataset"):
             logger.info("Loading dataset...")
-            dataset = get_dataset(self.config.dataset_config)
+            return get_dataset(dataset_config)
 
+    def _set_up_output_dir(self, run_id: str) -> Path:
+        output_dir = root / self.base_config.output_config.output_dir_base / run_id
+        output_dir.mkdir(parents=True, exist_ok=True)
+        return output_dir
+
+    def _run_inference(
+        self,
+        experiment_config: ExperimentConfig,
+        pytorch_profiler,
+        inference_output_path: Path,
+    ):
         # Reset peak tracking for inference
         torch.cuda.reset_peak_memory_stats()
         pre_inference = self.profiler.get_gpu_memory_gb()
 
-        prof.step()
+        pytorch_profiler.step()
         with record_function("inference"):
             logger.info("Running inference...")
-            approach_fn = APPROACHES[self.config.approach]
+            approach_fn = APPROACHES[experiment_config.approach]
 
-            fn_kwargs = {"config": self.config, "prm": prm}
-            if self.config.draft_config is not None:
-                fn_kwargs.update({"target_llm": llm, "draft_llm": draft_llm})
+            fn_kwargs = {"experiment_config": experiment_config, "prm": self.prm}
+            if self.maybe_draft_llm is not None:
+                fn_kwargs.update(
+                    {"target_llm": self.llm, "draft_llm": self.maybe_draft_llm}
+                )
             else:
-                fn_kwargs["llm"] = llm
-            dataset = dataset.map(
+                fn_kwargs["llm"] = self.llm
+            dataset = self.dataset.map(
                 approach_fn,
                 batched=True,
-                batch_size=self.config.search_config.search_batch_size,
+                batch_size=experiment_config.search_config.search_batch_size,
                 fn_kwargs=fn_kwargs,
                 desc="Running search",
                 load_from_cache_file=False,
             )
 
             inference_overhead = self.profiler.get_peak_gpu_memory_gb() - pre_inference
+            self.profiler.memory_metrics.inference_overhead_gb = inference_overhead
 
-        prof.step()
+        pytorch_profiler.step()
         with record_function("scoring"):
             logger.info("Scoring...")
-            dataset = score(dataset, self.config)
-            save_inference_output(dataset, self.inference_output_path)
+            dataset = score(
+                dataset, experiment_config, self.base_config.output_config.num_proc
+            )
+            save_inference_output(dataset, inference_output_path)
 
-        self.wandb_run.log(
-            {
-                "memory/llm_gb": llm_memory,
-                "memory/prm_gb": prm_memory,
-                "memory/inference_overhead_gb": inference_overhead,
-            }
+    def _evaluate_score(self, inference_output_path: Path, evaluation_score_path: Path):
+        logger.info("Evaluating...")
+        evaluate(
+            benchmark=self.base_config.evaluation_config.benchmark,
+            dataset_path=inference_output_path,
+            dataset_col=self.base_config.evaluation_config.dataset_col,
+            output_file=evaluation_score_path,
         )
-        logger.info(
-            f"Memory - LLM: {llm_memory:.2f}GB, PRM: {prm_memory:.2f}GB, Inference: {inference_overhead:.2f}GB"
-        )
-
-    def _finish(self):
-        logger.info("Done 🔥!")
-        self.wandb_run.finish()
 
 
-def run(config: Config):
-    experiment = TestTimeComputeRunner(config)
-    experiment.run()
+def run(base_config: BaseConfig, experiment_configs: List[ExperimentConfig]):
+    experiment_runner = ExperimentRunner(base_config)
+    experiment_runner.run_experiments(experiment_configs)

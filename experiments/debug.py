@@ -3,8 +3,8 @@ from dataclasses import replace
 from dotenv import load_dotenv
 
 from sal.config import (
-    Config,
     DatasetConfig,
+    ExperimentConfig,
     GeneratorConfig,
     PRMConfig,
     SearchConfig,
@@ -23,7 +23,7 @@ TINY_DATASET_CONFIG = DatasetConfig(num_samples=1)
 
 WANDB_CONFIG = WandbConfig(tags=set(["debug"]))
 
-BEAM_SEARCH_CONFIG = Config(
+BEAM_SEARCH_CONFIG = ExperimentConfig(
     prm_config=TINY_PRM_CONFIG,
     filter_duplicates=True,
     approach="beam_search",
@@ -36,7 +36,7 @@ BEAM_SEARCH_CONFIG = Config(
     wandb_config=WANDB_CONFIG,
 )
 
-BEST_OF_N_CONFIG = Config(
+BEST_OF_N_CONFIG = ExperimentConfig(
     prm_config=TINY_PRM_CONFIG,
     filter_duplicates=True,
     sort_completed=True,

@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 from vllm import LLM, SamplingParams
 
-from sal.config import Config
+from sal.config import ExperimentConfig
 from sal.models.reward_models import PRM
 from sal.utils.score import aggregate_scores
 
@@ -16,7 +16,7 @@ logger = logging.getLogger()
 
 def _qcts(
     batch_of_prompts: list[str],
-    config: Config,
+    config: ExperimentConfig,
     target_llm: LLM,
     draft_llm: LLM,
     prm: PRM,
@@ -249,7 +249,7 @@ def _qcts(
     return output
 
 
-def qcts(examples, config: Config, target_llm: LLM, draft_llm: LLM, prm: PRM):
+def qcts(examples, config: ExperimentConfig, target_llm: LLM, draft_llm: LLM, prm: PRM):
     problems = examples["problem"]
     beam_results = _qcts(problems, config, target_llm, draft_llm, prm)
 

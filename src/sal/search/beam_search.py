@@ -20,7 +20,7 @@ import numpy as np
 from tqdm import tqdm
 from vllm import LLM, SamplingParams
 
-from sal.config import Config
+from sal.config import ExperimentConfig
 from sal.models.reward_models import PRM
 from sal.utils.score import aggregate_scores
 
@@ -29,7 +29,9 @@ from .utils import Beam, build_conv, generate_k_steps, last
 logger = logging.getLogger()
 
 
-def _beam_search(batch_of_prompts, config: Config, llm: LLM, prm: PRM) -> list[Beam]:
+def _beam_search(
+    batch_of_prompts, config: ExperimentConfig, llm: LLM, prm: PRM
+) -> list[Beam]:
     sampling_params = SamplingParams(
         temperature=config.search_config.temperature,
         max_tokens=config.search_config.max_tokens,
@@ -208,7 +210,7 @@ def _beam_search(batch_of_prompts, config: Config, llm: LLM, prm: PRM) -> list[B
     return completed_beams
 
 
-def beam_search(examples, config: Config, llm: LLM, prm: PRM):
+def beam_search(examples, config: ExperimentConfig, llm: LLM, prm: PRM):
     problems = examples["problem"]
     beam_results = _beam_search(problems, config, llm, prm)
 

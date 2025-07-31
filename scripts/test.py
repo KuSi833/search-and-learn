@@ -1,9 +1,16 @@
-import wandb
-from sal.config import Config, SearchConfig, DatasetConfig, GeneratorConfig, PRMConfig
 from dataclasses import asdict, replace
-from sal.utils.env import get_env_or_throw
 
+import wandb
 from dotenv import load_dotenv
+
+from sal.config import (
+    DatasetConfig,
+    ExperimentConfig,
+    GeneratorConfig,
+    PRMConfig,
+    SearchConfig,
+)
+from sal.utils.env import get_env_or_throw
 
 load_dotenv()
 
@@ -18,7 +25,7 @@ Q8_MODEL = GeneratorConfig(
 
 PRM_CONFIG = PRMConfig(path="RLHFlow/Llama3.1-8B-PRM-Deepseek-Data")
 
-BEAM_SEARCH_CONFIG = Config(
+BEAM_SEARCH_CONFIG = ExperimentConfig(
     prm_config=PRM_CONFIG,
     filter_duplicates=True,
     approach="beam_search",
@@ -32,7 +39,7 @@ BEAM_SEARCH_CONFIG = Config(
     ),
 )
 
-BEST_OF_N_CONFIG = Config(
+BEST_OF_N_CONFIG = ExperimentConfig(
     prm_config=PRM_CONFIG,
     filter_duplicates=True,
     sort_completed=True,
@@ -48,7 +55,7 @@ BEST_OF_N_CONFIG = Config(
 )
 
 
-def main(config: Config):
+def main(config: ExperimentConfig):
     wandb.login(key=get_env_or_throw("WANDB_API_KEY"))
 
     with wandb.init(

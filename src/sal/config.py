@@ -24,7 +24,7 @@ class GeneratorConfig:
     parameter_count: Optional[str] = None
     quantisation: Optional[str] = None
     max_model_len: int = 6144
-    gpu_memory_utilization: float = 0.5,
+    gpu_memory_utilization: float = (0.5,)
 
     def get_model_path(self) -> str:
         if self.base_path is not None:
@@ -76,7 +76,6 @@ class SearchConfig:
     top_p: float = 1.0
     prm_batch_size: int = 4
     search_batch_size: int = 25
-    seed: int = 42
     max_tokens: int = 2048
     agg_strategy: Literal["last", "min", "prod"] = "last"
 
@@ -107,20 +106,30 @@ class EvaluationConfig:
 
 
 @dataclass
-class Config:
+class BaseConfig:
+    """Configuration that remains constant across all experiments"""
+
     dataset_config: DatasetConfig = field(default_factory=DatasetConfig)
     evaluation_config: EvaluationConfig = field(default_factory=EvaluationConfig)
     output_config: OutputConfig = field(default_factory=OutputConfig)
-    wandb_config: WandbConfig = field(default_factory=WandbConfig)
     profiler_config: ProfilerConfig = field(default_factory=ProfilerConfig)
+
+    # potentially might want to make this expriment config in the future?
+    generator_config: GeneratorConfig = field(default_factory=GeneratorConfig)
+    draft_config: Optional[GeneratorConfig] = None
+    prm_config: PRMConfig = field(default_factory=PRMConfig)
+    seed: int = 42
+
+
+@dataclass
+class ExperimentConfig:
+    """Configuration that varies between experiments"""
+
+    wandb_config: WandbConfig = field(default_factory=WandbConfig)
 
     search_config: SearchConfig = field(default_factory=SearchConfig)
     beam_search_config: BeamSearchConfig = field(default_factory=BeamSearchConfig)
     qcconfig: QCConfig = field(default_factory=QCConfig)
-
-    generator_config: GeneratorConfig = field(default_factory=GeneratorConfig)
-    draft_config: Optional[GeneratorConfig] = None
-    prm_config: PRMConfig = field(default_factory=PRMConfig)
 
     approach: Literal["best_of_n", "beam_search", "dvts", "qcts"] = "best_of_n"
 

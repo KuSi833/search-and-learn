@@ -18,12 +18,12 @@ import torch.profiler
 from torch.profiler import record_function
 from vllm import LLM, SamplingParams
 
-from sal.config import Config
+from sal.config import ExperimentConfig
 from sal.models.reward_models import PRM
 from sal.utils.score import aggregate_scores
 
 
-def best_of_n(x, config: Config, llm: LLM, prm: PRM):
+def best_of_n(x, config: ExperimentConfig, llm: LLM, prm: PRM):
     tokenizer = llm.get_tokenizer()
 
     convs = [

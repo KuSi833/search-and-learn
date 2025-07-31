@@ -21,7 +21,7 @@ import numpy as np
 from tqdm import tqdm
 from vllm import LLM, SamplingParams
 
-from sal.config import Config
+from sal.config import ExperimentConfig
 from sal.models.reward_models import PRM
 from sal.utils.score import aggregate_scores
 
@@ -30,7 +30,7 @@ from .utils import Beam, build_conv, generate_k_steps
 logger = logging.getLogger()
 
 
-def _dvts(batch_of_prompts: list[str], config: Config, llm: LLM, prm: PRM):
+def _dvts(batch_of_prompts: list[str], config: ExperimentConfig, llm: LLM, prm: PRM):
     sampling_params = SamplingParams(
         temperature=config.search_config.temperature,
         max_tokens=2048,
@@ -171,7 +171,7 @@ def _dvts(batch_of_prompts: list[str], config: Config, llm: LLM, prm: PRM):
     return output
 
 
-def dvts(examples, config: Config, llm: LLM, prm: PRM):
+def dvts(examples, config: ExperimentConfig, llm: LLM, prm: PRM):
     problems = examples["problem"]
     beam_results = _dvts(problems, config, llm, prm)
 

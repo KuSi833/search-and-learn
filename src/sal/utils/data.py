@@ -15,7 +15,7 @@ from pathlib import Path
 
 from datasets import Dataset, load_dataset
 
-from sal.config import Config, DatasetConfig
+from sal.config import DatasetConfig, ExperimentConfig
 
 logger = logging.getLogger()
 

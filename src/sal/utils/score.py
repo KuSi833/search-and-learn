@@ -15,12 +15,12 @@
 
 
 import math
-from typing import Literal
+from typing import Literal, Optional
 
 from datasets import Dataset
 from tqdm import tqdm
 
-from sal.config import Config
+from sal.config import ExperimentConfig
 from sal.utils.math import (
     compute_maj_pred,
     compute_naive_pred,
@@ -43,42 +43,46 @@ def aggregate_scores(
         raise ValueError(f"Invalid aggregation strategy: {agg_strategy}")
 
 
-def score(dataset: Dataset, config: Config) -> Dataset:
+def score(
+    dataset: Dataset, experiment_config: ExperimentConfig, num_proc: Optional[int]
+) -> Dataset:
     dataset = dataset.map(
         lambda x: {"agg_scores": [aggregate_scores(s, "last") for s in x["scores"]]}
     )
     subsets = [
-        2**i for i in range(config.search_config.n) if 2**i <= config.search_config.n
+        2**i
+        for i in range(experiment_config.search_config.n)
+        if 2**i <= experiment_config.search_config.n
     ]
     for n in tqdm(subsets, desc="Computing majority & weighted predictions"):
         dataset = dataset.map(
             subsample_completions,
             fn_kwargs={"n": n},
-            num_proc=config.output_config.num_proc,
+            num_proc=num_proc,
             desc=f"Subsample {n}",
         )
         dataset = dataset.map(
             extract_completion_answers,
             fn_kwargs={"n": n},
-            num_proc=config.output_config.num_proc,
+            num_proc=num_proc,
             desc=f"Extract answers {n}",
         )
         dataset = dataset.map(
             compute_weighted_pred,
             fn_kwargs={"n": n},
-            num_proc=config.output_config.num_proc,
+            num_proc=num_proc,
             desc=f"Compute weighted pred {n}",
         )
         dataset = dataset.map(
             compute_maj_pred,
             fn_kwargs={"n": n},
-            num_proc=config.output_config.num_proc,
+            num_proc=num_proc,
             desc=f"Compute majority pred {n}",
         )
         dataset = dataset.map(
             compute_naive_pred,
             fn_kwargs={"n": n},
-            num_proc=config.output_config.num_proc,
+            num_proc=num_proc,
             desc=f"Compute naive pred {n}",
         )
         # Nuke unused columns to keep dataset lean
