@@ -101,7 +101,7 @@ class TestTimeComputeRunner:
             logger.info("Loading LLM(s)...")
             llm = LLM(
                 model=self.config.generator_config.get_model_path(),
-                gpu_memory_utilization=self.config.gpu_memory_utilization,
+                gpu_memory_utilization=self.config.generator_config.gpu_memory_utilization,
                 enable_prefix_caching=True,
                 seed=self.config.search_config.seed,
                 tensor_parallel_size=1,
@@ -112,7 +112,7 @@ class TestTimeComputeRunner:
                 logger.info("Loading draft LLM...")
                 draft_llm = LLM(
                     model=self.config.draft_config.get_model_path(),
-                    gpu_memory_utilization=self.config.gpu_memory_utilization,
+                    gpu_memory_utilization=self.config.draft_config.gpu_memory_utilization,
                     enable_prefix_caching=True,
                     seed=self.config.search_config.seed,
                     tensor_parallel_size=1,
