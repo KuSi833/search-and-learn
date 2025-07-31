@@ -16,15 +16,15 @@ logger = logging.getLogger()
 
 def _qcts(
     batch_of_prompts: list[str],
-    config: ExperimentConfig,
+    experiment_config: ExperimentConfig,
     target_llm: LLM,
     draft_llm: LLM,
     prm: PRM,
 ):
     sampling_params = SamplingParams(
-        temperature=config.search_config.temperature,
+        temperature=experiment_config.search_config.temperature,
         max_tokens=2048,
-        top_p=config.search_config.top_p,
+        top_p=experiment_config.search_config.top_p,
         stop=[
             "\n\n"
         ],  # we consider that a step in the problem is indicated by a double newline
@@ -33,12 +33,12 @@ def _qcts(
     )
 
     # Thresholds for quantised cascade
-    high_threshold = config.qcconfig.high_threshold
-    low_threshold = config.qcconfig.low_threshold  # Prune beam
+    high_threshold = experiment_config.qcconfig.high_threshold
+    low_threshold = experiment_config.qcconfig.low_threshold  # Prune beam
 
     beams: list[Beam] = []
     for prompt in batch_of_prompts:
-        for i in range(config.n_beams):
+        for i in range(experiment_config.n_beams):
             beams.append(
                 Beam(
                     prompt=prompt,
@@ -56,7 +56,7 @@ def _qcts(
             )
 
     for i in tqdm(
-        range(config.beam_search_config.num_iterations),
+        range(experiment_config.beam_search_config.num_iterations),
         desc="Quantised cascade iterations",
     ):
         # generation with draft model (4-bit)
@@ -64,26 +64,26 @@ def _qcts(
         if len(gen_beams) == 0:
             break
 
-        if i == config.beam_search_config.num_iterations - 1:
+        if i == experiment_config.beam_search_config.num_iterations - 1:
             # last iteration, generate to EOS
             sampling_params = SamplingParams(
-                temperature=config.search_config.temperature,
+                temperature=experiment_config.search_config.temperature,
                 max_tokens=2048,
-                top_p=config.search_config.top_p,
+                top_p=experiment_config.search_config.top_p,
                 n=1,
             )
 
         # Step 1: Generate N beams using draft model (4-bit)
         convs = [
-            build_conv(b.prompt, b.current_text, config.system_prompt)
+            build_conv(b.prompt, b.current_text, experiment_config.system_prompt)
             for b in gen_beams
         ]
         continue_final_message = i > 0
         add_generation_prompt = i == 0
 
         tokenizer = draft_llm.get_tokenizer()
-        if config.custom_chat_template is not None:
-            tokenizer.chat_template = config.custom_chat_template
+        if experiment_config.custom_chat_template is not None:
+            tokenizer.chat_template = experiment_config.custom_chat_template
         templated_convs = tokenizer.apply_chat_template(
             convs,
             add_generation_prompt=add_generation_prompt,
@@ -92,15 +92,15 @@ def _qcts(
         )
         lookahead = (
             0
-            if i == config.beam_search_config.num_iterations - 1
-            else config.beam_search_config.lookahead
+            if i == experiment_config.beam_search_config.num_iterations - 1
+            else experiment_config.beam_search_config.lookahead
         )
         draft_gen_results = generate_k_steps(
             templated_convs,
             lookahead,
             draft_llm,
             sampling_params,
-            config.beam_search_config.beam_width,
+            experiment_config.beam_search_config.beam_width,
         )
 
         # Process draft generations
@@ -109,7 +109,7 @@ def _qcts(
             beam.next_texts = gen_result.next_texts
             beam.stop_reasons = gen_result.stop_reasons
             beam.lookahead_texts = gen_result.lookahead_texts
-            if len(beam.next_texts) != config.beam_search_config.beam_width:
+            if len(beam.next_texts) != experiment_config.beam_search_config.beam_width:
                 beam.pruned = True
                 logger.warning(
                     f"beam {beam.index} has {len(beam.next_texts)} completions"
@@ -129,7 +129,8 @@ def _qcts(
             zip(gen_beams, draft_scores, strict=True)
         ):
             agg_scores = [
-                aggregate_scores(s, config.search_config.agg_strategy) for s in scores
+                aggregate_scores(s, experiment_config.search_config.agg_strategy)
+                for s in scores
             ]
             best_score_ind = np.argmax(agg_scores)
             best_score = agg_scores[best_score_ind]
@@ -152,13 +153,13 @@ def _qcts(
         if upgrade_indices:
             upgrade_beams = [gen_beams[idx] for idx in upgrade_indices]
             upgrade_convs = [
-                build_conv(b.prompt, b.current_text, config.system_prompt)
+                build_conv(b.prompt, b.current_text, experiment_config.system_prompt)
                 for b in upgrade_beams
             ]
 
             target_tokenizer = target_llm.get_tokenizer()
-            if config.custom_chat_template is not None:
-                target_tokenizer.chat_template = config.custom_chat_template
+            if experiment_config.custom_chat_template is not None:
+                target_tokenizer.chat_template = experiment_config.custom_chat_template
             target_templated_convs = target_tokenizer.apply_chat_template(
                 upgrade_convs,
                 add_generation_prompt=add_generation_prompt,
@@ -171,7 +172,7 @@ def _qcts(
                 lookahead,
                 target_llm,
                 sampling_params,
-                config.beam_search_config.beam_width,
+                experiment_config.beam_search_config.beam_width,
             )
 
             # Process target model generations
@@ -191,7 +192,7 @@ def _qcts(
             # Update upgrade beams with target model results
             for beam, scores in zip(upgrade_beams, target_scores, strict=True):
                 agg_scores = [
-                    aggregate_scores(s, config.search_config.agg_strategy)
+                    aggregate_scores(s, experiment_config.search_config.agg_strategy)
                     for s in scores
                 ]
                 best_score_ind = np.argmax(agg_scores)
@@ -221,7 +222,10 @@ def _qcts(
     for beam in beams:
         if beam.next_texts:
             for i in range(
-                min(len(beam.next_texts), config.beam_search_config.beam_width)
+                min(
+                    len(beam.next_texts),
+                    experiment_config.beam_search_config.beam_width,
+                )
             ):
                 output.append(
                     Beam(
@@ -249,9 +253,15 @@ def _qcts(
     return output
 
 
-def qcts(examples, config: ExperimentConfig, target_llm: LLM, draft_llm: LLM, prm: PRM):
+def qcts(
+    examples,
+    experiment_config: ExperimentConfig,
+    target_llm: LLM,
+    draft_llm: LLM,
+    prm: PRM,
+):
     problems = examples["problem"]
-    beam_results = _qcts(problems, config, target_llm, draft_llm, prm)
+    beam_results = _qcts(problems, experiment_config, target_llm, draft_llm, prm)
 
     # group together alike beams and store in the dataset
     grouped_results = defaultdict(list)
@@ -268,7 +278,7 @@ def qcts(examples, config: ExperimentConfig, target_llm: LLM, draft_llm: LLM, pr
                 np.argmax(
                     [
                         aggregate_scores(
-                            b.best_scores, config.search_config.agg_strategy
+                            b.best_scores, experiment_config.search_config.agg_strategy
                         )
                         for b in beams
                     ]

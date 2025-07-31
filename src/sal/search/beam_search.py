@@ -210,9 +210,9 @@ def _beam_search(
     return completed_beams
 
 
-def beam_search(examples, config: ExperimentConfig, llm: LLM, prm: PRM):
+def beam_search(examples, experiment_config: ExperimentConfig, llm: LLM, prm: PRM):
     problems = examples["problem"]
-    beam_results = _beam_search(problems, config, llm, prm)
+    beam_results = _beam_search(problems, experiment_config, llm, prm)
 
     # Group together alike beams and store in the dataset
     grouped_results = defaultdict(list)
@@ -225,7 +225,7 @@ def beam_search(examples, config: ExperimentConfig, llm: LLM, prm: PRM):
         beams = grouped_results[p]
         completions = [b.current_text for b in beams]
         agg_scores = [
-            aggregate_scores(b.all_scores, config.search_config.agg_strategy)
+            aggregate_scores(b.all_scores, experiment_config.search_config.agg_strategy)
             for b in beams
         ]
         pred = completions[np.argmax(agg_scores)]
