@@ -284,7 +284,7 @@ export VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
 export NCCL_P2P_DISABLE=1
 
 echo "Running main file"
-python experiments/debug.py
+python experiments/qwen_math.py
 """
         connection.put(
             StringIO(job_script_content), f"{config.remote_config.remote_root}/job.sh"
