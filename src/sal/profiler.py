@@ -6,7 +6,6 @@ from pathlib import Path
 import pynvml
 import torch
 from git import Optional
-from wandb import Run
 
 from .config import ProfilerConfig
 
@@ -67,7 +66,7 @@ class Profiler:
                 max_entries=self.config.memory_max_entries
             )
 
-    def finish_memory_profiling(self, run: Run):
+    def finish_memory_profiling(self, run):
         if self.config.profile_memory:
             torch.cuda.memory._dump_snapshot(str(self._get_memory_snapshot_path()))
             torch.cuda.memory._record_memory_history(enabled=None)

@@ -1,4 +1,5 @@
-from dataclasses import replace
+import copy
+from typing import List
 
 from dotenv import load_dotenv
 
@@ -24,6 +25,7 @@ WANDB_CONFIG = WandbConfig(tags=set(["debug"]))
 
 BASE_CONFIG = BaseConfig(
     prm_config=TINY_PRM_CONFIG,
+    generator_config=TINY_GENERATOR,
     dataset_config=DatasetConfig(num_samples=1),
     seed=0,
 )
@@ -38,7 +40,7 @@ BEAM_SEARCH_CONFIG = ExperimentConfig(
     wandb_config=WANDB_CONFIG,
 )
 
-BEST_OF_N_CONFIG = ExperimentConfig(
+BASE_BEST_OF_N_CONFIG = ExperimentConfig(
     filter_duplicates=True,
     sort_completed=True,
     approach="best_of_n",
@@ -52,5 +54,12 @@ BEST_OF_N_CONFIG = ExperimentConfig(
 if __name__ == "__main__":
     load_dotenv()
 
-    experiment_config = replace(BEAM_SEARCH_CONFIG, generator_config=TINY_GENERATOR)
-    run(BASE_CONFIG, [experiment_config])
+    experiment_configs: List[ExperimentConfig] = []
+
+    for n in [2, 4]:
+        experiment_copy = copy.deepcopy(BASE_BEST_OF_N_CONFIG)
+        experiment_copy.search_config.n = n
+
+        experiment_configs.append(experiment_copy)
+
+    run(BASE_CONFIG, experiment_configs)
