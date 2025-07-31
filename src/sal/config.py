@@ -132,7 +132,7 @@ class Config:
     sort_completed: bool = False
 
     def __post_init__(self):
-        if self.approach == "dvts":
+        if self.approach in ["dvts", "qcts"]:
             if self.search_config.n % self.beam_search_config.beam_width != 0:
                 raise ValueError("n should be a multiple of beam_width")
             self.n_beams = self.search_config.n // self.beam_search_config.beam_width

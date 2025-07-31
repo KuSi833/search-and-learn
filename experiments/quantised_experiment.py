@@ -39,20 +39,20 @@ Q4_MODEL = GeneratorConfig(
 )
 
 # COMMENT FOR REAL TEST
-SMALLEST_MODEL = GeneratorConfig(
-    name="Qwen/Qwen2-Math-1.5B-Instruct",
-    parameter_count="1.5B",
-    gpu_memory_utilization = 0.3,
-)
-Q8_MODEL = SMALLEST_MODEL
-Q4_MODEL = SMALLEST_MODEL
+# SMALLEST_MODEL = GeneratorConfig(
+#     name="Qwen/Qwen2-Math-1.5B-Instruct",
+#     parameter_count="1.5B",
+#     gpu_memory_utilization = 0.4,
+# )
+# Q8_MODEL = SMALLEST_MODEL
+# Q4_MODEL = SMALLEST_MODEL
 
 
 # PRM_CONFIG = PRMConfig(path="RLHFlow/Llama3.1-8B-PRM-Deepseek-Data")
 PRM_CONFIG = PRMConfig(path="Qwen/Qwen2.5-Math-PRM-7B")
 
-# DATASET_CONFIG = DatasetConfig(num_samples=100)
-DATASET_CONFIG = DatasetConfig(num_samples=1)
+DATASET_CONFIG = DatasetConfig(num_samples=100)
+# DATASET_CONFIG = DatasetConfig(num_samples=1)
 
 QC_CONFIG = Config(
     prm_config=PRM_CONFIG,
