@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import logging
+import time
 from dataclasses import asdict
 from pathlib import Path
 from typing import List, Optional
@@ -198,6 +199,8 @@ class ExperimentRunner:
                 )
             else:
                 fn_kwargs["llm"] = self.llm
+
+            start_time = time.time()
             dataset = self.dataset.map(
                 approach_fn,
                 batched=True,
@@ -206,6 +209,8 @@ class ExperimentRunner:
                 desc="Running search",
                 load_from_cache_file=False,
             )
+            end_time = time.time()
+            self.profiler.inference_runtime = end_time - start_time
 
             inference_overhead = self.profiler.get_peak_gpu_memory_gb() - pre_inference
             self.profiler.memory_metrics.inference_overhead_gb = inference_overhead

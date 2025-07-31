@@ -6,6 +6,7 @@ from pathlib import Path
 import pynvml
 import torch
 from git import Optional
+from wandb.wandb_run import Run
 
 from .config import ProfilerConfig
 
@@ -56,6 +57,7 @@ class Profiler:
     def __init__(self, config: ProfilerConfig):
         self.config = config
         self.memory_metrics = MemoryMetrics()
+        self.inference_runtime: float = 0.0
 
     def set_output_dir(self, output_dir: Path) -> None:
         self.output_dir = output_dir
@@ -66,23 +68,30 @@ class Profiler:
                 max_entries=self.config.memory_max_entries
             )
 
-    def finish_memory_profiling(self, run):
+    def finish_memory_profiling(self, run: Run):
         if self.config.profile_memory:
             torch.cuda.memory._dump_snapshot(str(self._get_memory_snapshot_path()))
             torch.cuda.memory._record_memory_history(enabled=None)
 
         run.log(self.memory_metrics.to_wandb_dict())
+        run.log({"runtime/inference_runtime": self.inference_runtime})
 
-        draft_info = (
-            f", Draft LLM: {self.memory_metrics.draft_llm_memory_gb:.2f}GB"
-            if self.memory_metrics.draft_llm_memory_gb is not None
-            else ""
-        )
-        logger.info(
-            f"Memory - LLM: {self.memory_metrics.llm_memory_gb:.2f}GB, "
-            f"PRM: {self.memory_metrics.prm_memory_gb:.2f}GB{draft_info}, "
+        memory_info = [
+            f"LLM: {self.memory_metrics.llm_memory_gb:.2f}GB",
+            f"PRM: {self.memory_metrics.prm_memory_gb:.2f}GB",
+        ]
+
+        if self.memory_metrics.draft_llm_memory_gb is not None:
+            memory_info.append(
+                f"Draft LLM: {self.memory_metrics.draft_llm_memory_gb:.2f}GB"
+            )
+
+        memory_info.append(
             f"Inference: {self.memory_metrics.inference_overhead_gb:.2f}GB"
         )
+
+        logger.info(f"Memory - {', '.join(memory_info)}")
+        logger.info(f"Inference Runtime: {self.inference_runtime}")
 
     def get_pytorch_profiler(self):
         if self.config.profile_operations:
