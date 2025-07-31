@@ -82,6 +82,8 @@ class ExperimentRunner:
             config=asdict(self.base_config) | asdict(experiment_config),
         ) as run:
             output_dir = self._set_up_output_dir(run.id)
+            # TODO: could probably do this better with the profiler output dir
+            self.profiler.set_output_dir(output_dir)
             inference_output_path = (
                 output_dir / self.base_config.output_config.inference_output_file
             )
