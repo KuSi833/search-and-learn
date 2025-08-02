@@ -34,8 +34,8 @@ class RunConfig:
     wandb_api_key: str
     github_token: str
     commit_hash: str
-    # file_path: str = "experiments/qwen_math.py"  # path to file to run from project root
-    file_path: str = "experiments/expand.py"
+    file_path: str = "experiments/qwen_math.py"  # path to file to run from project root
+    # file_path: str = "experiments/expand.py"
 
 
 @dataclass
@@ -142,7 +142,8 @@ export VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
 export NCCL_P2P_DISABLE=1
 
 echo "Running main file"
-python {config.run_config.file_path}
+# python {config.run_config.file_path}
+python experiments/expand.py
 """
 
 
