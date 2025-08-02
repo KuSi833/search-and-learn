@@ -71,7 +71,7 @@ class PbsJobConfig:
     ncpus: int = 4
     memory: str = "24gb"
     gpu_type: str = "L40S"  # Empty string means any GPU type
-    walltime: str = "01:00:00"  # HH:MM:SS format
+    walltime: str = "05:00:00"  # HH:MM:SS format
     queue: str = "v1_gpu72"
     job_name: str = "qtts"
     output: str = "./logs/pbs-%j.log"
