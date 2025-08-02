@@ -55,15 +55,15 @@ APPROACHES = {
     "qcts": qcts,
 }
 
-SEARCH_WIDTH = 30
+SEARCH_WIDTH = 86400
 
 
 class ExperimentRunner:
     def __init__(self, base_config: BaseConfig):
         self.base_config = base_config
 
-        wandb.login(key=get_env_or_throw("WANDB_API_KEY"))
-        self.profiler = Profiler(base_config.profiler_config)
+        # wandb.login(key=get_env_or_throw("WANDB_API_KEY"))
+        # self.profiler = Profiler(base_config.profiler_config)
 
     def run_experiments(self, experiment_configs: List[ExperimentConfig]):
         # self.llm = self._load_llm(self.base_config.generator_config)
