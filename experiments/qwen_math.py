@@ -1,5 +1,6 @@
 from typing import List
 
+import pyrootutils
 from dotenv import load_dotenv
 
 from sal.config import (
@@ -13,7 +14,9 @@ from sal.config import (
 )
 from sal.test_time_compute import run
 
-MODEL_BASE_PATH = "/vol/bitbucket/km1124/search-and-learn/models"
+root = pyrootutils.find_root(indicator="pyproject.toml")
+
+MODEL_BASE_PATH = root / "models"
 
 INSTRUCT_MODEL = GeneratorConfig(
     name="Qwen/Qwen2.5-Math-7B-Instruct",

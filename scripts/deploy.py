@@ -211,7 +211,7 @@ def get_remote_config(scheduler: Scheduler) -> RemoteConfig:
             case Scheduler.PBS:
                 remote_config = RemoteConfig(
                     username=get_env_or_throw("USERNAME"),
-                    hostname=get_env_or_throw("HOSTNAME"),
+                    hostname=get_env_or_throw("HOSTNAME_PBS"),
                     remote_root=get_env_or_throw("REMOTE_ROOT_PBS"),
                 )
     console.print("[green]✔ Env variables validated")
@@ -432,9 +432,22 @@ def submit_slurm_job(config: DeployConfig, tail_output=True):
 
 
 def submit_pbs_job(config: DeployConfig, tail_output=True):
+    # Get password from pass command
+    password = subprocess.check_output(["pass", "show", "imperial"], text=True).strip()
+
     with console.status("[yellow]Connecting to remote...", spinner="dots"):
-        c = Connection(config.remote_config.hostname)
-    console.print(f"︎[green]✔︎ Connected to {config.remote_config.hostname}")
+        gateway = Connection("imperial", user="km1124")
+        c = Connection(
+            user=config.remote_config.username,
+            host=config.remote_config.hostname,
+            gateway=gateway,
+            connect_kwargs={
+                "password": password,
+                "look_for_keys": False,
+                "allow_agent": False,
+            },
+        )
+    console.print(f"︎[green]✔︎ Connected to cx3")
 
     # Write the PBS job script
     write_pbs_jobscript(c, config)
@@ -442,7 +455,7 @@ def submit_pbs_job(config: DeployConfig, tail_output=True):
     with c.cd(config.remote_config.remote_root):
         with console.status("[yellow]Submitting job to PBS...", spinner="dots"):
             result = c.run(
-                f"qsub "
+                f"/opt/pbs/bin/qsub "
                 f"-v WANDB_API_KEY='{config.run_config.wandb_api_key}',"
                 f"GITHUB_TOKEN='{config.run_config.github_token}',"
                 f"COMMIT_HASH='{config.run_config.commit_hash}' "
