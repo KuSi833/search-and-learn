@@ -66,10 +66,10 @@ class ExperimentRunner:
         self.profiler = Profiler(base_config.profiler_config)
 
     def run_experiments(self, experiment_configs: List[ExperimentConfig]):
-        self.llm = self._load_llm(self.base_config.generator_config)
-        self.maybe_draft_llm = self._maybe_load_draft_llm(self.base_config.draft_config)
-        self.prm = self._load_prm(self.base_config.prm_config)
-        self.dataset = self._load_dataset(self.base_config.dataset_config)
+        # self.llm = self._load_llm(self.base_config.generator_config)
+        # self.maybe_draft_llm = self._maybe_load_draft_llm(self.base_config.draft_config)
+        # self.prm = self._load_prm(self.base_config.prm_config)
+        # self.dataset = self._load_dataset(self.base_config.dataset_config)
 
         for experiment_config in experiment_configs:
             self._run_single_experiment2(experiment_config)
