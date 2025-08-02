@@ -34,7 +34,8 @@ class RunConfig:
     wandb_api_key: str
     github_token: str
     commit_hash: str
-    file_path: str = "experiments/qwen_math.py"  # path to file to run from project root
+    # file_path: str = "experiments/qwen_math.py"  # path to file to run from project root
+    file_path: str = "experiments/expand.py"
 
 
 @dataclass
@@ -70,7 +71,7 @@ class SlurmJobConfig:
 class PbsJobConfig:
     ncpus: int = 4
     memory: str = "24gb"
-    gpu_type: str = "L40S"  # Empty string means any GPU type
+    gpu_type: str = "L40S"  # Default to L40S GPU type
     walltime: str = "05:00:00"  # HH:MM:SS format
     queue: str = "v1_gpu72"
     job_name: str = "qtts"
@@ -154,7 +155,7 @@ def get_pbs_job_header(config: PbsJobConfig) -> str:
     """Generate PBS-specific job header."""
     # Build select statement for 1 node, 1 GPU
     select_statement = f"select=1:ncpus={config.ncpus}:mem={config.memory}:ngpus=1"
-    if config.gpu_type:
+    if config.gpu_type != "any":
         select_statement += f":gpu_type={config.gpu_type}"
 
     return f"""#!/bin/bash
@@ -198,23 +199,31 @@ def write_pbs_jobscript(connection, config: DeployConfig) -> None:
     )
 
 
-def get_remote_config(scheduler: Scheduler) -> RemoteConfig:
-    """Get base configuration from environment variables."""
-    with console.status("[yellow]Validating remote env variables...", spinner="dots"):
-        match scheduler:
-            case Scheduler.SLURM:
-                remote_config = RemoteConfig(
-                    username=get_env_or_throw("USERNAME"),
-                    hostname=get_env_or_throw("HOSTNAME"),
-                    remote_root=get_env_or_throw("REMOTE_ROOT"),
-                )
-            case Scheduler.PBS:
-                remote_config = RemoteConfig(
-                    username=get_env_or_throw("USERNAME"),
-                    hostname=get_env_or_throw("HOSTNAME_PBS"),
-                    remote_root=get_env_or_throw("REMOTE_ROOT_PBS"),
-                )
-    console.print("[green]✔ Env variables validated")
+def get_slurm_remote_config() -> RemoteConfig:
+    """Get SLURM configuration from environment variables."""
+    with console.status(
+        "[yellow]Validating SLURM remote env variables...", spinner="dots"
+    ):
+        remote_config = RemoteConfig(
+            username=get_env_or_throw("USERNAME"),
+            hostname=get_env_or_throw("HOSTNAME"),
+            remote_root=get_env_or_throw("REMOTE_ROOT"),
+        )
+    console.print("[green]✔ SLURM env variables validated")
+    return remote_config
+
+
+def get_pbs_remote_config() -> RemoteConfig:
+    """Get PBS configuration from environment variables."""
+    with console.status(
+        "[yellow]Validating PBS remote env variables...", spinner="dots"
+    ):
+        remote_config = RemoteConfig(
+            username=get_env_or_throw("USERNAME"),
+            hostname=get_env_or_throw("HOSTNAME_PBS"),
+            remote_root=get_env_or_throw("REMOTE_ROOT_PBS"),
+        )
+    console.print("[green]✔ PBS env variables validated")
     return remote_config
 
 
@@ -249,7 +258,7 @@ PARTITION_MAP = {
 }
 
 
-@cli.command()
+@cli.command("submit-slurm")
 @click.option(
     "--partition",
     default="A100",
@@ -258,40 +267,48 @@ PARTITION_MAP = {
 )
 @click.option("--commit-hash", required=False, help="Hash of commit to submit as a job")
 @click.option("--tail/--no-tail", default=True, help="Whether to tail the output log")
-@click.option(
-    "--scheduler",
-    default="slurm",
-    help="Job scheduler to use (default: slurm)",
-    type=click.Choice([s.value for s in Scheduler]),
-)
-def submit(
+def submit_slurm(
     commit_hash: str,
     partition: str,
     tail: bool,
-    scheduler: str,
 ):
-    """Submit a new job to SLURM or PBS scheduler."""
-    scheduler = Scheduler(scheduler)
-    remote_config = get_remote_config(scheduler)
+    """Submit a new job to SLURM scheduler."""
+    remote_config = get_slurm_remote_config()
     run_config = get_run_config(commit_hash)
 
-    match scheduler:
-        case Scheduler.SLURM:
-            slurm_config = SlurmJobConfig(partition=PARTITION_MAP[partition])
-            config = DeployConfig(
-                run_config=run_config,
-                remote_config=remote_config,
-                slurm_config=slurm_config,
-            )
-            submit_slurm_job(config, tail_output=tail)
-        case Scheduler.PBS:
-            pbs_config = PbsJobConfig()
-            config = DeployConfig(
-                run_config=run_config,
-                remote_config=remote_config,
-                pbs_config=pbs_config,
-            )
-            submit_pbs_job(config, tail_output=tail)
+    slurm_config = SlurmJobConfig(partition=PARTITION_MAP[partition])
+    config = DeployConfig(
+        run_config=run_config,
+        remote_config=remote_config,
+        slurm_config=slurm_config,
+    )
+    submit_slurm_job(config, tail_output=tail)
+
+
+@cli.command("submit-pbs")
+@click.option("--commit-hash", required=False, help="Hash of commit to submit as a job")
+@click.option("--tail/--no-tail", default=True, help="Whether to tail the output log")
+@click.option(
+    "--gpu-type",
+    default="L40S",
+    help="GPU type to request (default: L40S). Leave empty for any GPU type.",
+)
+def submit_pbs(
+    commit_hash: str,
+    tail: bool,
+    gpu_type: str,
+):
+    """Submit a new job to PBS scheduler."""
+    remote_config = get_pbs_remote_config()
+    run_config = get_run_config(commit_hash)
+
+    pbs_config = PbsJobConfig(gpu_type=gpu_type)
+    config = DeployConfig(
+        run_config=run_config,
+        remote_config=remote_config,
+        pbs_config=pbs_config,
+    )
+    submit_pbs_job(config, tail_output=tail)
 
 
 def _prompt_commit_info(commit_hash: str) -> None:
