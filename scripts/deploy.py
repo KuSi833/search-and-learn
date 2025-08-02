@@ -75,7 +75,7 @@ class PbsJobConfig:
     walltime: str = "05:00:00"  # HH:MM:SS format
     queue: str = "v1_gpu72"
     job_name: str = "qtts"
-    output: str = "./logs/pbs-%j.log"
+    output: str = "./logs/log.log"
 
 
 @dataclass
