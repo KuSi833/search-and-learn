@@ -91,13 +91,21 @@ class Scheduler(str, Enum):
     PBS = "pbs"
 
 
-def get_common_job_script_body(config: DeployConfig) -> str:
-    """Generate the common body of job scripts shared between SLURM and PBS."""
-    return f"""
+def get_slurm_job_script(config: DeployConfig) -> str:
+    """Generate complete SLURM job script."""
+    return f"""#!/bin/bash
+#SBATCH --nodes={config.slurm_config.nodes}
+#SBATCH --ntasks={config.slurm_config.ntasks}
+#SBATCH --partition={config.slurm_config.partition}
+#SBATCH --job-name={config.slurm_config.job_name}
+#SBATCH --output={config.slurm_config.output}
+#SBATCH --cpus-per-task={config.slurm_config.cpus_per_task}
+#SBATCH --gres={config.slurm_config.gres}
+
 # Exit on any error
 set -e
 
-echo "Launching jobscript"
+echo "Launching SLURM jobscript"
 source /vol/cuda/12.0.0/setup.sh
 source .venv/bin/activate
 
@@ -138,36 +146,60 @@ python {config.run_config.file_path}
 """
 
 
-def get_slurm_job_header(config: SlurmJobConfig) -> str:
-    """Generate SLURM-specific job header."""
-    return f"""#!/bin/bash
-#SBATCH --nodes={config.nodes}
-#SBATCH --ntasks={config.ntasks}
-#SBATCH --partition={config.partition}
-#SBATCH --job-name={config.job_name}
-#SBATCH --output={config.output}
-#SBATCH --cpus-per-task={config.cpus_per_task}
-#SBATCH --gres={config.gres}
-"""
-
-
-def get_pbs_job_header(config: PbsJobConfig) -> str:
-    """Generate PBS-specific job header."""
+def get_pbs_job_script(config: DeployConfig) -> str:
+    """Generate complete PBS job script."""
     # Build select statement for 1 node, 1 GPU
-    select_statement = f"select=1:ncpus={config.ncpus}:mem={config.memory}:ngpus=1"
-    if config.gpu_type != "any":
-        select_statement += f":gpu_type={config.gpu_type}"
+    select_statement = f"select=1:ncpus={config.pbs_config.ncpus}:mem={config.pbs_config.memory}:ngpus=1"
+    if config.pbs_config.gpu_type != "any":
+        select_statement += f":gpu_type={config.pbs_config.gpu_type}"
 
     return f"""#!/bin/bash
 #PBS -l {select_statement}
-#PBS -l walltime={config.walltime}
-#PBS -q {config.queue}
-#PBS -N {config.job_name}
-#PBS -o {config.output}
+#PBS -l walltime={config.pbs_config.walltime}
+#PBS -q {config.pbs_config.queue}
+#PBS -N {config.pbs_config.job_name}
+#PBS -o {config.pbs_config.output}
 #PBS -j oe
 
 # Change to submission directory
 cd $PBS_O_WORKDIR
+
+# Exit on any error
+set -e
+
+echo "Launching PBS jobscript"
+source .venv/bin/activate
+
+echo "Fetching commit with hash $COMMIT_HASH"
+git reset --hard HEAD
+
+git remote set-url origin https://$GITHUB_TOKEN@github.com/KuSi833/search-and-learn.git
+# Fetch with error handling
+echo "Fetching latest changes..."
+if ! git fetch; then
+    echo "ERROR: Failed to fetch from remote repository"
+    echo "This might be due to SSH key issues or network problems"
+    exit 1
+fi
+
+# Checkout specific commit with error handling
+echo "Checking out commit $COMMIT_HASH..."
+if ! git checkout $COMMIT_HASH; then
+    echo "ERROR: Failed to checkout commit $COMMIT_HASH"
+    echo "Commit may not exist or may not be fetched"
+    exit 1
+fi
+
+echo "Successfully checked out commit $COMMIT_HASH"
+
+# Set VLLM profiling and logging configuration
+export VLLM_TORCH_PROFILER_DIR="./trace"
+# export VLLM_LOGGING_LEVEL="DEBUG"
+export VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
+export NCCL_P2P_DISABLE=1
+
+echo "Running main file"
+python {config.run_config.file_path}
 """
 
 
@@ -175,11 +207,10 @@ def write_slurm_jobscript(connection, config: DeployConfig) -> None:
     with console.status(
         "[yellow]Writing SLURM job script to remote...", spinner="dots"
     ):
-        job_script_content = get_slurm_job_header(
-            config.slurm_config
-        ) + get_common_job_script_body(config)
+        job_script_content = get_slurm_job_script(config)
         connection.put(
-            StringIO(job_script_content), f"{config.remote_config.remote_root}/job.sh"
+            StringIO(job_script_content),
+            f"{config.remote_config.remote_root}/slurm_job.sh",
         )
     console.print(
         f"[green]✔ SLURM job script with commit hash {config.run_config.commit_hash} written to remote"
@@ -188,11 +219,10 @@ def write_slurm_jobscript(connection, config: DeployConfig) -> None:
 
 def write_pbs_jobscript(connection, config: DeployConfig) -> None:
     with console.status("[yellow]Writing PBS job script to remote...", spinner="dots"):
-        job_script_content = get_pbs_job_header(
-            config.pbs_config
-        ) + get_common_job_script_body(config)
+        job_script_content = get_pbs_job_script(config)
         connection.put(
-            StringIO(job_script_content), f"{config.remote_config.remote_root}/job.sh"
+            StringIO(job_script_content),
+            f"{config.remote_config.remote_root}/pbs_job.sh",
         )
     console.print(
         f"[green]✔ PBS job script with commit hash {config.run_config.commit_hash} written to remote"
@@ -428,7 +458,7 @@ def submit_slurm_job(config: DeployConfig, tail_output=True):
                 f"WANDB_API_KEY='{config.run_config.wandb_api_key}',"
                 f"GITHUB_TOKEN='{config.run_config.github_token}',"
                 f"COMMIT_HASH='{config.run_config.commit_hash}' "
-                "job.sh"
+                "slurm_job.sh"
             )
             job_id = result.stdout.strip().split()[-1]
             console.print(f"[green]✔︎ SLURM job submitted with ID: {job_id}")
@@ -476,7 +506,7 @@ def submit_pbs_job(config: DeployConfig, tail_output=True):
                 f"-v WANDB_API_KEY='{config.run_config.wandb_api_key}',"
                 f"GITHUB_TOKEN='{config.run_config.github_token}',"
                 f"COMMIT_HASH='{config.run_config.commit_hash}' "
-                "job.sh"
+                "pbs_job.sh"
             )
             job_id = result.stdout.strip()
             console.print(f"[green]✔︎ PBS job submitted with ID: {job_id}")
