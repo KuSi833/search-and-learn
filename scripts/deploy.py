@@ -193,6 +193,7 @@ fi
 
 echo "Successfully checked out commit $COMMIT_HASH"
 
+export CUDA_VISIBLE_DEVICES=0
 # Set VLLM profiling and logging configuration
 export VLLM_TORCH_PROFILER_DIR="./trace"
 # export VLLM_LOGGING_LEVEL="DEBUG"
