@@ -55,10 +55,7 @@ def _qcts(
                 )
             )
 
-    for i in tqdm(
-        range(experiment_config.beam_search_config.num_iterations),
-        desc="Quantised cascade iterations",
-    ):
+    for i in range(experiment_config.beam_search_config.num_iterations):
         # generation with draft model (4-bit)
         gen_beams = [b for b in beams if not b.pruned]
         if len(gen_beams) == 0:
