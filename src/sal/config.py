@@ -14,12 +14,13 @@
 # limitations under the License.
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Literal, Optional, Set
 
 
 @dataclass
 class GeneratorConfig:
-    base_path: Optional[str] = None  # when set to empty string it assumes hfhub
+    base_path: Optional[Path] = None  # when set to empty string it assumes hfhub
     name: str = "meta-llama/Llama-3.2-1B-Instruct"
     parameter_count: Optional[str] = None
     quantisation: Optional[str] = None
