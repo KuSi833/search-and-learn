@@ -68,7 +68,8 @@ if __name__ == "__main__":
         wandb_config=WANDB_CONFIG,
         search_config=SearchConfig(
             n=4,
-            search_batch_size=1,
+            # search_batch_size=1,
+            search_batch_size=25,
         ),
         qcconfig=QCConfig(
             low_threshold=0.5,
