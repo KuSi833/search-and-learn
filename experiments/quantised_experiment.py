@@ -76,9 +76,9 @@ if __name__ == "__main__":
     )
 
     experiment_configs: List[ExperimentConfig] = []
-    for low_threshold in [0.4, 0.5]:
+    for high_threshold in [0.6, 0.7, 0.9]:
         experiment_copy = copy.deepcopy(QC_CONFIG)
-        experiment_copy.qcconfig.low_threshold = low_threshold
+        experiment_copy.qcconfig.high_threshold = high_threshold
 
         experiment_configs.append(experiment_copy)
 
