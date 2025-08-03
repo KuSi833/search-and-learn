@@ -168,3 +168,4 @@ wandb/
 job.sh
 trace/
 output/
+nohup.out
