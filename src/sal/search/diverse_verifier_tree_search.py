@@ -189,7 +189,7 @@ def dvts(examples, experiment_config: ExperimentConfig, llm: LLM, prm: PRM):
             beams[
                 np.argmax(
                     [
-                        aggregate_scores(b.best_scores, experiment_config.agg_strategy)
+                        aggregate_scores(b.best_scores, experiment_config.search_config.agg_strategy)
                         for b in beams
                     ]
                 )
