@@ -22,10 +22,10 @@ if __name__ == "__main__":
 
     model_base_path = get_model_base_path()
 
-    # INSTRUCT_MODEL = GeneratorConfig(
-    #     name="Qwen/Qwen2.5-Math-7B-Instruct",
-    #     parameter_count="7B",
-    # )
+    INSTRUCT_MODEL = GeneratorConfig(
+        name="Qwen/Qwen2.5-Math-7B-Instruct",
+        parameter_count="7B",
+    )
     # BASE_MODEL = GeneratorConfig(
     #     name="Qwen/Qwen2.5-Math-7B",
     #     parameter_count="7B",
@@ -57,7 +57,8 @@ if __name__ == "__main__":
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
-        generator_config=Q8_MODEL,
+        # generator_config=Q8_MODEL,
+        generator_config=INSTRUCT_MODEL,
         draft_config=Q4_MODEL,
         dataset_config=DATASET_CONFIG,
     )
@@ -77,7 +78,7 @@ if __name__ == "__main__":
     )
 
     experiment_configs: List[ExperimentConfig] = []
-    for high_threshold in [0.6, 0.7, 0.9]:
+    for high_threshold in [0.9]:
         experiment_copy = copy.deepcopy(QC_CONFIG)
         experiment_copy.qcconfig.high_threshold = high_threshold
 
