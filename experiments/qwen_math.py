@@ -9,6 +9,7 @@ from sal.config import (
     ExperimentConfig,
     GeneratorConfig,
     PRMConfig,
+    QCConfig,
     SearchConfig,
     WandbConfig,
 )
@@ -80,12 +81,28 @@ if __name__ == "__main__":
         wandb_config=WANDB_CONFIG,
     )
 
+    QC_CONFIG = ExperimentConfig(
+        filter_duplicates=True,
+        approach="qcts",
+        wandb_config=WANDB_CONFIG,
+        search_config=SearchConfig(
+            n=4,
+            search_batch_size=10,
+            # search_batch_size=25,
+        ),
+        qcconfig=QCConfig(
+            low_threshold=0.3,
+            high_threshold=0.9,
+        )
+    )
+
     DVTS_CONFIG = ExperimentConfig(
         approach="dvts",
         custom_chat_template = None,
         search_config=SearchConfig(
             n=4,
-            search_batch_size=25,
+            search_batch_size=10,
+            # search_batch_size=25,
         ),
         wandb_config=WANDB_CONFIG,
     )
@@ -94,6 +111,7 @@ if __name__ == "__main__":
 
     # experiment_configs.append(BEST_OF_N_CONFIG)
     # experiment_configs.append(BEAM_SEARCH_CONFIG)
+    experiment_configs.append(QC_CONFIG)
     experiment_configs.append(DVTS_CONFIG)
 
     run(BASE_CONFIG, experiment_configs)
