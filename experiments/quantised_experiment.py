@@ -73,15 +73,18 @@ if __name__ == "__main__":
             search_batch_size=10,
         ),
         qcconfig=QCConfig(
-            low_threshold=0.5,
+            low_threshold=0.3,
+            high_threshold=0.9,
         )
     )
 
     experiment_configs: List[ExperimentConfig] = []
-    for high_threshold in [0.9]:
-        experiment_copy = copy.deepcopy(QC_CONFIG)
-        experiment_copy.qcconfig.high_threshold = high_threshold
+    # for high_threshold in [0.9]:
+    #     experiment_copy = copy.deepcopy(QC_CONFIG)
+        # experiment_copy.qcconfig.high_threshold = high_threshold
 
-        experiment_configs.append(experiment_copy)
+        # experiment_configs.append(experiment_copy)
+
+    experiment_configs.append(QC_CONFIG)
 
     run(BASE_CONFIG, experiment_configs)
