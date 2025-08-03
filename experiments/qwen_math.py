@@ -77,12 +77,23 @@ BEST_OF_N_CONFIG = ExperimentConfig(
     wandb_config=WANDB_CONFIG,
 )
 
+DVTS_CONFIG = ExperimentConfig(
+    approach="dvts",
+    custom_chat_template = None,
+    search_config=SearchConfig(
+        n=4,
+        search_batch_size=25,
+    ),
+    wandb_config=WANDB_CONFIG,
+)
+
 if __name__ == "__main__":
     load_dotenv()
 
     experiment_configs: List[ExperimentConfig] = []
 
-    experiment_configs.append(BEST_OF_N_CONFIG)
-    experiment_configs.append(BEAM_SEARCH_CONFIG)
+    # experiment_configs.append(BEST_OF_N_CONFIG)
+    # experiment_configs.append(BEAM_SEARCH_CONFIG)
+    experiment_configs.append(DVTS_CONFIG)
 
     run(BASE_CONFIG, experiment_configs)
