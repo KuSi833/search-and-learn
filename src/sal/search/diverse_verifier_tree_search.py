@@ -30,11 +30,11 @@ from .utils import Beam, build_conv, generate_k_steps
 logger = logging.getLogger()
 
 
-def _dvts(batch_of_prompts: list[str], config: ExperimentConfig, llm: LLM, prm: PRM):
+def _dvts(batch_of_prompts: list[str], experiment_config: ExperimentConfig, llm: LLM, prm: PRM):
     sampling_params = SamplingParams(
-        temperature=config.search_config.temperature,
+        temperature=experiment_config.search_config.temperature,
         max_tokens=2048,
-        top_p=config.search_config.top_p,
+        top_p=experiment_config.search_config.top_p,
         stop=[
             "\n\n"
         ],  # we consider that a step in the problem is indicated by a double newline
@@ -44,7 +44,7 @@ def _dvts(batch_of_prompts: list[str], config: ExperimentConfig, llm: LLM, prm: 
 
     beams: list[Beam] = []
     for prompt in batch_of_prompts:
-        for i in range(config.n_beams):
+        for i in range(experiment_config.n_beams):
             beams.append(
                 Beam(
                     prompt=prompt,
@@ -62,24 +62,24 @@ def _dvts(batch_of_prompts: list[str], config: ExperimentConfig, llm: LLM, prm: 
             )
 
     for i in tqdm(
-        range(config.beam_search_config.num_iterations), desc="Beam search iterations"
+        range(experiment_config.beam_search_config.num_iterations), desc="Beam search iterations"
     ):
         # generation
         gen_beams = [b for b in beams if not b.pruned]
         if len(gen_beams) == 0:
             break
 
-        if i == config.beam_search_config.num_iterations - 1:
+        if i == experiment_config.beam_search_config.num_iterations - 1:
             # last iteration, generate to EOS
             sampling_params = SamplingParams(
-                temperature=config.search_config.temperature,
+                temperature=experiment_config.search_config.temperature,
                 max_tokens=2048,
-                top_p=config.search_config.top_p,
+                top_p=experiment_config.search_config.top_p,
                 n=1,
             )
 
         convs = [
-            build_conv(b.prompt, b.current_text, config.system_prompt)
+            build_conv(b.prompt, b.current_text, experiment_config.system_prompt)
             for b in gen_beams
         ]
         continue_final_message = i > 0
@@ -87,8 +87,8 @@ def _dvts(batch_of_prompts: list[str], config: ExperimentConfig, llm: LLM, prm: 
 
         tokenizer = llm.get_tokenizer()
         # TODO: set the augmented template from a file
-        if config.custom_chat_template is not None:
-            tokenizer.chat_template = config.custom_chat_template
+        if experiment_config.custom_chat_template is not None:
+            tokenizer.chat_template = experiment_config.custom_chat_template
         templated_convs = tokenizer.apply_chat_template(
             convs,
             add_generation_prompt=add_generation_prompt,
@@ -97,15 +97,15 @@ def _dvts(batch_of_prompts: list[str], config: ExperimentConfig, llm: LLM, prm: 
         )
         lookahead = (
             0
-            if i == config.beam_search_config.num_iterations - 1
-            else config.beam_search_config.lookahead
+            if i == experiment_config.beam_search_config.num_iterations - 1
+            else experiment_config.beam_search_config.lookahead
         )
         gen_results = generate_k_steps(
             templated_convs,
             lookahead,
             llm,
             sampling_params,
-            config.beam_search_config.beam_width,
+            experiment_config.beam_search_config.beam_width,
         )
 
         prompts, completions = [], []
@@ -113,7 +113,7 @@ def _dvts(batch_of_prompts: list[str], config: ExperimentConfig, llm: LLM, prm: 
             beam.next_texts = gen_result.next_texts
             beam.stop_reasons = gen_result.stop_reasons
             beam.lookahead_texts = gen_result.lookahead_texts
-            if len(beam.next_texts) != config.beam_search_config.beam_width:
+            if len(beam.next_texts) != experiment_config.beam_search_config.beam_width:
                 beam.pruned = True
                 # rarely ~1/1000 the model will generate few beams than expected. #TODO: investigate why
                 logger.warning(
@@ -128,7 +128,7 @@ def _dvts(batch_of_prompts: list[str], config: ExperimentConfig, llm: LLM, prm: 
 
         for beam, scores in zip(gen_beams, all_scores, strict=True):
             agg_scores = [
-                aggregate_scores(s, config.search_config.agg_strategy) for s in scores
+                aggregate_scores(s, experiment_config.search_config.agg_strategy) for s in scores
             ]
             best_score_ind = np.argmax(agg_scores)
             beam.all_scores = scores
@@ -151,7 +151,7 @@ def _dvts(batch_of_prompts: list[str], config: ExperimentConfig, llm: LLM, prm: 
     # we need to copy the results from the last iteration in to beam_width beams as otherwise we would only have n/m results
     output: list[Beam] = []
     for beam in beams:
-        for i in range(config.beam_search_config.beam_width):
+        for i in range(experiment_config.beam_search_config.beam_width):
             output.append(
                 Beam(
                     prompt=beam.prompt,
@@ -171,9 +171,9 @@ def _dvts(batch_of_prompts: list[str], config: ExperimentConfig, llm: LLM, prm: 
     return output
 
 
-def dvts(examples, config: ExperimentConfig, llm: LLM, prm: PRM):
+def dvts(examples, experiment_config: ExperimentConfig, llm: LLM, prm: PRM):
     problems = examples["problem"]
-    beam_results = _dvts(problems, config, llm, prm)
+    beam_results = _dvts(problems, experiment_config, llm, prm)
 
     # group together alike beams and store in the dataset
     grouped_results = defaultdict(list)
@@ -189,7 +189,7 @@ def dvts(examples, config: ExperimentConfig, llm: LLM, prm: PRM):
             beams[
                 np.argmax(
                     [
-                        aggregate_scores(b.best_scores, config.agg_strategy)
+                        aggregate_scores(b.best_scores, experiment_config.agg_strategy)
                         for b in beams
                     ]
                 )
