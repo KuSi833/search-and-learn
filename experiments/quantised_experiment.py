@@ -77,5 +77,4 @@ QC_CONFIG = ExperimentConfig(
 
 
 if __name__ == "__main__":
-    config = QC_CONFIG
-    run(config)
+    run(BASE_CONFIG, [QC_CONFIG])
