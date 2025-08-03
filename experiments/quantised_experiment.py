@@ -1,11 +1,16 @@
 from dotenv import load_dotenv
 
+from typing import List
+
+import copy
+
 from sal.config import (
     BaseConfig,
     DatasetConfig,
     ExperimentConfig,
     GeneratorConfig,
     PRMConfig,
+    QCConfig,
     SearchConfig,
     WandbConfig,
 )
@@ -65,5 +70,16 @@ if __name__ == "__main__":
             n=4,
             search_batch_size=1,
         ),
+        qcconfig=QCConfig(
+            low_threshold=0.5,
+        )
     )
-    run(BASE_CONFIG, [QC_CONFIG])
+
+    experiment_configs: List[ExperimentConfig]
+    for low_threshold in [0.4, 0.5]:
+        experiment_copy = copy.deepcopy(QC_CONFIG)
+        experiment_copy.qcconfig.low_threshold = low_threshold
+
+        experiment_configs.append(experiment_copy)
+
+    run(BASE_CONFIG, experiment_configs)
