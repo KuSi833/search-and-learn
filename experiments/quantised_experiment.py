@@ -10,8 +10,7 @@ from sal.config import (
     WandbConfig,
 )
 from sal.test_time_compute import run
-
-from .util import get_model_base_path
+from sal.utils.experiment import get_model_base_path
 
 if __name__ == "__main__":
     load_dotenv()
