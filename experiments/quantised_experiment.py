@@ -25,6 +25,7 @@ if __name__ == "__main__":
     INSTRUCT_MODEL = GeneratorConfig(
         name="Qwen/Qwen2.5-Math-7B-Instruct",
         parameter_count="7B",
+        gpu_memory_utilization=0.4,
     )
     # BASE_MODEL = GeneratorConfig(
     #     name="Qwen/Qwen2.5-Math-7B",
@@ -43,7 +44,7 @@ if __name__ == "__main__":
         name="quant_factory/Qwen2.5-Math-7B.Q4_K_M.gguf",
         parameter_count="7B",
         quantisation="Q4_0",
-        gpu_memory_utilization=0.3,
+        gpu_memory_utilization=0.2,
     )
 
     # PRM_CONFIG = PRMConfig(path="RLHFlow/Llama3.1-8B-PRM-Deepseek-Data")
@@ -60,7 +61,8 @@ if __name__ == "__main__":
         prm_config=PRM_CONFIG,
         # generator_config=Q8_MODEL,
         generator_config=INSTRUCT_MODEL,
-        draft_config=Q4_MODEL,
+        # draft_config=Q4_MODEL,
+        draft_config=Q8_MODEL,
         dataset_config=DATASET_CONFIG,
     )
 
@@ -70,8 +72,8 @@ if __name__ == "__main__":
         wandb_config=WANDB_CONFIG,
         search_config=SearchConfig(
             n=4,
-            # search_batch_size=1,
-            search_batch_size=10,
+            search_batch_size=1,
+            # search_batch_size=10,
         ),
         qcconfig=QCConfig(
             low_threshold=0.4,
