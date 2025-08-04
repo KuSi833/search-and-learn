@@ -54,10 +54,21 @@ if __name__ == "__main__":
 
     WANDB_CONFIG = WandbConfig(tags=set([]))
 
-    BASE_CONFIG = BaseConfig(
+    # DATASET_CONFIG = DatasetConfig(num_samples=500)
+    DATASET_CONFIG = DatasetConfig() # FULL DATASET
+
+    BASE_CONFIG_INSTRUCT_Q8 = BaseConfig(
+        prm_config=PRM_CONFIG,
+        generator_config=INSTRUCT_MODEL,
+        draft_config=Q4_MODEL,
+        dataset_config=DATASET_CONFIG,
+    )
+
+    BASE_CONFIG_Q8_Q4 = BaseConfig(
         prm_config=PRM_CONFIG,
         generator_config=Q8_MODEL,
-        dataset_config=DatasetConfig(num_samples=100),
+        draft_config=Q4_MODEL,
+        dataset_config=DATASET_CONFIG,
     )
 
     BEAM_SEARCH_CONFIG = ExperimentConfig(
@@ -86,8 +97,8 @@ if __name__ == "__main__":
         custom_chat_template = None,
         search_config=SearchConfig(
             n=4,
-            search_batch_size=10,
-            # search_batch_size=25,
+            # search_batch_size=10,
+            search_batch_size=25,
         ),
         wandb_config=WANDB_CONFIG,
     )
@@ -97,5 +108,6 @@ if __name__ == "__main__":
     # experiment_configs.append(BEST_OF_N_CONFIG)
     # experiment_configs.append(BEAM_SEARCH_CONFIG)
     experiment_configs.append(DVTS_CONFIG)
+    experiment_configs.append(DVTS_CONFIG)
 
-    run(BASE_CONFIG, experiment_configs)
+    run(BASE_CONFIG_Q8_Q4, experiment_configs)
