@@ -39,7 +39,8 @@ if __name__ == "__main__":
     )
     Q4_MODEL = GeneratorConfig(
         base_path=model_base_path,
-        name="quant_factory/Qwen2.5-Math-7B.Q4_0.gguf",
+        # name="quant_factory/Qwen2.5-Math-7B.Q4_0.gguf",
+        name="quant_factory/Qwen2.5-Math-7B.Q4_K_M.gguf",
         parameter_count="7B",
         quantisation="Q4_0",
         gpu_memory_utilization=0.3,
@@ -73,7 +74,7 @@ if __name__ == "__main__":
             search_batch_size=10,
         ),
         qcconfig=QCConfig(
-            low_threshold=0.3,
+            low_threshold=0.4,
             high_threshold=0.9,
         )
     )
