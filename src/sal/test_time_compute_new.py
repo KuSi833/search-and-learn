@@ -62,7 +62,7 @@ class ExperimentRunner:
     def __init__(self, base_config: BaseConfig):
         self.base_config = base_config
 
-        # wandb.login(key=get_env_or_throw("WANDB_API_KEY"))
+        wandb.login(key=get_env_or_throw("WANDB_API_KEY"))
         # self.profiler = Profiler(base_config.profiler_config)
 
     def run_experiments(self, experiment_configs: List[ExperimentConfig]):
@@ -72,6 +72,8 @@ class ExperimentRunner:
         # self.dataset = self._load_dataset(self.base_config.dataset_config)
 
         for experiment_config in experiment_configs:
+            with wandb.init(project=experiment_config.wandb_config.project) as run:
+                run.alert(title="Experiment status", text="Starting experiment!")
             self._run_single_experiment2(experiment_config)
 
     def _run_single_experiment(
