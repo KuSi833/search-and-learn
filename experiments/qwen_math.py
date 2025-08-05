@@ -16,7 +16,6 @@ from sal.config import (
 from sal.test_time_compute import run
 from sal.utils.experiment import get_model_base_path
 
-
 if __name__ == "__main__":
     load_dotenv()
 
@@ -47,7 +46,6 @@ if __name__ == "__main__":
         parameter_count="1.5B",
     )
 
-
     # PRM_CONFIG = PRMConfig(path="RLHFlow/Llama3.1-8B-PRM-Deepseek-Data")
     PRM_CONFIG = PRMConfig(path="Qwen/Qwen2.5-Math-PRM-7B")
     # PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
@@ -55,7 +53,10 @@ if __name__ == "__main__":
     WANDB_CONFIG = WandbConfig(tags=set([]))
 
     # DATASET_CONFIG = DatasetConfig(num_samples=500)
-    DATASET_CONFIG = DatasetConfig() # FULL DATASET
+    # DATASET_CONFIG = DatasetConfig()  # FULL DATASET
+    DATASET_CONFIG = DatasetConfig(
+        dataset_name="HuggingFaceH4/aime_2024"
+    )  # FULL DATASET
 
     BASE_CONFIG_INSTRUCT_Q8 = BaseConfig(
         prm_config=PRM_CONFIG,
@@ -94,7 +95,7 @@ if __name__ == "__main__":
 
     DVTS_CONFIG = ExperimentConfig(
         approach="dvts",
-        custom_chat_template = None,
+        custom_chat_template=None,
         search_config=SearchConfig(
             n=4,
             # search_batch_size=10,
@@ -105,9 +106,8 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    # experiment_configs.append(BEST_OF_N_CONFIG)
-    # experiment_configs.append(BEAM_SEARCH_CONFIG)
-    experiment_configs.append(DVTS_CONFIG)
+    experiment_configs.append(BEST_OF_N_CONFIG)
+    experiment_configs.append(BEAM_SEARCH_CONFIG)
     experiment_configs.append(DVTS_CONFIG)
 
     run(BASE_CONFIG_Q8_Q4, experiment_configs)

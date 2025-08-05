@@ -51,7 +51,9 @@ class PRMConfig:
 
 @dataclass
 class DatasetConfig:
-    dataset_name: str = "HuggingFaceH4/MATH-500"
+    dataset_name: Literal["HuggingFaceH4/aime_2024", "HuggingFaceH4/MATH-500"] = (
+        "HuggingFaceH4/MATH-500"
+    )
     dataset_config: Optional[str] = None
     dataset_split: str = "test"
     dataset_start: Optional[int] = None
