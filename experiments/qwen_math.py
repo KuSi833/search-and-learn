@@ -58,17 +58,9 @@ if __name__ == "__main__":
         dataset_name="HuggingFaceH4/aime_2024"
     )  # FULL DATASET
 
-    BASE_CONFIG_INSTRUCT_Q8 = BaseConfig(
-        prm_config=PRM_CONFIG,
-        generator_config=INSTRUCT_MODEL,
-        draft_config=Q4_MODEL,
-        dataset_config=DATASET_CONFIG,
-    )
-
-    BASE_CONFIG_Q8_Q4 = BaseConfig(
+    BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
         generator_config=Q8_MODEL,
-        draft_config=Q4_MODEL,
         dataset_config=DATASET_CONFIG,
     )
 
@@ -110,4 +102,4 @@ if __name__ == "__main__":
     experiment_configs.append(BEAM_SEARCH_CONFIG)
     experiment_configs.append(DVTS_CONFIG)
 
-    run(BASE_CONFIG_Q8_Q4, experiment_configs)
+    run(BASE_CONFIG, experiment_configs)
