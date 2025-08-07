@@ -30,6 +30,7 @@ def _qcts(
         ],  # we consider that a step in the problem is indicated by a double newline
         include_stop_str_in_output=True,
         n=1,
+        seed=experiment_config.seed,
     )
 
     # Thresholds for quantised cascade
@@ -68,6 +69,7 @@ def _qcts(
                 max_tokens=2048,
                 top_p=experiment_config.search_config.top_p,
                 n=1,
+                seed=experiment_config.seed,
             )
 
         # Step 1: Generate N beams using draft model (4-bit)
