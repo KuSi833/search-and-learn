@@ -127,7 +127,6 @@ class BaseConfig:
 @dataclass
 class ExperimentConfig:
     """Configuration that varies between experiments"""
-
     wandb_config: WandbConfig = field(default_factory=WandbConfig)
 
     search_config: SearchConfig = field(default_factory=SearchConfig)
@@ -144,6 +143,7 @@ class ExperimentConfig:
 
     filter_duplicates: bool = False
     sort_completed: bool = False
+    seed: int = 0
 
     def __post_init__(self):
         if self.approach in ["dvts", "qcts"]:
