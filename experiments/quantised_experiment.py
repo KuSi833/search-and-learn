@@ -1,8 +1,7 @@
-from dotenv import load_dotenv
-
+import copy
 from typing import List
 
-import copy
+from dotenv import load_dotenv
 
 from sal.config import (
     BaseConfig,
@@ -60,8 +59,8 @@ if __name__ == "__main__":
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
-        generator_config=Q8_MODEL,
-        # generator_config=INSTRUCT_MODEL,
+        # generator_config=Q8_MODEL,
+        generator_config=INSTRUCT_MODEL,
         draft_config=Q4_MODEL,
         # draft_config=Q8_MODEL,
         dataset_config=DATASET_CONFIG,
@@ -80,7 +79,7 @@ if __name__ == "__main__":
         qcconfig=QCConfig(
             low_threshold=0.4,
             high_threshold=0.9,
-        )
+        ),
     )
 
     Q2_CONFIG = ExperimentConfig(
