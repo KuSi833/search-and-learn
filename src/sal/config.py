@@ -94,6 +94,17 @@ class BeamSearchConfig:
 class QCConfig:
     high_threshold: float = 0.8
     low_threshold: float = 0.3
+    # Optional dynamic CMC knobs (used by q2). Defaults keep existing behavior if unused.
+    use_dynamic_thresholds: bool = True
+    high_q: float = 0.8
+    low_q: float = 0.2
+    delta_high: float = 0.10
+    sigma_low: float = 0.10
+    min_beams_for_quantiles: int = 8
+    # Single-knob compute control. If set, overrides quantiles to target upgrade rate
+    # and disables margin/stability gating for simplicity.
+    target_upgrade_rate: float | None = None  # in [0, 1]
+    enable_margin_stability: bool = True
 
 
 @dataclass
@@ -127,14 +138,13 @@ class BaseConfig:
 @dataclass
 class ExperimentConfig:
     """Configuration that varies between experiments"""
-
     wandb_config: WandbConfig = field(default_factory=WandbConfig)
 
     search_config: SearchConfig = field(default_factory=SearchConfig)
     beam_search_config: BeamSearchConfig = field(default_factory=BeamSearchConfig)
     qcconfig: QCConfig = field(default_factory=QCConfig)
 
-    approach: Literal["best_of_n", "beam_search", "dvts", "qcts"] = "best_of_n"
+    approach: Literal["best_of_n", "beam_search", "dvts", "qcts", "q2"] = "best_of_n"
 
     # Chat template related options
     system_prompt: str = "Solve the following math problem efficiently and clearly:\n\n- For simple problems (2 steps or fewer):\nProvide a concise solution with minimal explanation.\n\n- For complex problems (3 steps or more):\nUse this step-by-step format:\n\n## Step 1: [Concise description]\n[Brief explanation and calculations]\n\n## Step 2: [Concise description]\n[Brief explanation and calculations]\n\n...\n\nRegardless of the approach, always conclude with:\n\nTherefore, the final answer is: $\\boxed{answer}$. I hope it is correct.\n\nWhere [answer] is just the final number or expression that solves the problem."
@@ -144,9 +154,10 @@ class ExperimentConfig:
 
     filter_duplicates: bool = False
     sort_completed: bool = False
+    seed: int = 0
 
     def __post_init__(self):
-        if self.approach in ["dvts", "qcts"]:
+        if self.approach in ["dvts", "qcts", "q2"]:
             if self.search_config.n % self.beam_search_config.beam_width != 0:
                 raise ValueError("n should be a multiple of beam_width")
             self.n_beams = self.search_config.n // self.beam_search_config.beam_width
