@@ -35,7 +35,8 @@ from sal.config import (
 from sal.evaluation.evaluate import evaluate
 from sal.models.reward_models import load_prm
 from sal.profiler import Profiler
-from sal.search import beam_search, best_of_n, dvts, qcts
+from sal.search import beam_search, best_of_n, dvts, qcts, q2
+
 from sal.utils.data import get_dataset, save_inference_output
 from sal.utils.env import get_env_or_throw
 from sal.utils.score import score
@@ -53,6 +54,7 @@ APPROACHES = {
     "dvts": dvts,
     "best_of_n": best_of_n,
     "qcts": qcts,
+    "q2": q2,
 }
 
 
