@@ -139,24 +139,7 @@ def diagnostic_tts(
     diag_dir.mkdir(parents=True, exist_ok=True)
     jsonl_path = diag_dir / "results.jsonl"
 
-    # Persist a small config snapshot for reproducibility
-    try:
-        with open(diag_dir / "config.json", "w", encoding="utf-8") as f:
-            json.dump(
-                {
-                    "search_config": asdict(experiment_config.search_config),
-                    "beam_search_config": asdict(experiment_config.beam_search_config),
-                    "qcconfig": asdict(experiment_config.qcconfig),
-                    "system_prompt": experiment_config.system_prompt[:256],
-                    "custom_chat_template_present": experiment_config.custom_chat_template
-                    is not None,
-                },
-                f,
-                ensure_ascii=False,
-                indent=2,
-            )
-    except Exception as e:
-        logger.warning(f"Failed to write config.json: {e}")
+    # Config is tracked externally (e.g., Weights & Biases). No local config.json persisted here.
 
     results: Dict[str, Any] = {
         "completions": [],
