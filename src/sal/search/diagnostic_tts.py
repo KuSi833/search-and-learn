@@ -108,8 +108,7 @@ def diagnostic_tts(
     draft_llm: LLM,
     target_llm: LLM,
     prm: PRM,
-    run_id: Optional[str] = None,
-    output_dir: Optional[str] = None,
+    output_dir: str,
 ) -> Dict[str, Any]:
     """Diagnostic TTC that mirrors a standard beam search but logs dual-model telemetry.
 
@@ -132,10 +131,8 @@ def diagnostic_tts(
     lookahead = experiment_config.beam_search_config.lookahead
 
     # Output directory handling
-    base_dir = Path("output") if output_dir is None else Path(output_dir)
-    if run_id is None:
-        run_id = str(int(time.time()))
-    diag_dir = base_dir / run_id / "diagnostics"
+    base_dir = Path(output_dir)
+    diag_dir = base_dir / "diagnostics"
     diag_dir.mkdir(parents=True, exist_ok=True)
     jsonl_path = diag_dir / "results.jsonl"
 

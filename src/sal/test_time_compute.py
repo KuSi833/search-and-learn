@@ -98,6 +98,7 @@ class ExperimentRunner:
                     experiment_config,
                     pytorch_profiler,
                     inference_output_path,
+                    output_dir,
                 )
             self.profiler.finish_memory_profiling(run)
 
@@ -186,6 +187,7 @@ class ExperimentRunner:
         experiment_config: ExperimentConfig,
         pytorch_profiler,
         inference_output_path: Path,
+        output_dir: Path,
     ):
         torch.cuda.reset_peak_memory_stats()
         pre_inference = self.profiler.get_gpu_memory_gb()
@@ -195,7 +197,11 @@ class ExperimentRunner:
             logger.info("Running inference...")
             approach_fn = APPROACHES[experiment_config.approach]
 
-            fn_kwargs = {"experiment_config": experiment_config, "prm": self.prm}
+            fn_kwargs = {
+                "experiment_config": experiment_config,
+                "prm": self.prm,
+                "output_dir": output_dir,
+            }
             if self.maybe_draft_llm is not None:
                 fn_kwargs.update(
                     {"target_llm": self.llm, "draft_llm": self.maybe_draft_llm}
