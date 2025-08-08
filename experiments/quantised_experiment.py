@@ -101,7 +101,8 @@ if __name__ == "__main__":
     experiment_configs: List[ExperimentConfig] = []
 
     # 1) Q2 single-knob target upgrade rate sweeps (fast to compare compute/accuracy)
-    for tur in [0.20, 0.30, 0.35, 0.45]:
+    # for tur in [0.20, 0.30, 0.35, 0.45]:
+    for tur in [0.45]:
         experiment_copy = copy.deepcopy(Q2_CONFIG)
         experiment_copy.qcconfig.target_upgrade_rate = tur
         experiment_copy.qcconfig.use_dynamic_thresholds = True
