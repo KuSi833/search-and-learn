@@ -406,6 +406,8 @@ def run_on_remote(config: DeployConfig, executable: str, tail: bool) -> None:
         c = Connection(config.remote_config.hostname)
     console.print(f"︎[green]✔︎ Connected to {config.remote_config.hostname}")
 
+    log_file = f"./logs/{config.remote_config.hostname}_run.log"
+
     with c.cd(config.remote_config.remote_root):
         if not _checkout_commit(c, config):
             return
@@ -414,15 +416,15 @@ def run_on_remote(config: DeployConfig, executable: str, tail: bool) -> None:
             c.run(
                 f"nohup env WANDB_API_KEY='{config.run_config.wandb_api_key}' "
                 f"GITHUB_TOKEN='{config.run_config.github_token}' "
-                f"./.venv/bin/python {executable} > {config.remote_config.hostname}_run.log 2>&1 &"
+                f"./.venv/bin/python {executable} > {log_file} 2>&1 &",
+                asynchronous=True,
+                hide=True,
             )
-            console.print("[green]✔︎ Running executable...")
+            console.print("[green]✔︎ Executable started in background...")
 
         if tail:
-            console.print(
-                f"[yellow]Tailing log file {config.remote_config.hostname}_run.log..."
-            )
-            c.run(f"tail -f {config.remote_config.hostname}_run.log")
+            console.print(f"[yellow]Tailing log file {log_file}...")
+            c.run(f"tail -f {log_file}")
 
 
 @cli.command("submit-pbs")
