@@ -1,9 +1,7 @@
-
-from dotenv import load_dotenv
-
+import copy
 from typing import List
 
-import copy
+from dotenv import load_dotenv
 
 from sal.config import (
     BaseConfig,

@@ -138,13 +138,16 @@ class BaseConfig:
 @dataclass
 class ExperimentConfig:
     """Configuration that varies between experiments"""
+
     wandb_config: WandbConfig = field(default_factory=WandbConfig)
 
     search_config: SearchConfig = field(default_factory=SearchConfig)
     beam_search_config: BeamSearchConfig = field(default_factory=BeamSearchConfig)
     qcconfig: QCConfig = field(default_factory=QCConfig)
 
-    approach: Literal["best_of_n", "beam_search", "dvts", "qcts", "q2"] = "best_of_n"
+    approach: Literal[
+        "best_of_n", "beam_search", "dvts", "qcts", "q2", "diagnostic_tts"
+    ] = "best_of_n"
 
     # Chat template related options
     system_prompt: str = "Solve the following math problem efficiently and clearly:\n\n- For simple problems (2 steps or fewer):\nProvide a concise solution with minimal explanation.\n\n- For complex problems (3 steps or more):\nUse this step-by-step format:\n\n## Step 1: [Concise description]\n[Brief explanation and calculations]\n\n## Step 2: [Concise description]\n[Brief explanation and calculations]\n\n...\n\nRegardless of the approach, always conclude with:\n\nTherefore, the final answer is: $\\boxed{answer}$. I hope it is correct.\n\nWhere [answer] is just the final number or expression that solves the problem."
