@@ -200,8 +200,9 @@ class ExperimentRunner:
             fn_kwargs = {
                 "experiment_config": experiment_config,
                 "prm": self.prm,
-                "output_dir": output_dir,
             }
+            if experiment_config.approach == "diagnostic_tts":
+                fn_kwargs["output_dir"] = (output_dir,)
             if self.maybe_draft_llm is not None:
                 fn_kwargs.update(
                     {"target_llm": self.llm, "draft_llm": self.maybe_draft_llm}
