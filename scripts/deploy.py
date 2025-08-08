@@ -86,11 +86,6 @@ class DeployConfig:
     pbs_config: PbsJobConfig = field(default_factory=PbsJobConfig)
 
 
-class Scheduler(str, Enum):
-    SLURM = "slurm"
-    PBS = "pbs"
-
-
 def get_slurm_job_script(config: DeployConfig) -> str:
     """Generate complete SLURM job script."""
     return f"""#!/bin/bash
@@ -231,6 +226,19 @@ def write_pbs_jobscript(connection, config: DeployConfig) -> None:
     )
 
 
+def get_hostname_remote_config(hostname: str) -> RemoteConfig:
+    with console.status(
+        "[yellow]Validating SLURM remote env variables...", spinner="dots"
+    ):
+        remote_config = RemoteConfig(
+            username=get_env_or_throw("USERNAME"),
+            hostname=hostname,
+            remote_root=get_env_or_throw("REMOTE_ROOT"),
+        )
+    console.print("[green]✔ SLURM env variables validated")
+    return remote_config
+
+
 def get_slurm_remote_config() -> RemoteConfig:
     """Get SLURM configuration from environment variables."""
     with console.status(
@@ -315,6 +323,98 @@ def submit_slurm(
         slurm_config=slurm_config,
     )
     submit_slurm_job(config, tail_output=tail)
+
+
+HOSTNAMES = set(
+    [
+        "gpuvm21",
+        "gpuvm22",
+        "merlin",
+        "linnet",
+    ]
+)
+
+
+@cli.command("submit-remote")
+@click.option(
+    "--hostname",
+    required=True,
+    help="Hostname of remote to run the script on",
+    type=click.Choice(HOSTNAMES),
+)
+@click.option("--commit-hash", required=False, help="Hash of commit to submit as a job")
+@click.option(
+    "--script-path",
+    required=True,
+    help="Relative path to python executable from project root",
+)
+def submit_remote(
+    hostname: str,
+    commit_hash: str,
+    script_path: str,
+):
+    """Run a script on a remote scheduler."""
+    remote_config = get_hostname_remote_config(hostname)
+    run_config = get_run_config(commit_hash)
+
+    config = DeployConfig(
+        run_config=run_config,
+        remote_config=remote_config,
+    )
+    run_on_remote(config, script_path)
+
+
+def _checkout_commit(connection, config: DeployConfig) -> bool:
+    with console.status("[yellow]Fetching and checking out commit...", spinner="dots"):
+        """Checkout specific commit on remote. Returns True if successful, False otherwise."""
+        connection.run("git reset --hard HEAD")
+        connection.run(
+            f"git remote set-url origin https://{config.run_config.github_token}@github.com/KuSi833/search-and-learn.git"
+        )
+
+        # Fetch with error handling
+        fetch_result = connection.run("git fetch", warn=True)
+        if fetch_result.failed:
+            console.print("[red]ERROR: Failed to fetch from remote repository")
+            console.print(
+                "[red]This might be due to SSH key issues or network problems"
+            )
+            return False
+
+        # Checkout specific commit with error handling
+        checkout_result = connection.run(
+            f"git checkout {config.run_config.commit_hash}", warn=True
+        )
+        if checkout_result.failed:
+            console.print(
+                f"[red]ERROR: Failed to checkout commit {config.run_config.commit_hash}"
+            )
+            console.print("[red]Commit may not exist or may not be fetched")
+            return False
+
+        console.print(
+            f"Successfully checked out commit {config.run_config.commit_hash}"
+        )
+        return True
+
+
+def run_on_remote(config: DeployConfig, executable: str) -> None:
+    with console.status("[yellow]Connecting to remote...", spinner="dots"):
+        c = Connection(config.remote_config.hostname)
+    console.print(f"︎[green]✔︎ Connected to {config.remote_config.hostname}")
+
+    with c.cd(config.remote_config.remote_root):
+        if not _checkout_commit(c, config):
+            return
+
+        with console.status("[yellow]Running executable on remote...", spinner="dots"):
+            result = c.run(
+                f"WANDB_API_KEY='{config.run_config.wandb_api_key}' "
+                f"GITHUB_TOKEN='{config.run_config.github_token}' "
+                f"./.venv/bin/python {executable}"
+            )
+            print(result)
+            # console.print("[green]✔︎ Running executable...")
 
 
 @cli.command("submit-pbs")
