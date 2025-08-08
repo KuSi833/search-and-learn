@@ -348,10 +348,12 @@ HOSTNAMES = set(
     required=True,
     help="Relative path to python executable from project root",
 )
+@click.option("--tail/--no-tail", default=True, help="Whether to tail the output log")
 def submit_remote(
     hostname: str,
     commit_hash: str,
     script_path: str,
+    tail: bool,
 ):
     """Run a script on a remote scheduler."""
     remote_config = get_hostname_remote_config(hostname)
@@ -361,19 +363,20 @@ def submit_remote(
         run_config=run_config,
         remote_config=remote_config,
     )
-    run_on_remote(config, script_path)
+    run_on_remote(config, script_path, tail)
 
 
-def _checkout_commit(connection, config: DeployConfig) -> bool:
+def _checkout_commit(connection: Connection, config: DeployConfig) -> bool:
     with console.status("[yellow]Fetching and checking out commit...", spinner="dots"):
         """Checkout specific commit on remote. Returns True if successful, False otherwise."""
-        connection.run("git reset --hard HEAD")
+        connection.run("git reset --hard HEAD", hide=True)
         connection.run(
-            f"git remote set-url origin https://{config.run_config.github_token}@github.com/KuSi833/search-and-learn.git"
+            f"git remote set-url origin https://{config.run_config.github_token}@github.com/KuSi833/search-and-learn.git",
+            hide=True,
         )
 
         # Fetch with error handling
-        fetch_result = connection.run("git fetch", warn=True)
+        fetch_result = connection.run("git fetch", warn=True, hide=True)
         if fetch_result.failed:
             console.print("[red]ERROR: Failed to fetch from remote repository")
             console.print(
@@ -383,7 +386,7 @@ def _checkout_commit(connection, config: DeployConfig) -> bool:
 
         # Checkout specific commit with error handling
         checkout_result = connection.run(
-            f"git checkout {config.run_config.commit_hash}", warn=True
+            f"git checkout {config.run_config.commit_hash}", warn=True, hide=True
         )
         if checkout_result.failed:
             console.print(
@@ -393,12 +396,12 @@ def _checkout_commit(connection, config: DeployConfig) -> bool:
             return False
 
         console.print(
-            f"Successfully checked out commit {config.run_config.commit_hash}"
+            f"[green]✔︎ Successfully checked out commit {config.run_config.commit_hash}"
         )
         return True
 
 
-def run_on_remote(config: DeployConfig, executable: str) -> None:
+def run_on_remote(config: DeployConfig, executable: str, tail: bool) -> None:
     with console.status("[yellow]Connecting to remote...", spinner="dots"):
         c = Connection(config.remote_config.hostname)
     console.print(f"︎[green]✔︎ Connected to {config.remote_config.hostname}")
@@ -408,13 +411,18 @@ def run_on_remote(config: DeployConfig, executable: str) -> None:
             return
 
         with console.status("[yellow]Running executable on remote...", spinner="dots"):
-            result = c.run(
-                f"WANDB_API_KEY='{config.run_config.wandb_api_key}' "
+            c.run(
+                f"nohup env WANDB_API_KEY='{config.run_config.wandb_api_key}' "
                 f"GITHUB_TOKEN='{config.run_config.github_token}' "
-                f"./.venv/bin/python {executable}"
+                f"./.venv/bin/python {executable} > {config.remote_config.hostname}_run.log 2>&1 &"
             )
-            print(result)
-            # console.print("[green]✔︎ Running executable...")
+            console.print("[green]✔︎ Running executable...")
+
+        if tail:
+            console.print(
+                f"[yellow]Tailing log file {config.remote_config.hostname}_run.log..."
+            )
+            c.run(f"tail -f {config.remote_config.hostname}_run.log")
 
 
 @cli.command("submit-pbs")
