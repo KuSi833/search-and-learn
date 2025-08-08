@@ -157,7 +157,7 @@ class ExperimentConfig:
     seed: int = 0
 
     def __post_init__(self):
-        if self.approach in ["dvts", "qcts", "q2"]:
+        if self.approach in ["dvts", "qcts", "q2", "diagnostic_tts"]:
             if self.search_config.n % self.beam_search_config.beam_width != 0:
                 raise ValueError("n should be a multiple of beam_width")
             self.n_beams = self.search_config.n // self.beam_search_config.beam_width
