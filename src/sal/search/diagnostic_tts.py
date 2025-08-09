@@ -145,7 +145,8 @@ def diagnostic_tts(
         "scores": [],
     }
 
-    with open(jsonl_path, "w", encoding="utf-8") as writer:
+    # Append mode so multiple runs/shards can add lines without truncation
+    with open(jsonl_path, "a", encoding="utf-8") as writer:
         for problem_idx, (prompt, level) in enumerate(
             tqdm(
                 zip(problems, levels, strict=True),
