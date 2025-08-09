@@ -102,10 +102,11 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    experiment_configs.append(BEST_OF_N_CONFIG)
-    experiment_configs.append(BEST_OF_N_CONFIG)
-    experiment_configs.append(BEAM_SEARCH_CONFIG)
-    experiment_configs.append(BEAM_SEARCH_CONFIG)
-    # experiment_configs.append(DVTS_CONFIG)
+    # experiment_configs.append(BEST_OF_N_CONFIG)
+    # experiment_configs.append(BEST_OF_N_CONFIG)
+    # experiment_configs.append(BEAM_SEARCH_CONFIG)
+    # experiment_configs.append(BEAM_SEARCH_CONFIG)
+    experiment_configs.append(DVTS_CONFIG)
+    experiment_configs.append(DVTS_CONFIG)
 
     run(BASE_CONFIG, experiment_configs)
