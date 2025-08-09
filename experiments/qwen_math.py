@@ -3,6 +3,7 @@ from typing import List
 
 import pyrootutils
 from dotenv import load_dotenv
+from pyparsing import nums
 
 from sal.config import (
     BaseConfig,
@@ -55,8 +56,8 @@ if __name__ == "__main__":
 
     WANDB_CONFIG = WandbConfig(tags=set(["q2 sweep"]))
 
-    DATASET_CONFIG = DatasetConfig(num_samples=100)
-    # DATASET_CONFIG = DatasetConfig()  # FULL DATASET
+    # DATASET_CONFIG = DatasetConfig(num_samples=100)
+    DATASET_CONFIG = DatasetConfig(num_samples=500)  # FULL DATASET
     # DATASET_CONFIG = DatasetConfig(
     #     dataset_name="HuggingFaceH4/aime_2024"
     # )  # FULL DATASET
@@ -84,7 +85,7 @@ if __name__ == "__main__":
         approach="best_of_n",
         search_config=SearchConfig(
             n=4,
-            search_batch_size=25,
+            search_batch_size=50,
         ),
         wandb_config=WANDB_CONFIG,
     )
@@ -95,18 +96,18 @@ if __name__ == "__main__":
         search_config=SearchConfig(
             n=4,
             # search_batch_size=10,
-            search_batch_size=25,
+            search_batch_size=50,
         ),
         wandb_config=WANDB_CONFIG,
     )
 
     experiment_configs: List[ExperimentConfig] = []
 
-    # experiment_configs.append(BEST_OF_N_CONFIG)
+    experiment_configs.append(BEST_OF_N_CONFIG)
     # experiment_configs.append(BEST_OF_N_CONFIG)
     # experiment_configs.append(BEAM_SEARCH_CONFIG)
     # experiment_configs.append(BEAM_SEARCH_CONFIG)
     experiment_configs.append(DVTS_CONFIG)
-    experiment_configs.append(DVTS_CONFIG)
+    # experiment_configs.append(DVTS_CONFIG)
 
     run(BASE_CONFIG, experiment_configs)
