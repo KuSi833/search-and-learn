@@ -356,6 +356,43 @@ def save_summary_json(summary: Dict[str, Any], out_dir: Path) -> None:
         json.dump(summary, f, indent=2, ensure_ascii=False)
 
 
+def compute_token_stats(perfs: List[StepPerf]) -> Dict[str, Any]:
+    def safe_np(arr: List[Optional[float]]) -> np.ndarray:
+        vals = [float(x) for x in arr if x is not None]
+        return (
+            np.array(vals, dtype=float) if len(vals) > 0 else np.array([], dtype=float)
+        )
+
+    toks_d = np.array([p.total_tokens_draft for p in perfs], dtype=float)
+    toks_t = np.array([p.total_tokens_target for p in perfs], dtype=float)
+    mspt_d = safe_np([p.ms_per_token_draft for p in perfs])
+    mspt_t = safe_np([p.ms_per_token_target for p in perfs])
+
+    def stats(a: np.ndarray) -> Dict[str, float]:
+        if a.size == 0:
+            return {"mean": 0.0, "median": 0.0, "p25": 0.0, "p75": 0.0}
+        return {
+            "mean": float(np.mean(a)),
+            "median": float(np.median(a)),
+            "p25": float(np.percentile(a, 25)),
+            "p75": float(np.percentile(a, 75)),
+        }
+
+    return {
+        "steps": int(len(perfs)),
+        "total_tokens": {
+            "draft_sum": float(np.sum(toks_d)) if toks_d.size > 0 else 0.0,
+            "target_sum": float(np.sum(toks_t)) if toks_t.size > 0 else 0.0,
+            "draft_stats_per_step": stats(toks_d),
+            "target_stats_per_step": stats(toks_t),
+        },
+        "ms_per_token": {
+            "draft_stats": stats(mspt_d),
+            "target_stats": stats(mspt_t),
+        },
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Analyse diagnostic TTC results.")
     parser.add_argument(
@@ -383,10 +420,17 @@ def main() -> None:
     records, lat_means, perfs = collect_records(results_path)
     stats = compute_upgrade_stats(records, delta_threshold=args.delta_threshold)
     aucs = indicator_auc(records, delta_threshold=args.delta_threshold)
+    token_stats = compute_token_stats(perfs)
 
     analysis_dir = diag_dir / "analysis"
     save_summary_json(
-        {**stats, "indicator_auc": aucs, "latency_means": lat_means}, analysis_dir
+        {
+            **stats,
+            "indicator_auc": aucs,
+            "latency_means": lat_means,
+            "token_stats": token_stats,
+        },
+        analysis_dir,
     )
     plot_upgrade_rate_by_iteration(stats["by_iteration"], analysis_dir)
     plot_uplift_box_by_level(records, analysis_dir)
