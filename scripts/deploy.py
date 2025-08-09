@@ -7,6 +7,7 @@ from time import sleep
 from typing import Optional, Set
 
 import click
+from anyio import Path
 from dotenv import load_dotenv
 from fabric import Connection
 from rich.console import Console
@@ -366,12 +367,76 @@ def submit_remote(
     run_on_remote(config, script_path, tail)
 
 
-def _checkout_commit(connection: Connection, config: DeployConfig) -> bool:
+@cli.command("setup-remote")
+@click.option(
+    "--hostname",
+    required=True,
+    help="Hostname of remote to run the script on",
+    type=click.Choice(HOSTNAMES),
+)
+@click.option("--commit-hash", required=False, help="Hash of commit to submit as a job")
+def setup_remote(
+    hostname: str,
+    commit_hash: Optional[str],
+):
+    """Set up remote with repo"""
+    remote_config = get_hostname_remote_config(hostname)
+    github_token = get_env_or_throw("GITHUB_TOKEN")
+
+    commit_hash = commit_hash if commit_hash else _get_latest_commit_hash()
+    _prompt_commit_info(commit_hash)
+
+    with console.status("[yellow]Connecting to remote...", spinner="dots"):
+        c = Connection(remote_config.hostname)
+    console.print(f"︎[green]✔︎ Connected to {remote_config.hostname}")
+
+    remote_root = Path(remote_config.remote_root)
+    with console.status("[yellow]Setting up remote directory...", spinner="dots"):
+        # Create directory if it doesn't exist
+        c.run(f"mkdir -p {remote_root}", hide=True)
+
+    with console.status("[yellow]Cloning repository...", spinner="dots"):
+        # Check if repository already exists
+        result = c.run(f"test -d {remote_root}/.git", warn=True, hide=True)
+        if result.failed:
+            # Repository doesn't exist, clone it
+            c.run(
+                f"git clone git@github.com:KuSi833/search-and-learn.git {remote_root}"
+            )
+            console.print(f"[green]✔ Repository cloned to {remote_root}")
+        else:
+            console.print(f"[green]✔ Repository already exists at {remote_root}")
+
+    with c.cd(remote_root):
+        _checkout_commit(c, github_token, commit_hash)
+
+        with c.prefix(
+            'export UV_PYTHON_INSTALL_DIR="/vol/bitbucket/km1124/.cache/python"; '
+            'export HF_HOME="/vol/bitbucket/km1124/.cache/huggingface"; '
+            'export UV_CACHE_DIR="/vol/bitbucket/km1124/.cache/uv"; '
+            'export UV_LINK_MODE="copy"'
+        ):
+            # BUG: I think this will never give back control even when the setup is done
+            # It has to be cancelled, and when run again will proceed
+            with console.status("[yellow]Setting up .venv with uv...", spinner="dots"):
+                c.run(f"{remote_config.uv_path} sync --group deploy", hide=False)
+            console.print("[green]✔ Virtual environment setup completed")
+
+    with console.status("[yellow]Syncing models directory...", spinner="dots"):
+        c.run(
+            f"rsync -avP /vol/bitbucket/km1124/search-and-learn/models/ {remote_root}/models/"
+        )
+    console.print("[green]✔ Models directory sync completed")
+
+
+def _checkout_commit(
+    connection: Connection, github_token: str, commit_hash: str
+) -> bool:
     with console.status("[yellow]Fetching and checking out commit...", spinner="dots"):
         """Checkout specific commit on remote. Returns True if successful, False otherwise."""
         connection.run("git reset --hard HEAD", hide=True)
         connection.run(
-            f"git remote set-url origin https://{config.run_config.github_token}@github.com/KuSi833/search-and-learn.git",
+            f"git remote set-url origin https://{github_token}@github.com/KuSi833/search-and-learn.git",
             hide=True,
         )
 
@@ -386,18 +451,14 @@ def _checkout_commit(connection: Connection, config: DeployConfig) -> bool:
 
         # Checkout specific commit with error handling
         checkout_result = connection.run(
-            f"git checkout {config.run_config.commit_hash}", warn=True, hide=True
+            f"git checkout {commit_hash}", warn=True, hide=True
         )
         if checkout_result.failed:
-            console.print(
-                f"[red]ERROR: Failed to checkout commit {config.run_config.commit_hash}"
-            )
+            console.print(f"[red]ERROR: Failed to checkout commit {commit_hash}")
             console.print("[red]Commit may not exist or may not be fetched")
             return False
 
-        console.print(
-            f"[green]✔︎ Successfully checked out commit {config.run_config.commit_hash}"
-        )
+        console.print(f"[green]✔︎ Successfully checked out commit {commit_hash}")
         return True
 
 
@@ -409,7 +470,9 @@ def run_on_remote(config: DeployConfig, executable: str, tail: bool) -> None:
     log_file = f"./logs/{config.remote_config.hostname}_run.log"
 
     with c.cd(config.remote_config.remote_root):
-        if not _checkout_commit(c, config):
+        if not _checkout_commit(
+            c, config.run_config.github_token, config.run_config.commit_hash
+        ):
             return
 
         with console.status("[yellow]Running executable on remote...", spinner="dots"):
