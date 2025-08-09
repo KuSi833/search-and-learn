@@ -23,9 +23,9 @@ if __name__ == "__main__":
     model_base_path = get_model_base_path()
 
     INSTRUCT_MODEL = GeneratorConfig(
-        # name="Qwen/Qwen2.5-Math-7B-Instruct",
-        base_path=model_base_path,
-        name="Qwen2.5-Math-7B-Instruct",
+        name="Qwen/Qwen2.5-Math-7B-Instruct",
+        # base_path=model_base_path,
+        # name="Qwen2.5-Math-7B-Instruct",
         parameter_count="7B",
     )
     BASE_MODEL = GeneratorConfig(
