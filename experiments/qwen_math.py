@@ -1,6 +1,8 @@
+import copy
 from typing import List
 
 from dotenv import load_dotenv
+from networkx import expected_degree_graph
 
 from sal.config import (
     BaseConfig,
@@ -102,8 +104,10 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    experiment_configs.append(BEST_OF_N_CONFIG)
-    experiment_configs.append(DVTS_CONFIG)
+    for seed in [1, 2]:
+        experiment_copy = copy.deepcopy(BEST_OF_N_CONFIG)
+        experiment_copy.seed = seed
+        experiment_configs.append(experiment_copy)
     # experiment_configs.append(BEAM_SEARCH_CONFIG)
 
     run(BASE_CONFIG, experiment_configs)
