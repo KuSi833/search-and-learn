@@ -30,6 +30,11 @@ if __name__ == "__main__":
     #     name="Qwen/Qwen2.5-Math-7B",
     #     parameter_count="7B",
     # )
+    SMALL_MODEL = GeneratorConfig(
+        name="Qwen/Qwen2.5-Math-1.5B-Instruct",
+        parameter_count="1.5B",
+        gpu_memory_utilization=0.2,
+    )
     Q8_MODEL = GeneratorConfig(
         base_path=model_base_path,
         name="quant_factory/Qwen2.5-Math-7B.Q8_0.gguf",
@@ -51,7 +56,7 @@ if __name__ == "__main__":
 
     DATASET_CONFIG = DatasetConfig(
         # num_samples=100,
-        # num_samples=10,
+        num_samples=10,
         # num_samples=25,
         # num_samples=1,
     )
@@ -63,7 +68,7 @@ if __name__ == "__main__":
         # generator_config=Q8_MODEL,
         generator_config=INSTRUCT_MODEL,
         # draft_config=Q4_MODEL,
-        draft_config=Q8_MODEL,
+        draft_config=SMALL_MODEL,
         dataset_config=DATASET_CONFIG,
     )
 
