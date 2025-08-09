@@ -249,6 +249,9 @@ def diagnostic_tts(
                 prm_prompts: List[str] = []
                 draft_completions: List[List[str]] = []
                 target_completions: List[List[str]] = []
+                # Tokenizers for counting generated tokens per candidate
+                draft_tokenizer = draft_llm.get_tokenizer()
+                target_tokenizer = target_llm.get_tokenizer()
                 for beam_obj, gd, gt in zip(
                     active_beams, gen_draft, gen_target, strict=True
                 ):
@@ -352,8 +355,10 @@ def diagnostic_tts(
                                 "prm_agg": float(d_aggs[j])
                                 if j < len(d_aggs)
                                 else None,
-                                # Token counts are not available from current utilities
-                                "tokens": -1,
+                                # Generated token count (first step + lookahead) using draft tokenizer
+                                "tokens": int(len(draft_tokenizer.encode(gd_look[j])))
+                                if j < len(gd_look)
+                                else 0,
                             }
                             for j in range(len(gd_next))
                         ],
@@ -365,7 +370,10 @@ def diagnostic_tts(
                                 "prm_agg": float(t_aggs[j])
                                 if j < len(t_aggs)
                                 else None,
-                                "tokens": -1,
+                                # Generated token count using target tokenizer
+                                "tokens": int(len(target_tokenizer.encode(gt_look[j])))
+                                if j < len(gt_look)
+                                else 0,
                             }
                             for j in range(len(gt_next))
                         ],
