@@ -72,8 +72,8 @@ def batched_math_shepherd_inference(
 
 
 class PRM:
-    def __init__(self, search_config: ExperimentConfig, **model_kwargs):
-        self.search_config = search_config
+    def __init__(self, prm_config: PRMConfig, **model_kwargs):
+        self.prm_config = prm_config
         self.model, self.tokenizer = self.load_model_and_tokenizer(**model_kwargs)
 
     def load_model_and_tokenizer(
@@ -420,25 +420,26 @@ class Qwen_2_5_Math_7B(Qwen_2_5_Math):
     def load_model_and_tokenizer(
         self, **model_kwargs
     ) -> tuple[PreTrainedModel, PreTrainedTokenizer]:
-        prm_model_path = "Qwen/Qwen2.5-Math-PRM-7B"
-        return Qwen_2_5_Math._load_model_and_tokenizer(prm_model_path, **model_kwargs)
+        # prm_model_path = "Qwen/Qwen2.5-Math-PRM-7B"
+        return Qwen_2_5_Math._load_model_and_tokenizer(
+            self.prm_config.get_model_path(), **model_kwargs
+        )
 
 
 def load_prm(prm_config: PRMConfig) -> PRM:
-    prm_path = prm_config.get_model_path()
-    if prm_path == "peiyi9979/math-shepherd-mistral-7b-prm":
+    if prm_config.name == "peiyi9979/math-shepherd-mistral-7b-prm":
         return MathShepherd(prm_config)
 
-    if prm_path == "RLHFlow/Llama3.1-8B-PRM-Deepseek-Data":
+    if prm_config.name == "RLHFlow/Llama3.1-8B-PRM-Deepseek-Data":
         return RLHFFlow(prm_config)
 
-    if prm_path == "Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B":
+    if prm_config.name == "Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B":
         return SkyworkO1_1_5B(prm_config)
 
-    if prm_path == "Skywork/Skywork-o1-Open-PRM-Qwen-2.5-7B":
+    if prm_config.name == "Skywork/Skywork-o1-Open-PRM-Qwen-2.5-7B":
         return SkyworkO1_7B(prm_config)
 
-    if prm_path == "Qwen/Qwen2.5-Math-PRM-7B":
+    if prm_config.name == "Qwen/Qwen2.5-Math-PRM-7B":
         return Qwen_2_5_Math_7B(prm_config)
 
-    raise NotImplementedError(f"PRM {prm_path} not implemented")
+    raise NotImplementedError(f"PRM {prm_config.path} not implemented")
