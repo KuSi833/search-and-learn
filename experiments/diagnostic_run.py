@@ -60,10 +60,10 @@ if __name__ == "__main__":
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
-        generator_config=Q8_MODEL,
-        # generator_config=INSTRUCT_MODEL,
-        draft_config=Q4_MODEL,
-        # draft_config=Q8_MODEL,
+        # generator_config=Q8_MODEL,
+        generator_config=INSTRUCT_MODEL,
+        # draft_config=Q4_MODEL,
+        draft_config=Q8_MODEL,
         dataset_config=DATASET_CONFIG,
     )
 
