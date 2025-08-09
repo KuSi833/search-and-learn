@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     DATASET_CONFIG = DatasetConfig(
         # num_samples=100,
-        num_samples=10,
+        # num_samples=10,
         # num_samples=25,
         # num_samples=1,
     )
@@ -73,7 +73,7 @@ if __name__ == "__main__":
         wandb_config=WANDB_CONFIG,
         search_config=SearchConfig(
             n=4,
-            search_batch_size=1,
+            search_batch_size=2,
             # search_batch_size=10,
             # search_batch_size=25,
         ),
