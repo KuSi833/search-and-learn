@@ -71,7 +71,7 @@ if __name__ == "__main__":
         approach="beam_search",
         search_config=SearchConfig(
             n=4,
-            search_batch_size=1,
+            search_batch_size=1,  # DO NOT CHANGE
         ),
         wandb_config=WANDB_CONFIG,
     )
