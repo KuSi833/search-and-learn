@@ -27,6 +27,19 @@ class Record:
     best_text_match: int
 
 
+@dataclass
+class StepPerf:
+    problem_id: int
+    level: Optional[int]
+    iteration: int
+    generation_ms_draft: float
+    generation_ms_target: float
+    total_tokens_draft: int
+    total_tokens_target: int
+    ms_per_token_draft: Optional[float]
+    ms_per_token_target: Optional[float]
+
+
 def load_jsonl(path: Path) -> Iterable[Dict[str, Any]]:
     with path.open("r", encoding="utf-8") as f:
         for line in f:
@@ -36,7 +49,9 @@ def load_jsonl(path: Path) -> Iterable[Dict[str, Any]]:
             yield json.loads(line)
 
 
-def collect_records(results_path: Path) -> Tuple[List[Record], Dict[str, float]]:
+def collect_records(
+    results_path: Path,
+) -> Tuple[List[Record], Dict[str, float], List[StepPerf]]:
     records: List[Record] = []
     latency_accum = {
         "templating_draft": [],
@@ -46,6 +61,7 @@ def collect_records(results_path: Path) -> Tuple[List[Record], Dict[str, float]]
         "prm_scoring_draft": [],
         "prm_scoring_target": [],
     }
+    perfs: List[StepPerf] = []
     for problem in load_jsonl(results_path):
         level = problem.get("level")
         pid = int(problem.get("problem_id", -1))
@@ -56,9 +72,17 @@ def collect_records(results_path: Path) -> Tuple[List[Record], Dict[str, float]]
                 v = lat.get(k)
                 if isinstance(v, (int, float)):
                     latency_accum[k].append(float(v))
+            # Aggregate tokens across beams for this step
+            total_tokens_draft = 0
+            total_tokens_target = 0
             for state in step.get("beam_states", []):
                 draft_summary = state.get("draft_summary", {})
                 cross_model = state.get("cross_model", {})
+                # Sum tokens across candidates (output tokens) for throughput normalisation
+                dc = state.get("draft_candidates", []) or []
+                tc = state.get("target_candidates", []) or []
+                total_tokens_draft += sum(int(c.get("tokens", 0) or 0) for c in dc)
+                total_tokens_target += sum(int(c.get("tokens", 0) or 0) for c in tc)
                 rec = Record(
                     problem_id=pid,
                     level=level if isinstance(level, int) else None,
@@ -77,10 +101,32 @@ def collect_records(results_path: Path) -> Tuple[List[Record], Dict[str, float]]
                     best_text_match=int(cross_model.get("best_text_match", 0)),
                 )
                 records.append(rec)
+            # Build per-step performance sample once per step
+            gen_draft_ms = float(lat.get("generation_draft", 0.0) or 0.0)
+            gen_target_ms = float(lat.get("generation_target", 0.0) or 0.0)
+            mspt_draft = (
+                gen_draft_ms / total_tokens_draft if total_tokens_draft > 0 else None
+            )
+            mspt_target = (
+                gen_target_ms / total_tokens_target if total_tokens_target > 0 else None
+            )
+            perfs.append(
+                StepPerf(
+                    problem_id=pid,
+                    level=level if isinstance(level, int) else None,
+                    iteration=it,
+                    generation_ms_draft=gen_draft_ms,
+                    generation_ms_target=gen_target_ms,
+                    total_tokens_draft=int(total_tokens_draft),
+                    total_tokens_target=int(total_tokens_target),
+                    ms_per_token_draft=mspt_draft,
+                    ms_per_token_target=mspt_target,
+                )
+            )
     latency_means = {
         k: float(np.mean(v)) if len(v) > 0 else 0.0 for k, v in latency_accum.items()
     }
-    return records, latency_means
+    return records, latency_means, perfs
 
 
 def compute_upgrade_stats(
@@ -109,10 +155,10 @@ def compute_upgrade_stats(
         if mask.any():
             by_level[str(int(L))] = float(np.mean(upgrade[mask]))
     by_iter: Dict[str, float] = {}
-    for I in sorted(set(iters.tolist())):
-        mask = iters == I
+    for iter_idx in sorted(set(iters.tolist())):
+        mask = iters == iter_idx
         if mask.any():
-            by_iter[str(int(I))] = float(np.mean(upgrade[mask]))
+            by_iter[str(int(iter_idx))] = float(np.mean(upgrade[mask]))
     return {
         "n_records": int(n),
         "upgrade_rate": float(np.mean(upgrade)),
@@ -194,7 +240,7 @@ def plot_uplift_box_by_level(records: List[Record], out_dir: Path) -> None:
     labels = sorted(uplift_by_level.keys(), key=lambda x: int(x))
     data = [uplift_by_level[k] for k in labels]
     plt.figure(figsize=(8, 4))
-    plt.boxplot(data, labels=labels, showfliers=False)
+    plt.boxplot(data, tick_labels=labels, showfliers=False)
     plt.xlabel("Level")
     plt.ylabel("Target − Draft PRM (best)")
     plt.title("Uplift distribution by difficulty level")
@@ -264,6 +310,46 @@ def plot_latency_summary(lat_means: Dict[str, float], out_dir: Path) -> None:
     plt.close()
 
 
+def plot_ms_per_token_hist(perfs: List[StepPerf], out_dir: Path) -> None:
+    import matplotlib.pyplot as plt
+
+    d = [p.ms_per_token_draft for p in perfs if p.ms_per_token_draft is not None]
+    t = [p.ms_per_token_target for p in perfs if p.ms_per_token_target is not None]
+    if len(d) == 0 and len(t) == 0:
+        return
+    plt.figure(figsize=(8, 4))
+    if len(d) > 0:
+        plt.hist(d, bins=30, alpha=0.6, label="draft")
+    if len(t) > 0:
+        plt.hist(t, bins=30, alpha=0.6, label="target")
+    plt.xlabel("ms per output token")
+    plt.ylabel("Count")
+    plt.title("Throughput distribution (lower is better)")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(out_dir / "ms_per_token_hist.png", dpi=150)
+    plt.close()
+
+
+def plot_latency_vs_tokens_scatter(perfs: List[StepPerf], out_dir: Path) -> None:
+    import matplotlib.pyplot as plt
+
+    xd = [p.total_tokens_draft for p in perfs]
+    yd = [p.generation_ms_draft for p in perfs]
+    xt = [p.total_tokens_target for p in perfs]
+    yt = [p.generation_ms_target for p in perfs]
+    plt.figure(figsize=(8, 4))
+    plt.scatter(xd, yd, s=12, alpha=0.5, label="draft")
+    plt.scatter(xt, yt, s=12, alpha=0.5, label="target")
+    plt.xlabel("Output tokens per step (sum across beams)")
+    plt.ylabel("Generation latency per step (ms)")
+    plt.title("Step latency vs tokens")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(out_dir / "latency_vs_tokens_scatter.png", dpi=150)
+    plt.close()
+
+
 def save_summary_json(summary: Dict[str, Any], out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     with (out_dir / "summary.json").open("w", encoding="utf-8") as f:
@@ -294,7 +380,7 @@ def main() -> None:
     if not results_path.exists():
         raise FileNotFoundError(f"results.jsonl not found at {results_path}")
 
-    records, lat_means = collect_records(results_path)
+    records, lat_means, perfs = collect_records(results_path)
     stats = compute_upgrade_stats(records, delta_threshold=args.delta_threshold)
     aucs = indicator_auc(records, delta_threshold=args.delta_threshold)
 
@@ -307,6 +393,8 @@ def main() -> None:
     plot_indicator_auc_bar(aucs, analysis_dir)
     plot_uplift_histogram_by_iteration(records, args.delta_threshold, analysis_dir)
     plot_latency_summary(lat_means, analysis_dir)
+    plot_ms_per_token_hist(perfs, analysis_dir)
+    plot_latency_vs_tokens_scatter(perfs, analysis_dir)
 
     # Print concise console summary
     print(
