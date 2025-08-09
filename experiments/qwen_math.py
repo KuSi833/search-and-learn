@@ -23,7 +23,9 @@ if __name__ == "__main__":
     model_base_path = get_model_base_path()
 
     INSTRUCT_MODEL = GeneratorConfig(
-        name="Qwen/Qwen2.5-Math-7B-Instruct",
+        # name="Qwen/Qwen2.5-Math-7B-Instruct",
+        base_path=model_base_path,
+        name="Qwen2.5-Math-7B-Instruct",
         parameter_count="7B",
     )
     BASE_MODEL = GeneratorConfig(
@@ -51,7 +53,7 @@ if __name__ == "__main__":
     PRM_CONFIG = PRMConfig(path="Qwen/Qwen2.5-Math-PRM-7B")
     # PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
-    WANDB_CONFIG = WandbConfig(tags=set([]))
+    WANDB_CONFIG = WandbConfig(tags=set(["q2 sweep"]))
 
     # DATASET_CONFIG = DatasetConfig(num_samples=500)
     # DATASET_CONFIG = DatasetConfig()  # FULL DATASET
