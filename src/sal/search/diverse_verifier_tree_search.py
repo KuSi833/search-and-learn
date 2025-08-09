@@ -30,7 +30,9 @@ from .utils import Beam, build_conv, generate_k_steps
 logger = logging.getLogger()
 
 
-def _dvts(batch_of_prompts: list[str], experiment_config: ExperimentConfig, llm: LLM, prm: PRM):
+def _dvts(
+    batch_of_prompts: list[str], experiment_config: ExperimentConfig, llm: LLM, prm: PRM
+):
     sampling_params = SamplingParams(
         temperature=experiment_config.search_config.temperature,
         max_tokens=2048,
@@ -39,6 +41,7 @@ def _dvts(batch_of_prompts: list[str], experiment_config: ExperimentConfig, llm:
             "\n\n"
         ],  # we consider that a step in the problem is indicated by a double newline
         include_stop_str_in_output=True,
+        seed=experiment_config.seed,
         n=1,
     )
 
@@ -62,7 +65,8 @@ def _dvts(batch_of_prompts: list[str], experiment_config: ExperimentConfig, llm:
             )
 
     for i in tqdm(
-        range(experiment_config.beam_search_config.num_iterations), desc="Beam search iterations"
+        range(experiment_config.beam_search_config.num_iterations),
+        desc="Beam search iterations",
     ):
         # generation
         gen_beams = [b for b in beams if not b.pruned]
@@ -75,6 +79,7 @@ def _dvts(batch_of_prompts: list[str], experiment_config: ExperimentConfig, llm:
                 temperature=experiment_config.search_config.temperature,
                 max_tokens=2048,
                 top_p=experiment_config.search_config.top_p,
+                seed=experiment_config.seed,
                 n=1,
             )
 
@@ -128,7 +133,8 @@ def _dvts(batch_of_prompts: list[str], experiment_config: ExperimentConfig, llm:
 
         for beam, scores in zip(gen_beams, all_scores, strict=True):
             agg_scores = [
-                aggregate_scores(s, experiment_config.search_config.agg_strategy) for s in scores
+                aggregate_scores(s, experiment_config.search_config.agg_strategy)
+                for s in scores
             ]
             best_score_ind = np.argmax(agg_scores)
             beam.all_scores = scores
@@ -189,7 +195,9 @@ def dvts(examples, experiment_config: ExperimentConfig, llm: LLM, prm: PRM):
             beams[
                 np.argmax(
                     [
-                        aggregate_scores(b.best_scores, experiment_config.search_config.agg_strategy)
+                        aggregate_scores(
+                            b.best_scores, experiment_config.search_config.agg_strategy
+                        )
                         for b in beams
                     ]
                 )
