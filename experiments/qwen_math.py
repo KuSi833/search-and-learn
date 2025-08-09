@@ -1,3 +1,4 @@
+from pickle import INST
 from typing import List
 
 import pyrootutils
@@ -60,7 +61,8 @@ if __name__ == "__main__":
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
-        generator_config=Q8_MODEL,
+        # generator_config=Q8_MODEL,
+        generator_config=INSTRUCT_MODEL,
         dataset_config=DATASET_CONFIG,
     )
 
@@ -99,7 +101,9 @@ if __name__ == "__main__":
     experiment_configs: List[ExperimentConfig] = []
 
     experiment_configs.append(BEST_OF_N_CONFIG)
+    experiment_configs.append(BEST_OF_N_CONFIG)
     experiment_configs.append(BEAM_SEARCH_CONFIG)
-    experiment_configs.append(DVTS_CONFIG)
+    experiment_configs.append(BEAM_SEARCH_CONFIG)
+    # experiment_configs.append(DVTS_CONFIG)
 
     run(BASE_CONFIG, experiment_configs)
