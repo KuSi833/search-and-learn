@@ -56,7 +56,7 @@ if __name__ == "__main__":
         # num_samples=1,
     )
 
-    WANDB_CONFIG = WandbConfig(tags=set(["q2 sweep"]))
+    WANDB_CONFIG = WandbConfig(tags=set(["diagnostic"]))
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
