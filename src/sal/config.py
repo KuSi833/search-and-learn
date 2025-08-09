@@ -19,18 +19,28 @@ from typing import Literal, Optional, Set
 
 
 @dataclass
-class GeneratorConfig:
+class ModelConfig:
     base_path: Optional[Path] = None  # when set to empty string it assumes hfhub
+    name: str = ""
+
+    def get_model_path(self) -> str:
+        if self.base_path is not None:
+            return f"{self.base_path}/{self.name}"
+        return self.name
+
+
+@dataclass
+class GeneratorConfig(ModelConfig):
     name: str = "meta-llama/Llama-3.2-1B-Instruct"
     parameter_count: Optional[str] = None
     quantisation: Optional[str] = None
     max_model_len: int = 6144
     gpu_memory_utilization: float = 0.5
 
-    def get_model_path(self) -> str:
-        if self.base_path is not None:
-            return f"{self.base_path}/{self.name}"
-        return self.name
+
+@dataclass
+class PRMConfig(ModelConfig):
+    name: str = "RLHFlow/Llama3.1-8B-PRM-Deepseek-Data"
 
 
 @dataclass
@@ -42,11 +52,6 @@ class ProfilerConfig:
     # operation profiling
     profile_operations: bool = True
     operations_trace_dir: str = "trace"
-
-
-@dataclass
-class PRMConfig:
-    path: str = "RLHFlow/Llama3.1-8B-PRM-Deepseek-Data"
 
 
 @dataclass

@@ -425,19 +425,20 @@ class Qwen_2_5_Math_7B(Qwen_2_5_Math):
 
 
 def load_prm(prm_config: PRMConfig) -> PRM:
-    if prm_config.path == "peiyi9979/math-shepherd-mistral-7b-prm":
+    prm_path = prm_config.get_model_path()
+    if prm_path == "peiyi9979/math-shepherd-mistral-7b-prm":
         return MathShepherd(prm_config)
 
-    if prm_config.path == "RLHFlow/Llama3.1-8B-PRM-Deepseek-Data":
+    if prm_path == "RLHFlow/Llama3.1-8B-PRM-Deepseek-Data":
         return RLHFFlow(prm_config)
 
-    if prm_config.path == "Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B":
+    if prm_path == "Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B":
         return SkyworkO1_1_5B(prm_config)
 
-    if prm_config.path == "Skywork/Skywork-o1-Open-PRM-Qwen-2.5-7B":
+    if prm_path == "Skywork/Skywork-o1-Open-PRM-Qwen-2.5-7B":
         return SkyworkO1_7B(prm_config)
 
-    if prm_config.path == "Qwen/Qwen2.5-Math-PRM-7B":
+    if prm_path == "Qwen/Qwen2.5-Math-PRM-7B":
         return Qwen_2_5_Math_7B(prm_config)
 
-    raise NotImplementedError(f"PRM {prm_config.path} not implemented")
+    raise NotImplementedError(f"PRM {prm_path} not implemented")

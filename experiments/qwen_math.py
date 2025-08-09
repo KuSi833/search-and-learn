@@ -1,9 +1,6 @@
-from pickle import INST
 from typing import List
 
-import pyrootutils
 from dotenv import load_dotenv
-from pyparsing import nums
 
 from sal.config import (
     BaseConfig,
@@ -11,7 +8,6 @@ from sal.config import (
     ExperimentConfig,
     GeneratorConfig,
     PRMConfig,
-    QCConfig,
     SearchConfig,
     WandbConfig,
 )
@@ -51,7 +47,10 @@ if __name__ == "__main__":
     )
 
     # PRM_CONFIG = PRMConfig(path="RLHFlow/Llama3.1-8B-PRM-Deepseek-Data")
-    PRM_CONFIG = PRMConfig(path="Qwen/Qwen2.5-Math-PRM-7B")
+    PRM_CONFIG = PRMConfig(
+        base_path=model_base_path,
+        name="Qwen/Qwen2.5-Math-PRM-7B",
+    )
     # PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
     WANDB_CONFIG = WandbConfig(tags=set(["q2 sweep"]))
