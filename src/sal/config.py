@@ -138,6 +138,7 @@ class BaseConfig:
     draft_config: Optional[GeneratorConfig] = None
     prm_config: PRMConfig = field(default_factory=PRMConfig)
     seed: int = 0
+    enforce_eager: bool = False
 
 
 @dataclass

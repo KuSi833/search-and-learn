@@ -120,7 +120,7 @@ class ExperimentRunner:
                 seed=self.base_config.seed,
                 tensor_parallel_size=1,
                 max_model_len=generator_config.max_model_len,
-                enforce_eager=True,
+                enforce_eager=self.base_config.enforce_eager,
             )
             self.profiler.memory_metrics.baseline_gb = baseline
             self.profiler.memory_metrics.llm_memory_gb = (
@@ -143,7 +143,7 @@ class ExperimentRunner:
                 seed=self.base_config.seed,
                 tensor_parallel_size=1,
                 max_model_len=draft_config.max_model_len,
-                enforce_eager=True,
+                enforce_eager=self.base_config.enforce_eager,
             )
 
             baseline = (
