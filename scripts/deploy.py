@@ -248,7 +248,7 @@ def get_slurm_remote_config() -> RemoteConfig:
         remote_config = RemoteConfig(
             username=get_env_or_throw("USERNAME"),
             hostname=get_env_or_throw("HOSTNAME"),
-            remote_root=get_env_or_throw("REMOTE_ROOT"),
+            remote_root=get_env_or_throw("REMOTE_SHARED_ROOT"),
         )
     console.print("[green]✔ SLURM env variables validated")
     return remote_config
