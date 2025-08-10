@@ -2,6 +2,7 @@
 import logging
 import os
 
+from rich.console import Console
 from rich.logging import RichHandler
 
 # def setup_logging():
@@ -22,11 +23,12 @@ def setup_logging():
     # Clear existing handlers
     logging.getLogger().handlers.clear()
 
+    # Create console with no wrapping
+    console = Console(width=None, soft_wrap=False)
+
     # Simple Rich handler
     handler = RichHandler(
-        show_time=True,
-        omit_repeated_times=False,  # Show time on every log
-        show_path=False,
+        console=console, show_time=True, omit_repeated_times=False, show_path=False
     )
 
     # Configure logging
@@ -34,8 +36,12 @@ def setup_logging():
         level="INFO", format="%(message)s", handlers=[handler], force=True
     )
 
-    # Apply to ALL existing loggers (including vLLM)
+    # FORCE all loggers to INFO level (override any DEBUG settings)
+    logging.getLogger().setLevel(logging.INFO)  # Root logger
+
     for name in logging.Logger.manager.loggerDict:
         logger = logging.getLogger(name)
-        logger.handlers = [handler]  # Replace all handlers
+        logger.handlers = [handler]
+        logger.setLevel(logging.INFO)  # Force to INFO
+        logger.disabled = False  # Make sure it's not disabled
         logger.propagate = True
