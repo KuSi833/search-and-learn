@@ -18,16 +18,16 @@ def setup_logging():
 
     class ColorFormatter(logging.Formatter):
         COLORS = {
-            "INFO": "\033[94m",
-            "WARNING": "\033[93m",
+            "INFO": "\033[34m",
+            "WARNING": "\033[33m",
             "ERROR": "\033[91m",
             "CRITICAL": "\033[95m",
         }
 
         def format(self, record):
             color = self.COLORS.get(record.levelname, "")
-            record.levelname = f"{color}{record.levelname}\033[0m"
-            return super().format(record)
+            formatted_msg = super().format(record)
+            return f"{color}{formatted_msg}\033[0m"
 
     # Apply to all existing loggers
     for name in [""] + list(logging.Logger.manager.loggerDict):
