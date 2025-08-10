@@ -106,13 +106,13 @@ if __name__ == "__main__":
         approach="dvts",
         custom_chat_template=None,
         search_config=SearchConfig(
-            n=4,  # You're using 4 instead of their 8
+            n=16,
             temperature=0.7,  # Their exact setting (you had 0.8)
             top_p=0.8,  # Their exact setting (you had 1.0)
             prm_batch_size=4,
             search_batch_size=50,
             max_tokens=2048,
-            agg_strategy="sum",  # Standard practice for PRM aggregation
+            agg_strategy="prod",
         ),
         wandb_config=WANDB_CONFIG,
     )
@@ -122,23 +122,24 @@ if __name__ == "__main__":
         sort_completed=True,
         approach="best_of_n",
         search_config=SearchConfig(
-            n=4,  # You're using 4 instead of their 8
+            n=16,
             temperature=0.7,  # Their exact setting (you had 0.8)
             top_p=0.8,  # Their exact setting (you had 1.0)
             prm_batch_size=4,
             search_batch_size=50,
             max_tokens=2048,
-            agg_strategy="sum",  # Standard practice for PRM aggregation
+            agg_strategy="prod",
         ),
         wandb_config=WANDB_CONFIG,
     )
 
     experiment_configs: List[ExperimentConfig] = []
 
-    for agg_strat in ["sum", "mean", "prod"]:
-        experiment_copy = copy.deepcopy(DVTS_CONFIG)
-        experiment_copy.search_config.agg_strategy = agg_strat  # type: ignore
-        experiment_configs.append(experiment_copy)
-    # experiment_configs.append(BEAM_SEARCH_CONFIG)
+    # for agg_strat in ["prod"]:
+    #     experiment_copy = copy.deepcopy(DVTS_CONFIG)
+    #     experiment_copy.search_config.agg_strategy = agg_strat  # type: ignore
+    #     experiment_configs.append(experiment_copy)
+    experiment_configs.append(BEST_OF_N_CONFIG)
+    experiment_configs.append(DVTS_CONFIG)
 
     run(BASE_CONFIG, experiment_configs)
