@@ -91,13 +91,28 @@ if __name__ == "__main__":
     #     wandb_config=WANDB_CONFIG,
     # )
 
+    # DVTS_CONFIG = ExperimentConfig(
+    #     approach="dvts",
+    #     custom_chat_template=None,
+    #     search_config=SearchConfig(
+    #         n=4,
+    #         # search_batch_size=10,
+    #         search_batch_size=50,
+    #     ),
+    #     wandb_config=WANDB_CONFIG,
+    # )
+
     DVTS_CONFIG = ExperimentConfig(
         approach="dvts",
         custom_chat_template=None,
         search_config=SearchConfig(
-            n=4,
-            # search_batch_size=10,
+            n=4,  # You're using 4 instead of their 8
+            temperature=0.7,  # Their exact setting (you had 0.8)
+            top_p=0.8,  # Their exact setting (you had 1.0)
+            prm_batch_size=4,
             search_batch_size=50,
+            max_tokens=2048,
+            agg_strategy="sum",  # Standard practice for PRM aggregation
         ),
         wandb_config=WANDB_CONFIG,
     )
@@ -121,7 +136,7 @@ if __name__ == "__main__":
     experiment_configs: List[ExperimentConfig] = []
 
     for agg_strat in ["sum", "mean", "prod"]:
-        experiment_copy = copy.deepcopy(BEST_OF_N_CONFIG)
+        experiment_copy = copy.deepcopy(DVTS_CONFIG)
         experiment_copy.search_config.agg_strategy = agg_strat  # type: ignore
         experiment_configs.append(experiment_copy)
     # experiment_configs.append(BEAM_SEARCH_CONFIG)
