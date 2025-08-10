@@ -14,6 +14,7 @@ model_base_path = Path("/data/km1124/search-and-learn/models")
 # prm = load_prm(PRM_CONFIG)
 
 SMALLEST_MODEL = GeneratorConfig(
+    base_path=model_base_path,
     name="Qwen/Qwen2-Math-1.5B-Instruct",
     parameter_count="1.5B",
 )
