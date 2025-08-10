@@ -55,10 +55,10 @@ if __name__ == "__main__":
     )
     # PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
-    WANDB_CONFIG = WandbConfig(tags=set(["q2 sweep"]))
+    WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
 
-    # DATASET_CONFIG = DatasetConfig(num_samples=100)
-    DATASET_CONFIG = DatasetConfig(num_samples=500)  # FULL DATASET
+    DATASET_CONFIG = DatasetConfig(num_samples=100)
+    # DATASET_CONFIG = DatasetConfig(num_samples=500)  # FULL DATASET
     # DATASET_CONFIG = DatasetConfig(
     #     dataset_name="HuggingFaceH4/aime_2024"
     # )  # FULL DATASET
@@ -106,7 +106,7 @@ if __name__ == "__main__":
         approach="dvts",
         custom_chat_template=None,
         search_config=SearchConfig(
-            n=16,
+            n=4,
             temperature=0.7,  # Their exact setting (you had 0.8)
             top_p=0.8,  # Their exact setting (you had 1.0)
             prm_batch_size=4,
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         sort_completed=True,
         approach="best_of_n",
         search_config=SearchConfig(
-            n=16,
+            n=4,
             temperature=0.7,  # Their exact setting (you had 0.8)
             top_p=0.8,  # Their exact setting (you had 1.0)
             prm_batch_size=4,
@@ -135,10 +135,13 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    for n in [8, 16]:
-        for base_config in [BEST_OF_N_CONFIG, DVTS_CONFIG]:
-            config_variant = copy.deepcopy(base_config)
-            config_variant.search_config.n = n
-            experiment_configs.append(config_variant)
+    # for n in [8, 16]:
+    #     for base_config in [BEST_OF_N_CONFIG, DVTS_CONFIG]:
+    #         config_variant = copy.deepcopy(base_config)
+    #         config_variant.search_config.n = n
+    #         experiment_configs.append(config_variant)
+
+    experiment_configs.append(BEST_OF_N_CONFIG)
+    experiment_configs.append(DVTS_CONFIG)
 
     run(BASE_CONFIG, experiment_configs)
