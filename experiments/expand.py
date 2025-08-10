@@ -19,7 +19,7 @@ TINY_GENERATOR = GeneratorConfig(
     name="Qwen/Qwen2-Math-1.5B-Instruct",
     parameter_count="1.5B",
 )
-TINY_PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
+TINY_PRM_CONFIG = PRMConfig(name="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
 WANDB_CONFIG = WandbConfig(tags=set(["debug"]))
 
