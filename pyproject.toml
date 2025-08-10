@@ -42,6 +42,7 @@ trl = {git = "https://github.com/huggingface/trl.git"}
 deploy = [
   "editables>=0.5",
   "flash-attn>=2.8.2",
+  "flashinfer-python>=0.2.11",
   "hatchling>=1.27.0",
   "matplotlib>=3.10.3",
   "nvidia-ml-py>=12.575.51",
