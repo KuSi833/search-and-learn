@@ -135,11 +135,10 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    # for agg_strat in ["prod"]:
-    #     experiment_copy = copy.deepcopy(DVTS_CONFIG)
-    #     experiment_copy.search_config.agg_strategy = agg_strat  # type: ignore
-    #     experiment_configs.append(experiment_copy)
-    experiment_configs.append(BEST_OF_N_CONFIG)
-    experiment_configs.append(DVTS_CONFIG)
+    for n in [8, 16]:
+        for base_config in [BEST_OF_N_CONFIG, DVTS_CONFIG]:
+            config_variant = copy.deepcopy(base_config)
+            config_variant.search_config.n = n
+            experiment_configs.append(config_variant)
 
     run(BASE_CONFIG, experiment_configs)
