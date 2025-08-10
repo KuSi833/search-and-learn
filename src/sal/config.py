@@ -85,7 +85,7 @@ class SearchConfig:
     prm_batch_size: int = 4
     search_batch_size: int = 25
     max_tokens: int = 2048
-    agg_strategy: Literal["last", "min", "prod"] = "last"
+    agg_strategy: Literal["last", "min", "prod", "sum", "mean"] = "last"
 
 
 @dataclass

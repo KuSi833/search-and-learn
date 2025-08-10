@@ -31,16 +31,21 @@ from sal.utils.math import (
 
 
 def aggregate_scores(
-    scores: list[float], agg_strategy: Literal["min", "prod", "last"]
+    scores: list[float], agg_strategy: Literal["min", "prod", "last", "sum", "mean"]
 ) -> float:
-    if agg_strategy == "min":
-        return min(scores)
-    elif agg_strategy == "prod":
-        return math.prod(scores)
-    elif agg_strategy == "last":
-        return scores[-1]
-    else:
-        raise ValueError(f"Invalid aggregation strategy: {agg_strategy}")
+    match agg_strategy:
+        case "min":
+            return min(scores)
+        case "prod":
+            return math.prod(scores)
+        case "last":
+            return scores[-1]
+        case "sum":
+            return sum(scores)
+        case "mean":
+            return sum(scores) / len(scores)
+        case _:
+            raise ValueError(f"Invalid aggregation strategy: {agg_strategy}")
 
 
 def score(
