@@ -62,7 +62,7 @@ class SlurmJobConfig:
     nodes: int = 1
     ntasks: int = 1
     partition: str = "gpgpuB"  # Default Tesla A30 24GB
-    job_name: str = "qtts"
+    job_name: str = "cascade"
     output: str = "./logs/slurm-%j.log"
     cpus_per_task: int = 1
     gres: str = "gpu:1"
