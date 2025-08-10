@@ -4,6 +4,9 @@ from vllm import LLM
 
 from sal.config import GeneratorConfig, PRMConfig
 from sal.models.reward_models import load_prm
+from sal.utils.logging import setup_logging
+
+setup_logging()
 
 model_base_path = Path("/data/km1124/search-and-learn/models")
 
