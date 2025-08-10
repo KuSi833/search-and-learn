@@ -427,19 +427,16 @@ class Qwen_2_5_Math_7B(Qwen_2_5_Math):
 
 
 def load_prm(prm_config: PRMConfig) -> PRM:
-    if prm_config.name == "peiyi9979/math-shepherd-mistral-7b-prm":
-        return MathShepherd(prm_config)
-
-    if prm_config.name == "RLHFlow/Llama3.1-8B-PRM-Deepseek-Data":
-        return RLHFFlow(prm_config)
-
-    if prm_config.name == "Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B":
-        return SkyworkO1_1_5B(prm_config)
-
-    if prm_config.name == "Skywork/Skywork-o1-Open-PRM-Qwen-2.5-7B":
-        return SkyworkO1_7B(prm_config)
-
-    if prm_config.name == "Qwen/Qwen2.5-Math-PRM-7B":
-        return Qwen_2_5_Math_7B(prm_config)
-
-    raise NotImplementedError(f"PRM {prm_config.path} not implemented")
+    match prm_config.name:
+        case "peiyi9979/math-shepherd-mistral-7b-prm":
+            return MathShepherd(prm_config)
+        case "RLHFlow/Llama3.1-8B-PRM-Deepseek-Data":
+            return RLHFFlow(prm_config)
+        case "Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B":
+            return SkyworkO1_1_5B(prm_config)
+        case "Skywork/Skywork-o1-Open-PRM-Qwen-2.5-7B":
+            return SkyworkO1_7B(prm_config)
+        case "Qwen/Qwen2.5-Math-PRM-7B":
+            return Qwen_2_5_Math_7B(prm_config)
+        case _:
+            raise NotImplementedError(f"PRM {prm_config.name} not implemented")
