@@ -2,9 +2,6 @@
 import logging
 import os
 
-from rich.console import Console
-from rich.logging import RichHandler
-
 # def setup_logging():
 #     logging.basicConfig(
 #         level="INFO",
@@ -15,33 +12,31 @@ from rich.logging import RichHandler
 
 
 def setup_logging():
-    """Simple Rich logging setup."""
+    """Add colors only - don't touch formatting."""
 
-    # Force colors
     os.environ["FORCE_COLOR"] = "1"
 
-    # Clear existing handlers
-    logging.getLogger().handlers.clear()
+    class ColorFormatter(logging.Formatter):
+        COLORS = {
+            "INFO": "\033[94m",
+            "WARNING": "\033[93m",
+            "ERROR": "\033[91m",
+            "CRITICAL": "\033[95m",
+        }
 
-    # Create console with no wrapping
-    console = Console(width=None, soft_wrap=False)
+        def format(self, record):
+            color = self.COLORS.get(record.levelname, "")
+            record.levelname = f"{color}{record.levelname}\033[0m"
+            return super().format(record)
 
-    # Simple Rich handler
-    handler = RichHandler(
-        console=console, show_time=True, omit_repeated_times=False, show_path=False
-    )
-
-    # Configure logging
-    logging.basicConfig(
-        level="INFO", format="%(message)s", handlers=[handler], force=True
-    )
-
-    # FORCE all loggers to INFO level (override any DEBUG settings)
-    logging.getLogger().setLevel(logging.INFO)  # Root logger
-
-    for name in logging.Logger.manager.loggerDict:
+    # Apply to all existing loggers
+    for name in [""] + list(logging.Logger.manager.loggerDict):
         logger = logging.getLogger(name)
-        logger.handlers = [handler]
-        logger.setLevel(logging.INFO)  # Force to INFO
-        logger.disabled = False  # Make sure it's not disabled
-        logger.propagate = True
+        for handler in logger.handlers:
+            handler.setFormatter(
+                ColorFormatter(
+                    handler.formatter._fmt
+                    if hasattr(handler.formatter, "_fmt")
+                    else None
+                )
+            )
