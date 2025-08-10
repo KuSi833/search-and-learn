@@ -22,6 +22,7 @@ if __name__ == "__main__":
     model_base_path = get_model_base_path()
 
     INSTRUCT_MODEL = GeneratorConfig(
+        base_path=model_base_path,
         name="Qwen/Qwen2.5-Math-7B-Instruct",
         parameter_count="7B",
         gpu_memory_utilization=0.4,
