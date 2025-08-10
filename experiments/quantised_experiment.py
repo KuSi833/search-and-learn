@@ -25,7 +25,7 @@ if __name__ == "__main__":
         base_path=model_base_path,
         name="Qwen/Qwen2.5-Math-7B-Instruct",
         parameter_count="7B",
-        gpu_memory_utilization=0.4,
+        gpu_memory_utilization=0.3,
     )
     # BASE_MODEL = GeneratorConfig(
     #     name="Qwen/Qwen2.5-Math-7B",
@@ -36,7 +36,7 @@ if __name__ == "__main__":
         name="quant_factory/Qwen2.5-Math-7B.Q8_0.gguf",
         parameter_count="7B",
         quantisation="Q8_0",
-        gpu_memory_utilization=0.3,
+        gpu_memory_utilization=0.2,
     )
     Q4_MODEL = GeneratorConfig(
         base_path=model_base_path,

@@ -1,5 +1,6 @@
 # logging_config.py
 import logging
+import os
 
 from rich.logging import RichHandler
 
@@ -13,26 +14,28 @@ from rich.logging import RichHandler
 
 
 def setup_logging():
-    """Force rich logging on ALL existing loggers."""
-    # Remove all existing handlers
-    root = logging.getLogger()
-    for handler in root.handlers[:]:
-        root.removeHandler(handler)
+    """Simple Rich logging setup."""
 
-    # Set up rich handler
-    rich_handler = RichHandler(rich_tracebacks=True, show_time=True, show_path=True)
+    # Force colors
+    os.environ["FORCE_COLOR"] = "1"
 
-    # Configure root logger
-    logging.basicConfig(
-        level="INFO",
-        format="%(message)s",
-        handlers=[rich_handler],
-        force=True,  # This is key!
+    # Clear existing handlers
+    logging.getLogger().handlers.clear()
+
+    # Simple Rich handler
+    handler = RichHandler(
+        show_time=True,
+        omit_repeated_times=False,  # Show time on every log
+        show_path=False,
     )
 
-    # Apply to all existing loggers
+    # Configure logging
+    logging.basicConfig(
+        level="INFO", format="%(message)s", handlers=[handler], force=True
+    )
+
+    # Apply to ALL existing loggers (including vLLM)
     for name in logging.Logger.manager.loggerDict:
         logger = logging.getLogger(name)
-        logger.handlers.clear()
-        logger.addHandler(rich_handler)
+        logger.handlers = [handler]  # Replace all handlers
         logger.propagate = True
