@@ -38,14 +38,14 @@ from sal.profiler import Profiler
 from sal.search import beam_search, best_of_n, diagnostic_tts, dvts, q2, qcts
 from sal.utils.data import get_dataset, save_inference_output
 from sal.utils.env import get_env_or_throw
+from sal.utils.logging import setup_logging
 from sal.utils.score import score
 
-logging.basicConfig(level=logging.INFO)
+setup_logging()
 
 root = pyrootutils.find_root(indicator="pyproject.toml")
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 APPROACHES = {
