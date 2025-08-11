@@ -1,16 +1,16 @@
-import wandb
 import argparse
-import numpy as np
-from tqdm import tqdm
-from pebble import ProcessPool
-from concurrent.futures import TimeoutError
-from datasets import load_dataset, Dataset
-from tqdm.auto import tqdm
 import json
+from concurrent.futures import TimeoutError
 from pathlib import Path
 
+import numpy as np
+import wandb
+from datasets import Dataset
+from pebble import ProcessPool
+from tqdm.auto import tqdm
+
 from sal.evaluation.grader import math_equal_process
-from sal.evaluation.parser import parse_ground_truth, extract_answer_map
+from sal.evaluation.parser import extract_answer_map, parse_ground_truth
 from sal.evaluation.utils import load_jsonl
 
 
@@ -49,12 +49,15 @@ def evaluate_config(params):
         future = pool.map(math_equal_process, params, timeout=3)
         iterator = future.result()
         scores = []
+        incorrect_indices = []
         timeout_cnt = 0
         with tqdm(total=len(params), desc=f"Evaluate {agg}@{n}") as progress_bar:
             while True:
                 try:
-                    result = next(iterator)
-                    scores.append(result)
+                    idx, is_correct = next(iterator)
+                    scores.append(is_correct)
+                    if not is_correct:
+                        incorrect_indices.append(idx)
                 except StopIteration:
                     break
                 except Exception as error:
@@ -91,8 +94,8 @@ def evaluate_config(params):
                 ) as progress_bar:
                     while True:
                         try:
-                            result = next(iterator)
-                            level_scores_list.append(result)
+                            _, is_correct = next(iterator)
+                            level_scores_list.append(is_correct)
                         except StopIteration:
                             break
                         except TimeoutError as error:
@@ -108,7 +111,7 @@ def evaluate_config(params):
                 )
                 level_counts[level] = len(level_scores_list)
 
-    return n, agg, level_scores, overall_acc, timeout_cnt
+    return n, agg, level_scores, overall_acc, timeout_cnt, incorrect_indices
 
 
 def evaluate_single_dataset(
@@ -116,6 +119,7 @@ def evaluate_single_dataset(
     dataset,
     dataset_col: str,
     output_file: Path,
+    result_id: str,
     max_num_samples=None,
 ):
     samples = dataset
@@ -163,11 +167,21 @@ def evaluate_single_dataset(
             ) as progress_bar:
                 while True:
                     try:
-                        n, agg, level_scores, overall_acc, timeout_cnt = next(iterator)
+                        (
+                            n,
+                            agg,
+                            level_scores,
+                            overall_acc,
+                            timeout_cnt,
+                            incorrect_indices,
+                        ) = next(iterator)
                         if n not in voting_results:
                             voting_results[n] = {}
                         voting_results[n][f"acc_{agg}"] = level_scores
                         voting_results[n][f"overall_acc_{agg}"] = overall_acc
+                        voting_results[n][f"incorrect_indices_{agg}"] = (
+                            incorrect_indices
+                        )
                         total_timeout_cnt += timeout_cnt
                     except StopIteration:
                         break
@@ -186,6 +200,8 @@ def evaluate_single_dataset(
                     ]
 
         result_json = {
+            "benchmark": benchmark,
+            "dataset": result_id,
             "num_samples": len(samples),
             "num_scores": len(samples),
             "timeout_samples": total_timeout_cnt,
@@ -217,6 +233,7 @@ def evaluate_single_dataset(
         # Evaluate each level separately
         level_scores = {}
         timeout_cnt = 0
+        incorrect_indices = []
         for level, params in level_params.items():
             with ProcessPool(max_workers=8) as pool:
                 future = pool.map(math_equal_process, params, timeout=3)
@@ -227,8 +244,10 @@ def evaluate_single_dataset(
                 ) as progress_bar:
                     while True:
                         try:
-                            result = next(iterator)
-                            scores.append(result)
+                            idx, is_correct = next(iterator)
+                            scores.append(is_correct)
+                            if not is_correct:
+                                incorrect_indices.append(idx)
                         except StopIteration:
                             break
                         except TimeoutError as error:
@@ -236,16 +255,19 @@ def evaluate_single_dataset(
                             scores.append(False)
                             timeout_cnt += 1
                         except Exception as error:
-                            print(error.traceback)
+                            print(error)
                             exit()
                         progress_bar.update(1)
                 level_scores[level] = np.mean(scores) * 100 if scores else 0.0
 
         result_json = {
+            "benchmark": benchmark,
+            "dataset": result_id,
             "num_samples": len(samples),
             "num_scores": len(samples),
             "timeout_samples": timeout_cnt,
             "acc": level_scores,
+            "incorrect_indices": incorrect_indices,
         }
 
     print(result_json)
@@ -273,10 +295,11 @@ def evaluate(
         benchmark=benchmark,
         dataset=dataset,
         dataset_col=dataset_col,
+        result_id=result_id,
         max_num_samples=max_num_samples,
         output_file=output_file,
     )
-    # Add id to result
+    # Add id to result (redundant with dataset field for backwards compatibility)
     result["id"] = result_id
     return samples, result
 
