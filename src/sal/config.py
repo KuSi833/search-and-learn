@@ -109,7 +109,8 @@ class ParticlesConfig:
 @dataclass
 class BeamSearchConfig:
     beam_width: int = 4  # m in the paper
-    num_iterations: int = 40
+    # num_iterations: int = 40
+    num_iterations: int = 39
     lookahead: int = 0
 
 
