@@ -34,8 +34,8 @@ if __name__ == "__main__":
 
     # WANDB_CONFIG = WandbConfig(tags=set(["particles", "diagnostic"]))
     WANDB_CONFIG = WandbConfig(tags=set(["particles"]))
-    DATASET_CONFIG = DatasetConfig(num_samples=100)
-    # DATASET_CONFIG = DatasetConfig(num_samples=10)
+    # DATASET_CONFIG = DatasetConfig(num_samples=100)
+    DATASET_CONFIG = DatasetConfig(num_samples=10)
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
@@ -56,7 +56,8 @@ if __name__ == "__main__":
         particles_config=ParticlesConfig(
             min_iterations=0,
             allow_completed_ancestors=True,
-            debug_enable=False,
+            # debug_enable=False,
+            debug_enable=True,
         ),
         wandb_config=WANDB_CONFIG,
     )
