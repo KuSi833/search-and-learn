@@ -1,3 +1,5 @@
+import copy
+
 from dotenv import load_dotenv
 
 from sal.config import (
@@ -37,7 +39,6 @@ if __name__ == "__main__":
         generator_config=INSTRUCT_MODEL,
         dataset_config=DATASET_CONFIG,
     )
-    import copy
 
     base_experiment_config = ExperimentConfig(
         approach="particles",
