@@ -49,14 +49,14 @@ if __name__ == "__main__":
             temperature=0.7,
             top_p=0.8,
             prm_batch_size=4,
-            search_batch_size=1,
+            search_batch_size=10,
             max_tokens=2048,
             agg_strategy="prod",
         ),
         particles_config=ParticlesConfig(
             min_iterations=0,
             allow_completed_ancestors=True,
-            debug_enable=True,
+            debug_enable=False,
         ),
         wandb_config=WANDB_CONFIG,
     )
