@@ -104,6 +104,8 @@ class ParticlesConfig:
     temperature_jitter_std: float = 0.0
     # Add zero-mean Gaussian noise to aggregated scores before softmax resampling
     score_noise_std: float = 0.0
+    # Resampling method: 'multinomial' or 'systematic'
+    resampling_method: Literal["multinomial", "systematic"] = "systematic"
 
 
 @dataclass

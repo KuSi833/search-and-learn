@@ -33,9 +33,9 @@ if __name__ == "__main__":
     )
 
     # WANDB_CONFIG = WandbConfig(tags=set(["particles", "diagnostic"]))
-    WANDB_CONFIG = WandbConfig(tags=set(["particles"]))
-    # DATASET_CONFIG = DatasetConfig(num_samples=100)
-    DATASET_CONFIG = DatasetConfig(num_samples=10)
+    WANDB_CONFIG = WandbConfig(tags=set(["particles", "agg_strat_sweep"]))
+    DATASET_CONFIG = DatasetConfig(num_samples=100)
+    # DATASET_CONFIG = DatasetConfig(num_samples=25)
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
@@ -51,28 +51,29 @@ if __name__ == "__main__":
             prm_batch_size=4,
             search_batch_size=10,
             max_tokens=2048,
-            agg_strategy="prod",
+            agg_strategy="mean",
         ),
         particles_config=ParticlesConfig(
-            min_iterations=0,
-            allow_completed_ancestors=True,
-            # debug_enable=False,
+            min_iterations=3,
+            allow_completed_ancestors=False,
+            resampling_temperature=1.5,
+            temperature_jitter_std=0.2,
+            score_noise_std=0.02,
+            resampling_method="systematic",
             debug_enable=True,
         ),
         wandb_config=WANDB_CONFIG,
     )
 
-    exp_list: List[ExperimentConfig] = []
-    exp_list.append(base_experiment_config)
+    exp_list: List[ExperimentConfig] = [base_experiment_config]
 
-    # for n in [8, 16]:
-    #     cfg = copy.deepcopy(base_experiment_config)
-    #     cfg.search_config.n = n
-    #     cfg.particles_config.resampling_temperature = 1.5
-    #     cfg.particles_config.allow_completed_ancestors = False
-    #     cfg.particles_config.min_iterations = 5
-    #     cfg.wandb_config.tags.add("anti_takeover")
-    #     cfg.wandb_config.tags.add("tau_1p5")
-    #     exp_list.append(cfg)
+    for agg_strategy in ["sum", "last", "prod"]:
+        cfg = copy.deepcopy(base_experiment_config)
+        cfg.search_config.agg_strategy = agg_strategy
+        # Keep diversity-friendly particle defaults; tag the run for clarity
+        cfg.wandb_config.tags.add(f"agg={agg_strategy}")
+        cfg.wandb_config.tags.add("anti_takeover")
+        cfg.wandb_config.tags.add("tau_1p5")
+        exp_list.append(cfg)
 
     run(BASE_CONFIG, exp_list)

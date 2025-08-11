@@ -245,9 +245,23 @@ def _particles(
                     weights = weights / weights.sum()
             # Keep a copy of the final weights used for sampling for telemetry
             chosen_weights = np.copy(weights)
-            ancestor_indices = rng.choice(
-                candidate_indices, size=n_particles, replace=True, p=weights
-            )
+            if (
+                experiment_config.particles_config.resampling_method == "systematic"
+                and weights.size > 0
+            ):
+                # Systematic resampling (low-variance)
+                # Ensure weights sum to 1
+                w = weights / weights.sum()
+                cdf = np.cumsum(w)
+                start = rng.random() / n_particles
+                points = start + (np.arange(n_particles) / n_particles)
+                ancestor_indices = np.searchsorted(cdf, points)
+                # Map back into candidate_indices domain
+                ancestor_indices = candidate_indices[ancestor_indices]
+            else:
+                ancestor_indices = rng.choice(
+                    candidate_indices, size=n_particles, replace=True, p=weights
+                )
 
             # Rebuild the particle population by cloning ancestors
             particles = [
