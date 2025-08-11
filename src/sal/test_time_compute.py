@@ -35,7 +35,7 @@ from sal.config import (
 from sal.evaluation.evaluate import evaluate
 from sal.models.reward_models import load_prm
 from sal.profiler import Profiler
-from sal.search import beam_search, best_of_n, diagnostic_tts, dvts, q2, qcts
+from sal.search import beam_search, best_of_n, diagnostic_tts, dvts, particles, q2, qcts
 from sal.utils.data import get_dataset, save_inference_output
 from sal.utils.env import get_env_or_throw
 from sal.utils.logging import setup_logging
@@ -55,6 +55,7 @@ APPROACHES = {
     "qcts": qcts,
     "q2": q2,
     "diagnostic_tts": diagnostic_tts,
+    "particles": particles,
 }
 
 

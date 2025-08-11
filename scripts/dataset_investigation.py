@@ -18,3 +18,19 @@ for level, count in sorted(level_counts.items()):
     print(f"Level {level}: {count} questions")
 
 print(f"\nTotal questions: {sum(level_counts.values())}")
+
+# Questions by level:
+# Level 1: 43 questions
+# Level 2: 90 questions
+# Level 3: 105 questions
+# Level 4: 128 questions
+# Level 5: 134 questions
+# Total questions: 500
+# ---
+# Questions by level:
+# Level 1: 11 questions
+# Level 2: 25 questions
+# Level 3: 19 questions
+# Level 4: 22 questions
+# Level 5: 23 questions
+# Total questions: 100

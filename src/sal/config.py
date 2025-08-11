@@ -152,7 +152,13 @@ class ExperimentConfig:
     qcconfig: QCConfig = field(default_factory=QCConfig)
 
     approach: Literal[
-        "best_of_n", "beam_search", "dvts", "qcts", "q2", "diagnostic_tts"
+        "best_of_n",
+        "beam_search",
+        "dvts",
+        "qcts",
+        "q2",
+        "diagnostic_tts",
+        "particles",
     ] = "best_of_n"
 
     # Chat template related options
