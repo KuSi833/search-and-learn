@@ -1,4 +1,5 @@
 import copy
+from typing import List
 
 from dotenv import load_dotenv
 
@@ -58,14 +59,25 @@ if __name__ == "__main__":
         wandb_config=WANDB_CONFIG,
     )
 
-    n_values = [8, 16]
-    taus = [1, 2.0]
-    exp_list = []
-    for n in n_values:
-        for tau in taus:
-            cfg = copy.deepcopy(base_experiment_config)
-            cfg.search_config.n = n
-            cfg.particles_config.resampling_temperature = tau
-            exp_list.append(cfg)
+    # n_values = [8, 16]
+    # taus = [1, 2.0]
+    exp_list: List[ExperimentConfig] = []
+    # for n in n_values:
+    #     for tau in taus:
+    #         cfg = copy.deepcopy(base_experiment_config)
+    #         cfg.search_config.n = n
+    #         cfg.particles_config.resampling_temperature = tau
+    #         exp_list.append(cfg)
+
+    # Experiment B: anti-takeover particles — fix tau=1.5, vary n, disallow completed ancestors, delay early stop
+    for n in [8, 16]:
+        cfg = copy.deepcopy(base_experiment_config)
+        cfg.search_config.n = n
+        cfg.particles_config.resampling_temperature = 1.5
+        cfg.particles_config.allow_completed_ancestors = False
+        cfg.particles_config.min_iterations = 5
+        cfg.wandb_config.tags.add("anti_takeover")
+        cfg.wandb_config.tags.add("tau_1p5")
+        exp_list.append(cfg)
 
     run(BASE_CONFIG, exp_list)
