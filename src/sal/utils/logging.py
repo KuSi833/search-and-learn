@@ -12,9 +12,21 @@ import os
 
 
 def setup_logging():
-    """Add colors only - don't touch formatting."""
+    """Initialise logging once: ensure a root StreamHandler at INFO and add colours."""
 
     os.environ["FORCE_COLOR"] = "1"
+
+    # Ensure there is at least one handler and an INFO log level on the root logger
+    root_logger = logging.getLogger()
+    if not root_logger.handlers:
+        default_handler = logging.StreamHandler()
+        default_handler.setLevel(logging.INFO)
+        default_handler.setFormatter(
+            logging.Formatter("%(levelname)s | %(name)s | %(message)s")
+        )
+        root_logger.addHandler(default_handler)
+    # Even if handlers already exist, make sure INFO and above are emitted
+    root_logger.setLevel(logging.INFO)
 
     class ColorFormatter(logging.Formatter):
         COLORS = {
@@ -33,10 +45,8 @@ def setup_logging():
     for name in [""] + list(logging.Logger.manager.loggerDict):
         logger = logging.getLogger(name)
         for handler in logger.handlers:
-            handler.setFormatter(
-                ColorFormatter(
-                    handler.formatter._fmt
-                    if hasattr(handler.formatter, "_fmt")
-                    else None
-                )
-            )
+            # Safely extract existing format string if present
+            fmt = None
+            if handler.formatter is not None and hasattr(handler.formatter, "_fmt"):
+                fmt = handler.formatter._fmt  # type: ignore[attr-defined]
+            handler.setFormatter(ColorFormatter(fmt))

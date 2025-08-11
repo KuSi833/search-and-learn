@@ -207,7 +207,6 @@ def _particles(
             ]
 
             # Optional debug telemetry
-            print("BEFORE DEBUG")
             if experiment_config.particles_config.debug_enable and (
                 (iteration % max(1, experiment_config.particles_config.debug_log_every))
                 == 0
@@ -248,7 +247,6 @@ def _particles(
                 score_mean = float(scores_arr.mean()) if scores_arr.size else 0.0
                 score_std = float(scores_arr.std()) if scores_arr.size else 0.0
 
-                print("TEST", score_mean)
                 logger.info(
                     f"[particles] it={iteration} completed={num_completed}/{n_particles} diversity={diversity} "
                     f"score_mean={score_mean:.4f} score_std={score_std:.4f} w_entropy={entropy:.3f} ess={ess:.2f} "
