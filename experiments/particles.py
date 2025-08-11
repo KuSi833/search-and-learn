@@ -55,7 +55,7 @@ if __name__ == "__main__":
         particles_config=ParticlesConfig(
             min_iterations=0,
             allow_completed_ancestors=True,
-            debug_enable=True,
+            debug_enable=False,
         ),
         wandb_config=WANDB_CONFIG,
     )
