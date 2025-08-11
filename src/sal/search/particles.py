@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import copy
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
@@ -120,30 +121,69 @@ def _particles(
                 final_sampling_params if use_final else step_sampling_params
             )
 
-            # Build conversations and apply chat template
-            convs = [
-                build_conv(
+            # Build conversations and apply chat template per particle depending on whether this is the first step
+            convs = []
+            is_first_step_flags = []
+            for i in active_indices:
+                conv = build_conv(
                     prompt, particles[i].current_text, experiment_config.system_prompt
                 )
-                for i in active_indices
-            ]
-            templated_convs = tokenizer.apply_chat_template(
-                convs,
-                add_generation_prompt=(
-                    len(particles[active_indices[0]].current_text) == 0
-                ),
-                continue_final_message=(
-                    len(particles[active_indices[0]].current_text) > 0
-                ),
-                tokenize=False,
-            )
+                convs.append(conv)
+                is_first_step_flags.append(len(particles[i].current_text) == 0)
 
-            # Generate one step for each active particle
-            responses = llm.generate(
-                templated_convs, sampling_params=sampling_params, use_tqdm=False
-            )
-            for idx, resp in zip(active_indices, responses, strict=True):
-                out = resp.outputs[0]
+            # Partition into first-step and continuation to set chat template flags correctly
+            first_idxs = [
+                j for j, is_first in enumerate(is_first_step_flags) if is_first
+            ]
+            cont_idxs = [
+                j for j, is_first in enumerate(is_first_step_flags) if not is_first
+            ]
+
+            templated_convs_map: dict[int, str] = {}
+            if first_idxs:
+                first_convs = [convs[j] for j in first_idxs]
+                templated_first = tokenizer.apply_chat_template(
+                    first_convs,
+                    add_generation_prompt=True,
+                    continue_final_message=False,
+                    tokenize=False,
+                )
+                for local_idx, text in zip(first_idxs, templated_first, strict=True):
+                    templated_convs_map[local_idx] = text
+            if cont_idxs:
+                cont_convs = [convs[j] for j in cont_idxs]
+                templated_cont = tokenizer.apply_chat_template(
+                    cont_convs,
+                    add_generation_prompt=False,
+                    continue_final_message=True,
+                    tokenize=False,
+                )
+                for local_idx, text in zip(cont_idxs, templated_cont, strict=True):
+                    templated_convs_map[local_idx] = text
+            templated_convs = [templated_convs_map[j] for j in range(len(convs))]
+
+            # Generate one step for each active particle with unique seeds to promote diversity
+            for idx, conv in zip(active_indices, templated_convs, strict=True):
+                per_particle_params = copy.deepcopy(sampling_params)
+                # Temperature jitter for diversity
+                if experiment_config.particles_config.temperature_jitter_std > 0.0:
+                    jitter = float(
+                        np.random.default_rng(
+                            experiment_config.seed + iteration * 7919 + idx
+                        ).normal(
+                            0.0,
+                            experiment_config.particles_config.temperature_jitter_std,
+                        )
+                    )
+                    base_temp = float(sampling_params.temperature or 0.0)
+                    per_particle_params.temperature = max(0.0, base_temp + jitter)
+                per_particle_params.seed = (
+                    int(experiment_config.seed) + int(iteration) * 1000003 + int(idx)
+                )
+                resp_list = llm.generate(
+                    [conv], sampling_params=per_particle_params, use_tqdm=False
+                )
+                out = resp_list[0].outputs[0]
                 gen_text = out.text
                 stop_reason = out.stop_reason
                 if stop_reason is None:
@@ -176,9 +216,24 @@ def _particles(
                     )
                 )
 
+            # Measure diversity before resampling
+            diversity_before = len({p.current_text for p in particles})
+
             # Resample particles for next iteration according to softmax weights
             resample_tau = experiment_config.particles_config.resampling_temperature
-            weights = _softmax(agg_scores, resample_tau)
+            # Optional score noise to fight collapse
+            if experiment_config.particles_config.score_noise_std > 0.0:
+                noise = np.random.default_rng(
+                    experiment_config.seed + iteration * 104729
+                ).normal(
+                    0.0,
+                    experiment_config.particles_config.score_noise_std,
+                    size=len(agg_scores),
+                )
+                noisy_scores = (np.array(agg_scores, dtype=np.float64) + noise).tolist()
+            else:
+                noisy_scores = agg_scores
+            weights = _softmax(noisy_scores, resample_tau)
             rng = np.random.default_rng(experiment_config.seed + iteration)
             candidate_indices = np.arange(n_particles)
             if not experiment_config.particles_config.allow_completed_ancestors:
@@ -212,7 +267,7 @@ def _particles(
                 == 0
             ):
                 num_completed = int(sum(1 for p in particles if p.completed))
-                diversity = len({p.current_text for p in particles})
+                diversity_after = len({p.current_text for p in particles})
                 scores_arr = np.array(agg_scores, dtype=np.float64)
                 weights_arr = np.array(chosen_weights, dtype=np.float64)
                 ess = (
@@ -248,7 +303,7 @@ def _particles(
                 score_std = float(scores_arr.std()) if scores_arr.size else 0.0
 
                 logger.info(
-                    f"[particles] it={iteration} completed={num_completed}/{n_particles} diversity={diversity} "
+                    f"[particles] it={iteration} completed={num_completed}/{n_particles} div_pre={diversity_before} div_post={diversity_after} "
                     f"score_mean={score_mean:.4f} score_std={score_std:.4f} w_entropy={entropy:.3f} ess={ess:.2f} "
                     f"uniq_anc={unique_ancestors} comp_anc_frac={completed_ancestor_frac:.2f}"
                 )

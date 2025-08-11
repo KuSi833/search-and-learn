@@ -99,6 +99,11 @@ class ParticlesConfig:
     # Debugging/telemetry controls
     debug_enable: bool = False
     debug_log_every: int = 1
+    # Diversity controls
+    # Jitter the sampling temperature per particle using a zero-mean Gaussian
+    temperature_jitter_std: float = 0.0
+    # Add zero-mean Gaussian noise to aggregated scores before softmax resampling
+    score_noise_std: float = 0.0
 
 
 @dataclass
