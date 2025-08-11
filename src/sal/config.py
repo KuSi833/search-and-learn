@@ -89,6 +89,16 @@ class SearchConfig:
 
 
 @dataclass
+class ParticlesConfig:
+    # Softmax temperature used for particle resampling
+    resampling_temperature: float = 1.0
+    # Optional: minimum number of iterations before allowing early stop
+    min_iterations: int = 0
+    # If True, completed particles can be chosen as ancestors during resampling
+    allow_completed_ancestors: bool = True
+
+
+@dataclass
 class BeamSearchConfig:
     beam_width: int = 4  # m in the paper
     num_iterations: int = 40
@@ -150,6 +160,7 @@ class ExperimentConfig:
     search_config: SearchConfig = field(default_factory=SearchConfig)
     beam_search_config: BeamSearchConfig = field(default_factory=BeamSearchConfig)
     qcconfig: QCConfig = field(default_factory=QCConfig)
+    particles_config: ParticlesConfig = field(default_factory=ParticlesConfig)
 
     approach: Literal[
         "best_of_n",

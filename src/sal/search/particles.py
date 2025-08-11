@@ -42,12 +42,14 @@ class Particle:
     best_scores: List[float]
 
 
-def _softmax(x: List[float]) -> np.ndarray:
+def _softmax(x: List[float], temperature: float = 1.0) -> np.ndarray:
     if len(x) == 0:
         return np.array([])
     x_arr = np.array(x, dtype=np.float64)
     # stabilise
-    x_arr = x_arr - np.max(x_arr)
+    if temperature <= 0:
+        temperature = 1.0
+    x_arr = (x_arr - np.max(x_arr)) / temperature
     exps = np.exp(x_arr)
     s = np.sum(exps)
     if not np.isfinite(s) or s <= 0.0:
@@ -171,10 +173,19 @@ def _particles(
                 )
 
             # Resample particles for next iteration according to softmax weights
-            weights = _softmax(agg_scores)
+            resample_tau = experiment_config.particles_config.resampling_temperature
+            weights = _softmax(agg_scores, resample_tau)
             rng = np.random.default_rng(experiment_config.seed + iteration)
+            candidate_indices = np.arange(n_particles)
+            if not experiment_config.particles_config.allow_completed_ancestors:
+                # Mask completed indices out by renormalising over active ones
+                active_mask = np.array([not p.completed for p in particles], dtype=bool)
+                if active_mask.any():
+                    candidate_indices = candidate_indices[active_mask]
+                    weights = weights[active_mask]
+                    weights = weights / weights.sum()
             ancestor_indices = rng.choice(
-                np.arange(n_particles), size=n_particles, replace=True, p=weights
+                candidate_indices, size=n_particles, replace=True, p=weights
             )
 
             # Rebuild the particle population by cloning ancestors
@@ -189,8 +200,11 @@ def _particles(
                 for a in ancestor_indices
             ]
 
-            # If all are completed, stop early
-            if all(p.completed for p in particles):
+            # If all are completed, stop early (respect minimum iterations)
+            if (
+                all(p.completed for p in particles)
+                and iteration + 1 >= experiment_config.particles_config.min_iterations
+            ):
                 break
 
         # Convert final particles to Beam objects for uniform downstream handling

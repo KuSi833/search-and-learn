@@ -5,6 +5,7 @@ from sal.config import (
     DatasetConfig,
     ExperimentConfig,
     GeneratorConfig,
+    ParticlesConfig,
     PRMConfig,
     SearchConfig,
     WandbConfig,
@@ -37,19 +38,29 @@ if __name__ == "__main__":
         dataset_config=DATASET_CONFIG,
     )
 
-    PARTICLES_CONFIG = ExperimentConfig(
-        approach="particles",
-        custom_chat_template=None,
-        search_config=SearchConfig(
-            n=4,
-            temperature=0.7,
-            top_p=0.8,
-            prm_batch_size=4,
-            search_batch_size=50,
-            max_tokens=2048,
-            agg_strategy="prod",
-        ),
-        wandb_config=WANDB_CONFIG,
-    )
+    # Simple sweep over resampling temperatures
+    temps = [0.7, 1.0, 1.3, 1.6, 2.0]
+    exp_list = []
+    for tau in temps:
+        cfg = ExperimentConfig(
+            approach="particles",
+            custom_chat_template=None,
+            search_config=SearchConfig(
+                n=4,
+                temperature=0.7,
+                top_p=0.8,
+                prm_batch_size=4,
+                search_batch_size=25,
+                max_tokens=2048,
+                agg_strategy="prod",
+            ),
+            particles_config=ParticlesConfig(
+                resampling_temperature=tau,
+                min_iterations=0,
+                allow_completed_ancestors=True,
+            ),
+            wandb_config=WANDB_CONFIG,
+        )
+        exp_list.append(cfg)
 
-    run(BASE_CONFIG, [PARTICLES_CONFIG])
+    run(BASE_CONFIG, exp_list)
