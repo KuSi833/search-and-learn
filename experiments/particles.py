@@ -1,10 +1,12 @@
 import copy
+from turtle import numinput
 from typing import List
 
 from dotenv import load_dotenv
 
 from sal.config import (
     BaseConfig,
+    BeamSearchConfig,
     DatasetConfig,
     ExperimentConfig,
     GeneratorConfig,
@@ -37,8 +39,8 @@ if __name__ == "__main__":
     # DATASET_CONFIG = DatasetConfig(num_samples=500)
     DATASET_CONFIG = DatasetConfig(
         num_samples=10,
-        dataset_start=40,
-        dataset_end=45,
+        dataset_start=41,
+        dataset_end=42,
     )
 
     BASE_CONFIG = BaseConfig(
@@ -61,6 +63,9 @@ if __name__ == "__main__":
             min_iterations=0,
             allow_completed_ancestors=True,
             debug_enable=True,
+        ),
+        beam_search_config=BeamSearchConfig(
+            num_iterations=35,
         ),
         wandb_config=WANDB_CONFIG,
     )
