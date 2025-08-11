@@ -34,7 +34,7 @@ class GeneratorConfig(ModelConfig):
     name: str = "meta-llama/Llama-3.2-1B-Instruct"
     parameter_count: Optional[str] = None
     quantisation: Optional[str] = None
-    max_model_len: int = 6144
+    max_model_len: int = 2000
     gpu_memory_utilization: float = 0.5
 
 
