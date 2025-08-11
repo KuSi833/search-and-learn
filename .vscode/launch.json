@@ -1,11 +1,18 @@
 {
-    "configurations": [
-        {
-            "name": "main",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/experiments/debug.py",
-            "console": "integratedTerminal",
-        }
-    ]
+  "configurations": [
+    {
+      "name": "Python Debugger: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "main",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/experiments/debug.py",
+      "console": "integratedTerminal"
+    }
+  ]
 }
