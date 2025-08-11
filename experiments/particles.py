@@ -32,7 +32,7 @@ if __name__ == "__main__":
         name="Qwen/Qwen2.5-Math-PRM-7B",
     )
 
-    WANDB_CONFIG = WandbConfig(tags=set(["particles"]))
+    WANDB_CONFIG = WandbConfig(tags=set(["particles", "diagnostic"]))
     # DATASET_CONFIG = DatasetConfig(num_samples=100)
     DATASET_CONFIG = DatasetConfig(num_samples=10)
 
