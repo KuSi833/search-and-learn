@@ -37,30 +37,34 @@ if __name__ == "__main__":
         generator_config=INSTRUCT_MODEL,
         dataset_config=DATASET_CONFIG,
     )
+    import copy
 
-    # Simple sweep over resampling temperatures
-    temps = [0.7, 1.0, 1.3, 1.6, 2.0]
+    base_experiment_config = ExperimentConfig(
+        approach="particles",
+        search_config=SearchConfig(
+            temperature=0.7,
+            top_p=0.8,
+            prm_batch_size=4,
+            search_batch_size=25,
+            max_tokens=2048,
+            agg_strategy="prod",
+        ),
+        particles_config=ParticlesConfig(
+            min_iterations=0,
+            allow_completed_ancestors=True,
+            debug_enable=True,
+        ),
+        wandb_config=WANDB_CONFIG,
+    )
+
+    n_values = [8, 16]
+    taus = [1, 2.0]
     exp_list = []
-    for tau in temps:
-        cfg = ExperimentConfig(
-            approach="particles",
-            custom_chat_template=None,
-            search_config=SearchConfig(
-                n=4,
-                temperature=0.7,
-                top_p=0.8,
-                prm_batch_size=4,
-                search_batch_size=25,
-                max_tokens=2048,
-                agg_strategy="prod",
-            ),
-            particles_config=ParticlesConfig(
-                resampling_temperature=tau,
-                min_iterations=0,
-                allow_completed_ancestors=True,
-            ),
-            wandb_config=WANDB_CONFIG,
-        )
-        exp_list.append(cfg)
+    for n in n_values:
+        for tau in taus:
+            cfg = copy.deepcopy(base_experiment_config)
+            cfg.search_config.n = n
+            cfg.particles_config.resampling_temperature = tau
+            exp_list.append(cfg)
 
     run(BASE_CONFIG, exp_list)

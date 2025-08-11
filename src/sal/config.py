@@ -96,6 +96,9 @@ class ParticlesConfig:
     min_iterations: int = 0
     # If True, completed particles can be chosen as ancestors during resampling
     allow_completed_ancestors: bool = True
+    # Debugging/telemetry controls
+    debug_enable: bool = False
+    debug_log_every: int = 1
 
 
 @dataclass

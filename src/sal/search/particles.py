@@ -165,7 +165,11 @@ def _particles(
             agg_scores: List[float] = []
             for p, s in zip(particles, all_scores_per_particle, strict=True):
                 # s is List[List[float]], one candidate per inner list; we used one completion → s[0]
-                p.best_scores = s[0]
+                s0 = s[0]
+                if isinstance(s0, list):
+                    p.best_scores = s0
+                else:
+                    p.best_scores = [float(s0)]
                 agg_scores.append(
                     aggregate_scores(
                         p.best_scores, experiment_config.search_config.agg_strategy
@@ -184,6 +188,8 @@ def _particles(
                     candidate_indices = candidate_indices[active_mask]
                     weights = weights[active_mask]
                     weights = weights / weights.sum()
+            # Keep a copy of the final weights used for sampling for telemetry
+            chosen_weights = np.copy(weights)
             ancestor_indices = rng.choice(
                 candidate_indices, size=n_particles, replace=True, p=weights
             )
@@ -199,6 +205,60 @@ def _particles(
                 )
                 for a in ancestor_indices
             ]
+
+            # Optional debug telemetry
+            if experiment_config.particles_config.debug_enable and (
+                (iteration % max(1, experiment_config.particles_config.debug_log_every))
+                == 0
+            ):
+                num_completed = int(sum(1 for p in particles if p.completed))
+                diversity = len({p.current_text for p in particles})
+                scores_arr = np.array(agg_scores, dtype=np.float64)
+                weights_arr = np.array(chosen_weights, dtype=np.float64)
+                ess = (
+                    1.0 / float(np.sum(np.square(weights_arr)))
+                    if weights_arr.size > 0
+                    else 0.0
+                )
+                entropy = (
+                    -float(
+                        np.sum(weights_arr * np.log(np.clip(weights_arr, 1e-12, 1.0)))
+                    )
+                    if weights_arr.size > 0
+                    else 0.0
+                )
+                unique_ancestors = len(set(int(a) for a in ancestor_indices.tolist()))
+                completed_ancestor_frac = (
+                    (
+                        float(
+                            sum(
+                                1
+                                for a in ancestor_indices
+                                if particles[int(a)].completed
+                            )
+                        )
+                        / len(ancestor_indices)
+                    )
+                    if len(ancestor_indices) > 0
+                    else 0.0
+                )
+                logger.info(
+                    (
+                        "[particles] it=%d completed=%d/%d diversity=%d "
+                        "score_mean=%.4f score_std=%.4f w_entropy=%.3f ess=%.2f "
+                        "uniq_anc=%d comp_anc_frac=%.2f"
+                    ),
+                    iteration,
+                    num_completed,
+                    n_particles,
+                    diversity,
+                    float(scores_arr.mean()) if scores_arr.size else 0.0,
+                    float(scores_arr.std()) if scores_arr.size else 0.0,
+                    entropy,
+                    ess,
+                    unique_ancestors,
+                    completed_ancestor_frac,
+                )
 
             # If all are completed, stop early (respect minimum iterations)
             if (
