@@ -34,7 +34,7 @@ class GeneratorConfig(ModelConfig):
     name: str = "meta-llama/Llama-3.2-1B-Instruct"
     parameter_count: Optional[str] = None
     quantisation: Optional[str] = None
-    max_model_len: int = 2000
+    max_model_len: int = 6144
     gpu_memory_utilization: float = 0.5
 
 
@@ -96,20 +96,13 @@ class ParticlesConfig:
     min_iterations: int = 0
     # If True, completed particles can be chosen as ancestors during resampling
     allow_completed_ancestors: bool = True
-    # Debugging/telemetry controls
-    debug_enable: bool = False
-    debug_log_every: int = 1
-    # Diversity controls
-    # Jitter the sampling temperature per particle using a zero-mean Gaussian
-    temperature_jitter_std: float = 0.0
-    # Add zero-mean Gaussian noise to aggregated scores before softmax resampling
-    score_noise_std: float = 0.0
 
 
 @dataclass
 class BeamSearchConfig:
     beam_width: int = 4  # m in the paper
-    num_iterations: int = 40
+    # num_iterations: int = 40
+    num_iterations: int = 39
     lookahead: int = 0
 
 
@@ -156,7 +149,7 @@ class BaseConfig:
     draft_config: Optional[GeneratorConfig] = None
     prm_config: PRMConfig = field(default_factory=PRMConfig)
     seed: int = 0
-    enforce_eager: bool = False
+    enforce_eager: bool = True
 
 
 @dataclass
