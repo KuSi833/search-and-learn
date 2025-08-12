@@ -54,7 +54,7 @@ if __name__ == "__main__":
         ),
         particles_config=ParticlesConfig(
             min_iterations=0,
-            allow_completed_ancestors=True,
+            allow_completed_ancestors=False,
             debug_enable=False,
         ),
         wandb_config=WANDB_CONFIG,
@@ -63,14 +63,9 @@ if __name__ == "__main__":
     exp_list: List[ExperimentConfig] = []
     exp_list.append(base_experiment_config)
 
-    # for n in [8, 16]:
-    #     cfg = copy.deepcopy(base_experiment_config)
-    #     cfg.search_config.n = n
-    #     cfg.particles_config.resampling_temperature = 1.5
-    #     cfg.particles_config.allow_completed_ancestors = False
-    #     cfg.particles_config.min_iterations = 5
-    #     cfg.wandb_config.tags.add("anti_takeover")
-    #     cfg.wandb_config.tags.add("tau_1p5")
-    #     exp_list.append(cfg)
+    for agg_strat in ["sum", "prod"]:
+        cfg = copy.deepcopy(base_experiment_config)
+        cfg.search_config.agg_strategy = agg_strat
+        exp_list.append(cfg)
 
     run(BASE_CONFIG, exp_list)
