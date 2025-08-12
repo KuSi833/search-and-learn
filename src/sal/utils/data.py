@@ -11,7 +11,6 @@
 # limitations under the License.
 
 import logging
-from typing import Dict, Literal, Optional
 
 from datasets import Dataset, load_dataset
 
@@ -54,29 +53,6 @@ def save_inference_output(dataset, result_file_path):
     logger.info(f"Saved completions to {result_file_path}")
 
 
-# ---------- Convenience loaders ----------
-
-# Known subsets for MATH-500. Extend as needed.
-Math500Subset = Literal["hard"]
-_MATH500_SUBSETS: Dict[Math500Subset, set[int]] = {
-    "hard": {40, 62},
-}
-
-
-def get_math500(subset: Optional[Math500Subset] = None) -> Dataset:
-    """Return the MATH-500 test split optionally filtered to a named subset.
-
-    Parameters
-    - subset: an optional subset name (e.g., "hard"). When provided and known,
-      the dataset will be indexed accordingly.
-    """
-    cfg = DatasetConfig(
-        dataset_name="HuggingFaceH4/MATH-500",
-        dataset_split="test",
-    )
-
-    if subset is not None:
-        indices = _MATH500_SUBSETS[subset]
-        cfg.dataset_indicies = set(indices)
-
-    return get_dataset(cfg)
+# Note: dataset-specific curated index helpers are defined close to experiment
+# code (see `sal/utils/experiment.py`). This module remains focused on generic
+# dataset loading and I/O utilities only.
