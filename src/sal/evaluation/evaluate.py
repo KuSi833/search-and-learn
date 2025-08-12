@@ -229,15 +229,8 @@ def evaluate_single_dataset(
         with open(mistakes_file, "w") as f:
             json.dump(mistakes_json, f)
         try:
-            artifact = wandb.Artifact("mistakes", type="mistakes")
-            artifact.add_file(str(mistakes_file))
             if wandb.run is not None:
-                wandb.run.log_artifact(artifact)
-            else:
-                try:
-                    wandb.save(str(mistakes_file))
-                except Exception:
-                    pass
+                wandb.run.save(str(mistakes_file))
         except Exception as error:
             print(f"W&B artifact upload failed: {error}")
 
@@ -323,17 +316,10 @@ def evaluate_single_dataset(
         with open(mistakes_file, "w") as f:
             json.dump(mistakes_json, f)
         try:
-            artifact = wandb.Artifact("mistakes", type="mistakes")
-            artifact.add_file(str(mistakes_file))
             if wandb.run is not None:
-                wandb.run.log_artifact(artifact)
-            else:
-                try:
-                    wandb.save(str(mistakes_file))
-                except Exception:
-                    pass
+                wandb.run.save(str(mistakes_file))
         except Exception as error:
-            print(f"W&B artifact upload failed: {error}")
+            print(f"W&B artifact upload failed: {error}")run.
 
         result_json = {
             "num_samples": len(samples),
