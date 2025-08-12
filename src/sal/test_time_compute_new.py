@@ -55,7 +55,7 @@ APPROACHES = {
     "qcts": qcts,
 }
 
-SEARCH_WIDTH = 86400
+SEARCH_WIDTH = 86400 * 2
 
 
 class ExperimentRunner:
