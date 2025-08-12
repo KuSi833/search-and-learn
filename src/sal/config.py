@@ -97,6 +97,12 @@ class ParticlesConfig:
     min_iterations: int = 0
     # If True, completed particles can be chosen as ancestors during resampling
     allow_completed_ancestors: bool = True
+    # Diversity controls: add small Gaussian jitter to temperature per particle
+    temperature_jitter_std: float = 0.0
+    # Add Gaussian noise to aggregated PRM scores before resampling to reduce collapse
+    score_noise_std: float = 0.0
+    # Resampling strategy for selecting ancestors
+    resampling_method: Literal["multinomial", "systematic"] = "multinomial"
     # Debugging/telemetry controls
     debug_enable: bool = False
     debug_log_every: int = 1

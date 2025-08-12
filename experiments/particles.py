@@ -32,7 +32,7 @@ if __name__ == "__main__":
         name="Qwen/Qwen2.5-Math-PRM-7B",
     )
 
-    WANDB_CONFIG = WandbConfig(tags=set(["particles", "diagnostic"]))
+    WANDB_CONFIG = WandbConfig(tags=set(["particles", "ps1"]))
     # DATASET_CONFIG = DatasetConfig(num_samples=100)
     # DATASET_CONFIG = DatasetConfig(num_samples=500)
     DATASET_CONFIG = DatasetConfig(
@@ -68,20 +68,113 @@ if __name__ == "__main__":
         wandb_config=WANDB_CONFIG,
     )
 
+    def with_tags(cfg: ExperimentConfig, tags: List[str]) -> ExperimentConfig:
+        cfg2 = copy.deepcopy(cfg)
+        cfg2.wandb_config.tags = set(
+            list(cfg2.wandb_config.tags) + tags + ["particles", "sweep"]
+        )  # type: ignore[arg-type]
+        return cfg2
+
     exp_list: List[ExperimentConfig] = []
-    exp_list.append(base_experiment_config)
 
-    # for agg_strat in ["last", "sum", "mean", "min"]:
-    # cfg_sum = copy.deepcopy(base_experiment_config)
-    # cfg_sum.search_config.agg_strategy = "sum"
-    # exp_list.append(cfg_sum)
+    # 0) Baseline
+    exp_list.append(with_tags(base_experiment_config, ["baseline"]))
 
-    # cfg_mean = copy.deepcopy(base_experiment_config)
-    # cfg_mean.search_config.agg_strategy = "mean"
-    # exp_list.append(cfg_mean)
+    # 1) Vary number of particles n
+    for n in [8, 16]:
+        cfg = copy.deepcopy(base_experiment_config)
+        cfg.search_config.n = n
+        exp_list.append(with_tags(cfg, [f"n{n}"]))
 
-    # cfg_min = copy.deepcopy(base_experiment_config)
-    # cfg_min.search_config.agg_strategy = "min"
-    # exp_list.append(cfg_min)
+    # 2) Aggregation strategy variants
+    for agg in ["last", "sum", "mean"]:
+        cfg = copy.deepcopy(base_experiment_config)
+        cfg.search_config.agg_strategy = agg  # type: ignore[assignment]
+        cfg.search_config.n = 8
+        exp_list.append(with_tags(cfg, [f"agg_{agg}", "n8"]))
+
+    # 3) Resampling method and temperature
+    for method in ["multinomial", "systematic"]:
+        for tau in [0.5, 1.0, 2.0]:
+            cfg = copy.deepcopy(base_experiment_config)
+            cfg.search_config.n = 8
+            cfg.particles_config.resampling_method = method  # type: ignore[assignment]
+            cfg.particles_config.resampling_temperature = float(tau)
+            exp_list.append(with_tags(cfg, [f"resamp_{method}", f"tau{tau}", "n8"]))
+
+    # 4) Iteration budget (deeper rollouts)
+    for iters in [20, 40, 60]:
+        cfg = copy.deepcopy(base_experiment_config)
+        cfg.beam_search_config.num_iterations = iters
+        cfg.search_config.n = 8
+        exp_list.append(with_tags(cfg, [f"iters{iters}", "n8"]))
+
+    # 5) Allow completed ancestors vs not, and enforce minimum iterations
+    for allow in [False, True]:
+        for min_it in [0, 2, 4]:
+            cfg = copy.deepcopy(base_experiment_config)
+            cfg.particles_config.allow_completed_ancestors = allow
+            cfg.particles_config.min_iterations = min_it
+            cfg.search_config.n = 8
+            exp_list.append(
+                with_tags(
+                    cfg,
+                    [
+                        "allow_done" if allow else "no_done",
+                        f"minit{min_it}",
+                        "n8",
+                    ],
+                )
+            )
+
+    # 6) Exploration parameters (temperature, top_p)
+    for temp, top_p in [(0.5, 0.95), (0.7, 0.95), (0.6, 0.9)]:
+        cfg = copy.deepcopy(base_experiment_config)
+        cfg.search_config.temperature = float(temp)
+        cfg.search_config.top_p = float(top_p)
+        cfg.search_config.n = 8
+        exp_list.append(with_tags(cfg, [f"T{temp}", f"p{top_p}", "n8"]))
+
+    # 7) Diversity and anti-collapse tweaks (small jitter/noise)
+    for jit, sn in [(0.0, 0.05), (0.03, 0.0), (0.05, 0.03)]:
+        cfg = copy.deepcopy(base_experiment_config)
+        cfg.search_config.n = 8
+        cfg.particles_config.temperature_jitter_std = float(jit)
+        cfg.particles_config.score_noise_std = float(sn)
+        cfg.particles_config.resampling_method = "systematic"  # type: ignore[assignment]
+        cfg.particles_config.resampling_temperature = 0.8
+        exp_list.append(with_tags(cfg, [f"jit{jit}", f"sn{sn}", "sys", "tau0.8", "n8"]))
+
+    # 8) Stronger search: combine several beneficial settings
+    strong_cfg = copy.deepcopy(base_experiment_config)
+    strong_cfg.search_config.n = 16
+    strong_cfg.search_config.temperature = 0.6
+    strong_cfg.search_config.top_p = 0.95
+    strong_cfg.search_config.agg_strategy = "last"  # type: ignore[assignment]
+    strong_cfg.beam_search_config.num_iterations = 60
+    strong_cfg.particles_config.resampling_method = "systematic"  # type: ignore[assignment]
+    strong_cfg.particles_config.resampling_temperature = 0.7
+    strong_cfg.particles_config.temperature_jitter_std = 0.03
+    strong_cfg.particles_config.score_noise_std = 0.0
+    strong_cfg.particles_config.min_iterations = 2
+    strong_cfg.particles_config.allow_completed_ancestors = False
+    exp_list.append(
+        with_tags(
+            strong_cfg,
+            [
+                "strong",
+                "n16",
+                "T0.6",
+                "p0.95",
+                "agg_last",
+                "iters60",
+                "sys",
+                "tau0.7",
+                "jit0.03",
+                "minit2",
+                "no_done",
+            ],
+        )
+    )
 
     run(BASE_CONFIG, exp_list)
