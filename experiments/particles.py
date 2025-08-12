@@ -63,7 +63,8 @@ if __name__ == "__main__":
     exp_list: List[ExperimentConfig] = []
     exp_list.append(base_experiment_config)
 
-    for agg_strat in ["last", "sum", "mean", "min"]:
+    # for agg_strat in ["last", "sum", "mean", "min"]:
+    for agg_strat in ["sum", "mean", "min"]:
         cfg = copy.deepcopy(base_experiment_config)
         cfg.search_config.agg_strategy = agg_strat
         exp_list.append(cfg)
