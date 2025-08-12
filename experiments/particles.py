@@ -33,8 +33,8 @@ if __name__ == "__main__":
     )
 
     WANDB_CONFIG = WandbConfig(tags=set(["particles", "diagnostic"]))
-    DATASET_CONFIG = DatasetConfig(num_samples=100)
-    # DATASET_CONFIG = DatasetConfig(num_samples=500)
+    # DATASET_CONFIG = DatasetConfig(num_samples=100)
+    DATASET_CONFIG = DatasetConfig(num_samples=500)
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     exp_list: List[ExperimentConfig] = []
     exp_list.append(base_experiment_config)
 
-    for agg_strat in ["sum", "prod"]:
+    for agg_strat in ["last", "sum", "mean", "min"]:
         cfg = copy.deepcopy(base_experiment_config)
         cfg.search_config.agg_strategy = agg_strat
         exp_list.append(cfg)
