@@ -1,16 +1,16 @@
-import wandb
 import argparse
-import numpy as np
-from tqdm import tqdm
-from pebble import ProcessPool
-from concurrent.futures import TimeoutError
-from datasets import load_dataset, Dataset
-from tqdm.auto import tqdm
 import json
+from concurrent.futures import TimeoutError
 from pathlib import Path
 
+import numpy as np
+import wandb
+from datasets import Dataset
+from pebble import ProcessPool
+from tqdm import tqdm
+
 from sal.evaluation.grader import math_equal_process
-from sal.evaluation.parser import parse_ground_truth, extract_answer_map
+from sal.evaluation.parser import extract_answer_map, parse_ground_truth
 from sal.evaluation.utils import load_jsonl
 
 
@@ -45,21 +45,42 @@ def evaluate_config(params):
             samples_with_pred["idx"], samples_with_pred["pred"], samples_with_pred["gt"]
         )
     ]
+    idx_sequence = [p[0] for p in params]
+    # We only need overall mistakes (indices), not per-level breakdown
     with ProcessPool(max_workers=8) as pool:
         future = pool.map(math_equal_process, params, timeout=3)
         iterator = future.result()
         scores = []
         timeout_cnt = 0
+        overall_mistakes = []
         with tqdm(total=len(params), desc=f"Evaluate {agg}@{n}") as progress_bar:
+            pos = 0
             while True:
                 try:
                     result = next(iterator)
                     scores.append(result)
+                    if pos < len(idx_sequence) and not result:
+                        current_idx = idx_sequence[pos]
+                        overall_mistakes.append(current_idx)
+                    pos += 1
                 except StopIteration:
                     break
+                except TimeoutError as error:
+                    timeout_cnt += 1
+                    print(error)
+                    if pos < len(idx_sequence):
+                        current_idx = idx_sequence[pos]
+                        overall_mistakes.append(current_idx)
+                        scores.append(False)
+                        pos += 1
                 except Exception as error:
                     timeout_cnt += 1
                     print(error)
+                    if pos < len(idx_sequence):
+                        current_idx = idx_sequence[pos]
+                        overall_mistakes.append(current_idx)
+                        scores.append(False)
+                        pos += 1
 
     level_scores = {}
     level_counts = {}
@@ -108,7 +129,7 @@ def evaluate_config(params):
                 )
                 level_counts[level] = len(level_scores_list)
 
-    return n, agg, level_scores, overall_acc, timeout_cnt
+    return (n, agg, level_scores, overall_acc, timeout_cnt, overall_mistakes)
 
 
 def evaluate_single_dataset(
@@ -154,6 +175,7 @@ def evaluate_single_dataset(
 
         # Run parallel evaluation
         voting_results = {}
+        mistakes = {}
         total_timeout_cnt = 0
         with ProcessPool(max_workers=min(len(eval_params), 8)) as pool:
             future = pool.map(evaluate_config, eval_params)
@@ -163,11 +185,21 @@ def evaluate_single_dataset(
             ) as progress_bar:
                 while True:
                     try:
-                        n, agg, level_scores, overall_acc, timeout_cnt = next(iterator)
+                        (
+                            n,
+                            agg,
+                            level_scores,
+                            overall_acc,
+                            timeout_cnt,
+                            overall_mistakes,
+                        ) = next(iterator)
                         if n not in voting_results:
                             voting_results[n] = {}
+                        if n not in mistakes:
+                            mistakes[n] = {}
                         voting_results[n][f"acc_{agg}"] = level_scores
                         voting_results[n][f"overall_acc_{agg}"] = overall_acc
+                        mistakes[n][f"overall_mistakes_{agg}"] = overall_mistakes
                         total_timeout_cnt += timeout_cnt
                     except StopIteration:
                         break
@@ -184,6 +216,30 @@ def evaluate_single_dataset(
                     avg_acc[f"overall_acc_{agg}_n{n}"] = voting_results[n][
                         f"overall_acc_{agg}"
                     ]
+
+        # Save mistakes to file and upload to W&B as a file artifact
+        mistakes_json = {
+            "num_samples": len(samples),
+            "timeout_samples": total_timeout_cnt,
+            "voting_ns": voting_ns,
+            "mistakes": mistakes,
+        }
+        mistakes_file = output_file.parent / "mistakes.json"
+        mistakes_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(mistakes_file, "w") as f:
+            json.dump(mistakes_json, f)
+        try:
+            artifact = wandb.Artifact("mistakes", type="mistakes")
+            artifact.add_file(str(mistakes_file))
+            if wandb.run is not None:
+                wandb.run.log_artifact(artifact)
+            else:
+                try:
+                    wandb.save(str(mistakes_file))
+                except Exception:
+                    pass
+        except Exception as error:
+            print(f"W&B artifact upload failed: {error}")
 
         result_json = {
             "num_samples": len(samples),
@@ -217,6 +273,7 @@ def evaluate_single_dataset(
         # Evaluate each level separately
         level_scores = {}
         timeout_cnt = 0
+        overall_mistakes = []
         for level, params in level_params.items():
             with ProcessPool(max_workers=8) as pool:
                 future = pool.map(math_equal_process, params, timeout=3)
@@ -225,21 +282,58 @@ def evaluate_single_dataset(
                 with tqdm(
                     total=len(params), desc=f"Evaluate level {level}"
                 ) as progress_bar:
+                    pos = 0
+                    idx_sequence = [p[0] for p in params]
                     while True:
                         try:
                             result = next(iterator)
                             scores.append(result)
+                            if pos < len(idx_sequence) and not result:
+                                current_idx = idx_sequence[pos]
+                                overall_mistakes.append(current_idx)
+                            pos += 1
                         except StopIteration:
                             break
                         except TimeoutError as error:
                             print(error)
                             scores.append(False)
                             timeout_cnt += 1
+                            if pos < len(idx_sequence):
+                                current_idx = idx_sequence[pos]
+                                overall_mistakes.append(current_idx)
+                                pos += 1
                         except Exception as error:
-                            print(error.traceback)
-                            exit()
+                            print(error)
+                            scores.append(False)
+                            if pos < len(idx_sequence):
+                                current_idx = idx_sequence[pos]
+                                overall_mistakes.append(current_idx)
+                                pos += 1
                         progress_bar.update(1)
                 level_scores[level] = np.mean(scores) * 100 if scores else 0.0
+
+        # Save mistakes to file and upload to W&B as a file artifact
+        mistakes_json = {
+            "num_samples": len(samples),
+            "timeout_samples": timeout_cnt,
+            "overall_mistakes": overall_mistakes,
+        }
+        mistakes_file = output_file.parent / "mistakes.json"
+        mistakes_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(mistakes_file, "w") as f:
+            json.dump(mistakes_json, f)
+        try:
+            artifact = wandb.Artifact("mistakes", type="mistakes")
+            artifact.add_file(str(mistakes_file))
+            if wandb.run is not None:
+                wandb.run.log_artifact(artifact)
+            else:
+                try:
+                    wandb.save(str(mistakes_file))
+                except Exception:
+                    pass
+        except Exception as error:
+            print(f"W&B artifact upload failed: {error}")
 
         result_json = {
             "num_samples": len(samples),

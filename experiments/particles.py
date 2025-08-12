@@ -69,16 +69,16 @@ if __name__ == "__main__":
     exp_list.append(base_experiment_config)
 
     # for agg_strat in ["last", "sum", "mean", "min"]:
-    cfg_sum = copy.deepcopy(base_experiment_config)
-    cfg_sum.search_config.agg_strategy = "sum"
-    exp_list.append(cfg_sum)
+    # cfg_sum = copy.deepcopy(base_experiment_config)
+    # cfg_sum.search_config.agg_strategy = "sum"
+    # exp_list.append(cfg_sum)
 
-    cfg_mean = copy.deepcopy(base_experiment_config)
-    cfg_mean.search_config.agg_strategy = "mean"
-    exp_list.append(cfg_mean)
+    # cfg_mean = copy.deepcopy(base_experiment_config)
+    # cfg_mean.search_config.agg_strategy = "mean"
+    # exp_list.append(cfg_mean)
 
-    cfg_min = copy.deepcopy(base_experiment_config)
-    cfg_min.search_config.agg_strategy = "min"
-    exp_list.append(cfg_min)
+    # cfg_min = copy.deepcopy(base_experiment_config)
+    # cfg_min.search_config.agg_strategy = "min"
+    # exp_list.append(cfg_min)
 
     run(BASE_CONFIG, exp_list)
