@@ -319,7 +319,7 @@ def evaluate_single_dataset(
             if wandb.run is not None:
                 wandb.run.save(str(mistakes_file))
         except Exception as error:
-            print(f"W&B artifact upload failed: {error}")run.
+            print(f"W&B artifact upload failed: {error}")
 
         result_json = {
             "num_samples": len(samples),
