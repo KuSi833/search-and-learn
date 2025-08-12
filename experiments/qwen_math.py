@@ -14,7 +14,7 @@ from sal.config import (
     WandbConfig,
 )
 from sal.test_time_compute import run
-from sal.utils.experiment import get_model_base_path
+from sal.utils.experiment import get_math500_indices, get_model_base_path
 
 if __name__ == "__main__":
     load_dotenv()
@@ -57,7 +57,8 @@ if __name__ == "__main__":
 
     WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
 
-    DATASET_CONFIG = DatasetConfig(num_samples=100)
+    # DATASET_CONFIG = DatasetConfig(num_samples=100)
+    DATASET_CONFIG = DatasetConfig(dataset_indicies=get_math500_indices(subset="hard"))
     # DATASET_CONFIG = DatasetConfig(num_samples=500)  # FULL DATASET
     # DATASET_CONFIG = DatasetConfig(
     #     dataset_name="HuggingFaceH4/aime_2024"
@@ -142,6 +143,6 @@ if __name__ == "__main__":
     #         experiment_configs.append(config_variant)
 
     experiment_configs.append(BEST_OF_N_CONFIG)
-    experiment_configs.append(DVTS_CONFIG)
+    # experiment_configs.append(DVTS_CONFIG)
 
     run(BASE_CONFIG, experiment_configs)
