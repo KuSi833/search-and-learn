@@ -33,7 +33,7 @@ if __name__ == "__main__":
     )
 
     WANDB_CONFIG = WandbConfig(tags=set(["gibbs", "baseline"]))
-    DATASET_CONFIG = DatasetConfig(num_samples=500)
+    DATASET_CONFIG = DatasetConfig(num_samples=100)
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     exp_list.append(base_experiment_config)
 
     cfg_sum = copy.deepcopy(base_experiment_config)
-    cfg_sum.search_config.agg_strategy = "sum"
+    cfg_sum.search_config.agg_strategy = "prod"
     exp_list.append(cfg_sum)
 
     cfg_mean = copy.deepcopy(base_experiment_config)
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     exp_list.append(cfg_mean)
 
     cfg_min = copy.deepcopy(base_experiment_config)
-    cfg_min.search_config.agg_strategy = "min"
+    cfg_min.search_config.agg_strategy = "last"
     exp_list.append(cfg_min)
 
     run(BASE_CONFIG, exp_list)
