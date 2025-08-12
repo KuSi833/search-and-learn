@@ -64,6 +64,9 @@ class DatasetConfig:
     dataset_start: Optional[int] = None
     dataset_end: Optional[int] = None
     num_samples: Optional[int] = None
+    dataset_indicies: Set[int] = field(default_factory=set)
+    # Optional named subset for dataset-specific curated slices (e.g., MATH-500 "hard")
+    dataset_subset: Optional[str] = None
 
 
 @dataclass
