@@ -37,8 +37,8 @@ if __name__ == "__main__":
     # DATASET_CONFIG = DatasetConfig(num_samples=500)
     DATASET_CONFIG = DatasetConfig(
         num_samples=100,
-        dataset_start=62,
-        dataset_end=64,
+        dataset_start=40,
+        dataset_end=45,
     )
 
     BASE_CONFIG = BaseConfig(
