@@ -34,12 +34,12 @@ if __name__ == "__main__":
 
     WANDB_CONFIG = WandbConfig(tags=set(["particles", "diagnostic"]))
     # DATASET_CONFIG = DatasetConfig(num_samples=100)
-    # DATASET_CONFIG = DatasetConfig(num_samples=500)
-    DATASET_CONFIG = DatasetConfig(
-        num_samples=100,
-        dataset_start=40,
-        dataset_end=45,
-    )
+    DATASET_CONFIG = DatasetConfig(num_samples=500)
+    # DATASET_CONFIG = DatasetConfig(
+    #     num_samples=100,
+    #     dataset_start=40,
+    #     dataset_end=45,
+    # )
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
