@@ -2,10 +2,15 @@ from collections import Counter
 
 from sal.config import DatasetConfig
 from sal.utils.data import get_dataset
+from sal.utils.experiment import get_math500_indices
 
+# dataset_config = DatasetConfig(
+#     dataset_name="HuggingFaceH4/MATH-500",
+#     num_samples=100,
+# )
 dataset_config = DatasetConfig(
     dataset_name="HuggingFaceH4/MATH-500",
-    num_samples=100,
+    dataset_indicies=get_math500_indices(subset="hard"),
 )
 
 dataset = get_dataset(dataset_config)
