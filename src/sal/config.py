@@ -173,6 +173,7 @@ class ExperimentConfig:
         "q2",
         "diagnostic_tts",
         "particles",
+        "gibbs",
     ] = "best_of_n"
 
     # Chat template related options

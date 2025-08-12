@@ -32,8 +32,7 @@ if __name__ == "__main__":
         name="Qwen/Qwen2.5-Math-PRM-7B",
     )
 
-    WANDB_CONFIG = WandbConfig(tags=set(["particles", "diagnostic"]))
-    # DATASET_CONFIG = DatasetConfig(num_samples=100)
+    WANDB_CONFIG = WandbConfig(tags=set(["gibbs", "baseline"]))
     DATASET_CONFIG = DatasetConfig(num_samples=500)
 
     BASE_CONFIG = BaseConfig(
@@ -43,7 +42,7 @@ if __name__ == "__main__":
     )
 
     base_experiment_config = ExperimentConfig(
-        approach="particles",
+        approach="gibbs",
         search_config=SearchConfig(
             temperature=0.7,
             top_p=0.8,
@@ -63,7 +62,6 @@ if __name__ == "__main__":
     exp_list: List[ExperimentConfig] = []
     exp_list.append(base_experiment_config)
 
-    # for agg_strat in ["last", "sum", "mean", "min"]:
     cfg_sum = copy.deepcopy(base_experiment_config)
     cfg_sum.search_config.agg_strategy = "sum"
     exp_list.append(cfg_sum)
