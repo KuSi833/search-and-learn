@@ -479,7 +479,6 @@ def run_on_remote(config: DeployConfig, executable: str, tail: bool) -> None:
             c.run(
                 f"source ~/.bashrc && "
                 f"export HF_HOME='/vol/bitbucket/km1124/.cache/huggingface' && "
-                f"export VLLM_ALLOW_LONG_MAX_MODEL_LEN=1 && "
                 f"nohup env WANDB_API_KEY='{config.run_config.wandb_api_key}' "
                 f"GITHUB_TOKEN='{config.run_config.github_token}' "
                 f"./.venv/bin/python {executable} > {log_file} 2>&1 &",
