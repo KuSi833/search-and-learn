@@ -134,16 +134,16 @@ EXPERIMENTS: Final[List[ExperimentConfig]] = [
         ),
     ),
     # Gibbs-like particle Gibbs (stepwise)
-    ExperimentConfig(
-        approach="gibbs",
-        search_config=SearchConfig(
-            n=n,
-            temperature=0.7,
-            top_p=0.8,
-            max_tokens=2048,
-            agg_strategy="prod",
-        ),
-    ),
+    # ExperimentConfig(
+    #     approach="gibbs",
+    #     search_config=SearchConfig(
+    #         n=n,
+    #         temperature=0.7,
+    #         top_p=0.8,
+    #         max_tokens=2048,
+    #         agg_strategy="prod",
+    #     ),
+    # ),
 ]
 
 

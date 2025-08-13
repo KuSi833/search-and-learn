@@ -41,7 +41,6 @@ def _dvts(
             "\n\n"
         ],  # we consider that a step in the problem is indicated by a double newline
         include_stop_str_in_output=True,
-        seed=experiment_config.seed,
         n=1,
     )
 
@@ -79,7 +78,6 @@ def _dvts(
                 temperature=experiment_config.search_config.temperature,
                 max_tokens=2048,
                 top_p=experiment_config.search_config.top_p,
-                seed=experiment_config.seed,
                 n=1,
             )
 
