@@ -100,28 +100,6 @@ EXPERIMENTS: Final[List[ExperimentConfig]] = [
             agg_strategy="prod",
         ),
     ),
-    # Quantised cascade TTC (stepwise, draft+target)
-    ExperimentConfig(
-        approach="qcts",
-        search_config=SearchConfig(
-            n=n,
-            temperature=0.7,
-            top_p=0.8,
-            max_tokens=2048,
-            agg_strategy="prod",
-        ),
-    ),
-    # Confidence–margin cascade TTC (stepwise, draft+target)
-    ExperimentConfig(
-        approach="q2",
-        search_config=SearchConfig(
-            n=n,
-            temperature=0.7,
-            top_p=0.8,
-            max_tokens=2048,
-            agg_strategy="prod",
-        ),
-    ),
     # Particle filter (stepwise)
     ExperimentConfig(
         approach="particles",
@@ -133,17 +111,6 @@ EXPERIMENTS: Final[List[ExperimentConfig]] = [
             agg_strategy="prod",
         ),
     ),
-    # Gibbs-like particle Gibbs (stepwise)
-    # ExperimentConfig(
-    #     approach="gibbs",
-    #     search_config=SearchConfig(
-    #         n=n,
-    #         temperature=0.7,
-    #         top_p=0.8,
-    #         max_tokens=2048,
-    #         agg_strategy="prod",
-    #     ),
-    # ),
 ]
 
 
