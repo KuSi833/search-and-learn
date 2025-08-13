@@ -21,9 +21,12 @@ from sal.search.utils import build_conv, generate_k_steps
 from sal.utils.experiment import get_model_base_path
 from sal.utils.score import aggregate_scores
 
+PROBE_DATA_INPUT_ROOT: Final[Path] = Path("./data/probe_data")
+PROBE_OUTPUT_ROOT: Final[Path] = Path("./output/probes/")
+
 
 def _load_probe_record(run_id: str, index: int) -> Dict[str, Any]:
-    path = Path("./data/probe_data") / run_id / f"{index}.jsonl"
+    path = PROBE_DATA_INPUT_ROOT / run_id / f"{index}.jsonl"
     if not path.exists():
         raise FileNotFoundError(f"Probe datum not found: {path}")
     with path.open("r", encoding="utf-8") as f:
@@ -157,43 +160,6 @@ def _summarise_aggregates(score_vecs: List[List[float]]) -> List[Dict[str, float
     return results
 
 
-MODEL_BASE_PATH: Final = get_model_base_path()
-
-INSTRUCT_MODEL: Final[GeneratorConfig] = GeneratorConfig(
-    base_path=MODEL_BASE_PATH,
-    name="Qwen/Qwen2.5-Math-7B-Instruct",
-    parameter_count="7B",
-)
-
-PRM_MODEL: Final[PRMConfig] = PRMConfig(
-    base_path=MODEL_BASE_PATH,
-    name="Qwen/Qwen2.5-Math-PRM-7B",
-)
-
-BASE_CONFIG: Final[BaseConfig] = BaseConfig(
-    generator_config=INSTRUCT_MODEL,
-    prm_config=PRM_MODEL,
-)
-
-PROBE_SEARCH: Final[SearchConfig] = SearchConfig(
-    temperature=0.7,
-    top_p=0.8,
-    max_tokens=2048,
-    agg_strategy="prod",
-)
-
-WBON_CFG: Final[WeightedBoNConfig] = WeightedBoNConfig(n=8)
-VBEAM_CFG: Final[VerifierGuidedBeamConfig] = VerifierGuidedBeamConfig(
-    beam_width=4, lookahead=0
-)
-
-PROBE_EXPERIMENT_CONFIG: Final[ExperimentConfig] = ExperimentConfig(
-    search_config=PROBE_SEARCH,
-    wbon_config=WBON_CFG,
-    verifier_beam_config=VBEAM_CFG,
-)
-
-
 @click.command(
     help="Probe next-step candidates from a shared prefix for selected strategies"
 )
@@ -207,20 +173,56 @@ def main(run_id: str, index: int) -> None:
     step_delimiter: str = datum.get("step_delimiter", "\n\n")
     fail_step: int = int(datum.get("fail_step", 1))
 
-    base_cfg_obj = BASE_CONFIG
-    exp_cfg_obj = PROBE_EXPERIMENT_CONFIG
+    PROBE_DATA_INPUT_ROOT.mkdir(exist_ok=True)
+    PROBE_OUTPUT_ROOT.mkdir(exist_ok=True)
+
+    MODEL_BASE_PATH = get_model_base_path()
+
+    INSTRUCT_MODEL: Final[GeneratorConfig] = GeneratorConfig(
+        base_path=MODEL_BASE_PATH,
+        name="Qwen/Qwen2.5-Math-7B-Instruct",
+        parameter_count="7B",
+    )
+
+    PRM_MODEL: Final[PRMConfig] = PRMConfig(
+        base_path=MODEL_BASE_PATH,
+        name="Qwen/Qwen2.5-Math-PRM-7B",
+    )
+
+    BASE_CONFIG: Final[BaseConfig] = BaseConfig(
+        generator_config=INSTRUCT_MODEL,
+        prm_config=PRM_MODEL,
+    )
+
+    PROBE_SEARCH: Final[SearchConfig] = SearchConfig(
+        temperature=0.7,
+        top_p=0.8,
+        max_tokens=2048,
+        agg_strategy="prod",
+    )
+
+    WBON_CFG: Final[WeightedBoNConfig] = WeightedBoNConfig(n=8)
+    VBEAM_CFG: Final[VerifierGuidedBeamConfig] = VerifierGuidedBeamConfig(
+        beam_width=4, lookahead=0
+    )
+
+    PROBE_EXPERIMENT_CONFIG: Final[ExperimentConfig] = ExperimentConfig(
+        search_config=PROBE_SEARCH,
+        wbon_config=WBON_CFG,
+        verifier_beam_config=VBEAM_CFG,
+    )
 
     # Load models
     llm = LLM(
-        model=base_cfg_obj.generator_config.get_model_path(),
-        gpu_memory_utilization=base_cfg_obj.generator_config.gpu_memory_utilization,
+        model=BASE_CONFIG.generator_config.get_model_path(),
+        gpu_memory_utilization=BASE_CONFIG.generator_config.gpu_memory_utilization,
         enable_prefix_caching=True,
-        seed=exp_cfg_obj.seed,
+        seed=BASE_CONFIG.seed,
         tensor_parallel_size=1,
-        max_model_len=base_cfg_obj.generator_config.max_model_len,
+        max_model_len=BASE_CONFIG.generator_config.max_model_len,
         enforce_eager=False,
     )
-    prm = load_prm(base_cfg_obj.prm_config)
+    prm = load_prm(BASE_CONFIG.prm_config)
 
     # Strategies
     results: Dict[str, Any] = {
@@ -231,22 +233,22 @@ def main(run_id: str, index: int) -> None:
         "problem": problem,
         "strategies": [],
         "config": {
-            "search": asdict(exp_cfg_obj.search_config),
-            "wbon": asdict(exp_cfg_obj.wbon_config)
-            if exp_cfg_obj.wbon_config
+            "search": asdict(PROBE_EXPERIMENT_CONFIG.search_config),
+            "wbon": asdict(PROBE_EXPERIMENT_CONFIG.wbon_config)
+            if PROBE_EXPERIMENT_CONFIG.wbon_config
             else None,
-            "verifier_beam": asdict(exp_cfg_obj.verifier_beam_config)
-            if exp_cfg_obj.verifier_beam_config
+            "verifier_beam": asdict(PROBE_EXPERIMENT_CONFIG.verifier_beam_config)
+            if PROBE_EXPERIMENT_CONFIG.verifier_beam_config
             else None,
         },
     }
 
     # Weighted Best-of-N (proposal only)
-    if exp_cfg_obj.wbon_config is not None:
-        bon_n = int(exp_cfg_obj.wbon_config.n)
+    if PROBE_EXPERIMENT_CONFIG.wbon_config is not None:
+        bon_n = int(PROBE_EXPERIMENT_CONFIG.wbon_config.n)
         bon_texts, bon_stops = _bon_candidates(
             llm,
-            exp_cfg_obj,
+            PROBE_EXPERIMENT_CONFIG,
             problem,
             prefix_text,
             n=bon_n,
@@ -273,11 +275,11 @@ def main(run_id: str, index: int) -> None:
         )
 
     # Verifier-guided beam (one-iteration, proposal only)
-    if exp_cfg_obj.verifier_beam_config is not None:
-        beam_width = int(exp_cfg_obj.verifier_beam_config.beam_width)
+    if PROBE_EXPERIMENT_CONFIG.verifier_beam_config is not None:
+        beam_width = int(PROBE_EXPERIMENT_CONFIG.verifier_beam_config.beam_width)
         beam_texts, beam_stops = _beam_candidates(
             llm,
-            exp_cfg_obj,
+            PROBE_EXPERIMENT_CONFIG,
             problem,
             prefix_text,
             beam_width=beam_width,
@@ -304,9 +306,9 @@ def main(run_id: str, index: int) -> None:
         )
 
     # Write output
-    out_dir = Path("./output") / run_id / "probes"
+    out_dir = PROBE_OUTPUT_ROOT / run_id
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"idx{index}_k{fail_step}.jsonl"
+    out_path = out_dir / f"{index}.jsonl"
     with out_path.open("w", encoding="utf-8") as f:
         f.write(json.dumps(results, ensure_ascii=False))
         f.write("\n")
