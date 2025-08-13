@@ -63,12 +63,12 @@ def _particles(
     batch_of_prompts: List[str], experiment_config: ExperimentConfig, llm: LLM, prm: PRM
 ) -> List[Beam]:
     # One particle per requested sample (n particles total per prompt)
-    n_particles = experiment_config.search_config.n
+    n_particles = experiment_config.particles_config.sampling.n
 
     step_sampling_params = SamplingParams(
-        temperature=experiment_config.search_config.temperature,
-        max_tokens=experiment_config.search_config.max_tokens,
-        top_p=experiment_config.search_config.top_p,
+        temperature=experiment_config.particles_config.sampling.temperature,
+        max_tokens=experiment_config.particles_config.sampling.max_tokens,
+        top_p=experiment_config.particles_config.sampling.top_p,
         stop=["\n\n"],
         include_stop_str_in_output=True,
         n=1,
@@ -76,9 +76,9 @@ def _particles(
 
     # When forcing completion at the final iteration
     final_sampling_params = SamplingParams(
-        temperature=experiment_config.search_config.temperature,
-        max_tokens=experiment_config.search_config.max_tokens,
-        top_p=experiment_config.search_config.top_p,
+        temperature=experiment_config.particles_config.sampling.temperature,
+        max_tokens=experiment_config.particles_config.sampling.max_tokens,
+        top_p=experiment_config.particles_config.sampling.top_p,
         n=1,
     )
 
@@ -102,7 +102,7 @@ def _particles(
         if experiment_config.custom_chat_template is not None:
             tokenizer.chat_template = experiment_config.custom_chat_template
 
-        num_iterations = experiment_config.beam_search_config.num_iterations
+        num_iterations = experiment_config.particles_config.num_iterations
 
         for iteration in tqdm(
             range(num_iterations), desc="Particle filter iterations", leave=False
@@ -325,7 +325,8 @@ def _particles(
                     p.best_scores = [float(s0)]
                 agg_scores.append(
                     aggregate_scores(
-                        p.best_scores, experiment_config.search_config.agg_strategy
+                        p.best_scores,
+                        experiment_config.particles_config.sampling.agg_strategy,
                     )
                 )
 
@@ -453,7 +454,7 @@ def _particles(
                     lookahead_texts=None,
                     stop_reasons=None,
                     best_scores=p.best_scores,
-                    all_scores=[p.best_scores],
+                    all_scores=p.best_scores,
                     previous_text=None,
                     pruned=False,
                     history=[],
@@ -480,7 +481,9 @@ def particles(examples, experiment_config: ExperimentConfig, llm: LLM, prm: PRM)
         completions = [b.current_text for b in beams]
         scores = [b.best_scores for b in beams]
         agg = [
-            aggregate_scores(s, experiment_config.search_config.agg_strategy)
+            aggregate_scores(
+                s, experiment_config.particles_config.sampling.agg_strategy
+            )
             for s in scores
         ]
         pred = completions[int(np.argmax(agg))]
