@@ -116,6 +116,20 @@ class BeamSearchConfig:
 
 
 @dataclass
+class WeightedBoNConfig:
+    # Number of next-step samples to propose for a probe
+    n: int = 8
+
+
+@dataclass
+class VerifierGuidedBeamConfig:
+    # Beam width for single-iteration next-step proposal in a probe
+    beam_width: int = 4
+    # Optional greedy lookahead depth for ranking only (still returns raw step-k)
+    lookahead: int = 0
+
+
+@dataclass
 class QCConfig:
     high_threshold: float = 0.8
     low_threshold: float = 0.3
@@ -171,6 +185,9 @@ class ExperimentConfig:
     beam_search_config: BeamSearchConfig = field(default_factory=BeamSearchConfig)
     qcconfig: QCConfig = field(default_factory=QCConfig)
     particles_config: ParticlesConfig = field(default_factory=ParticlesConfig)
+    # Probe-only adapters
+    wbon_config: Optional[WeightedBoNConfig] = None
+    verifier_beam_config: Optional[VerifierGuidedBeamConfig] = None
 
     approach: Literal[
         "best_of_n",

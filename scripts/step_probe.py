@@ -2,14 +2,23 @@
 import json
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Final, List, Tuple
 
 import click
 from vllm import LLM, SamplingParams  # type: ignore
 
-from sal.config import ExperimentConfig, GeneratorConfig, PRMConfig
+from sal.config import (
+    BaseConfig,
+    ExperimentConfig,
+    GeneratorConfig,
+    PRMConfig,
+    SearchConfig,
+    VerifierGuidedBeamConfig,
+    WeightedBoNConfig,
+)
 from sal.models.reward_models import load_prm
 from sal.search.utils import build_conv, generate_k_steps
+from sal.utils.experiment import get_model_base_path
 from sal.utils.score import aggregate_scores
 
 
@@ -148,51 +157,52 @@ def _summarise_aggregates(score_vecs: List[List[float]]) -> List[Dict[str, float
     return results
 
 
+MODEL_BASE_PATH: Final = get_model_base_path()
+
+INSTRUCT_MODEL: Final[GeneratorConfig] = GeneratorConfig(
+    base_path=MODEL_BASE_PATH,
+    name="Qwen/Qwen2.5-Math-7B-Instruct",
+    parameter_count="7B",
+)
+
+PRM_MODEL: Final[PRMConfig] = PRMConfig(
+    base_path=MODEL_BASE_PATH,
+    name="Qwen/Qwen2.5-Math-PRM-7B",
+)
+
+BASE_CONFIG: Final[BaseConfig] = BaseConfig(
+    generator_config=INSTRUCT_MODEL,
+    prm_config=PRM_MODEL,
+)
+
+PROBE_SEARCH: Final[SearchConfig] = SearchConfig(
+    temperature=0.7,
+    top_p=0.8,
+    max_tokens=2048,
+    agg_strategy="prod",
+)
+
+WBON_CFG: Final[WeightedBoNConfig] = WeightedBoNConfig(n=8)
+VBEAM_CFG: Final[VerifierGuidedBeamConfig] = VerifierGuidedBeamConfig(
+    beam_width=4, lookahead=0
+)
+
+PROBE_EXPERIMENT_CONFIG: Final[ExperimentConfig] = ExperimentConfig(
+    search_config=PROBE_SEARCH,
+    wbon_config=WBON_CFG,
+    verifier_beam_config=VBEAM_CFG,
+)
+
+
 @click.command(
     help="Probe next-step candidates from a shared prefix for selected strategies"
 )
 @click.option("--run-id", required=True, type=str)
 @click.option("--index", required=True, type=int)
 @click.option(
-    "--bon-n", default=8, show_default=True, type=int, help="Best-of-N samples"
-)
-@click.option(
-    "--beam-width",
-    default=4,
-    show_default=True,
-    type=int,
-    help="Beam width for verifier-guided beam probe",
-)
-@click.option("--temperature", default=0.8, show_default=True, type=float)
-@click.option("--top-p", default=1.0, show_default=True, type=float)
-@click.option("--max-tokens", default=256, show_default=True, type=int)
-@click.option(
-    "--model",
-    default=None,
-    type=str,
-    help="Generator model id or path; defaults to ExperimentConfig",
-)
-@click.option(
-    "--prm-model",
-    default=None,
-    type=str,
-    help="PRM model id; defaults to ExperimentConfig",
-)
-@click.option(
     "--output", default=None, type=str, help="Optional explicit output file path"
 )
-def main(
-    run_id: str,
-    index: int,
-    bon_n: int,
-    beam_width: int,
-    temperature: float,
-    top_p: float,
-    max_tokens: int,
-    model: str | None,
-    prm_model: str | None,
-    output: str | None,
-) -> None:
+def main(run_id: str, index: int, output: str | None) -> None:
     # Load probe datum
     datum = _load_probe_record(run_id, index)
     problem: str = datum.get("problem", "")
@@ -200,30 +210,20 @@ def main(
     step_delimiter: str = datum.get("step_delimiter", "\n\n")
     fail_step: int = int(datum.get("fail_step", 1))
 
-    # Configure experiment and models
-    experiment_config = ExperimentConfig()
-    experiment_config.search_config.temperature = temperature
-    experiment_config.search_config.top_p = top_p
-    experiment_config.search_config.max_tokens = max_tokens
-
-    generator_config = GeneratorConfig()
-    if model is not None:
-        generator_config.name = model
-    prm_config = PRMConfig()
-    if prm_model is not None:
-        prm_config.name = prm_model
+    base_cfg_obj = BASE_CONFIG
+    exp_cfg_obj = PROBE_EXPERIMENT_CONFIG
 
     # Load models
     llm = LLM(
-        model=generator_config.get_model_path(),
-        gpu_memory_utilization=generator_config.gpu_memory_utilization,
+        model=base_cfg_obj.generator_config.get_model_path(),
+        gpu_memory_utilization=base_cfg_obj.generator_config.gpu_memory_utilization,
         enable_prefix_caching=True,
-        seed=experiment_config.seed,
+        seed=exp_cfg_obj.seed,
         tensor_parallel_size=1,
-        max_model_len=generator_config.max_model_len,
+        max_model_len=base_cfg_obj.generator_config.max_model_len,
         enforce_eager=False,
     )
-    prm = load_prm(prm_config)
+    prm = load_prm(base_cfg_obj.prm_config)
 
     # Strategies
     results: Dict[str, Any] = {
@@ -233,66 +233,78 @@ def main(
         "prefix_text": prefix_text,
         "problem": problem,
         "strategies": [],
-        "config": {"search": asdict(experiment_config.search_config)},
+        "config": {
+            "search": asdict(exp_cfg_obj.search_config),
+            "wbon": asdict(exp_cfg_obj.wbon_config)
+            if exp_cfg_obj.wbon_config
+            else None,
+            "verifier_beam": asdict(exp_cfg_obj.verifier_beam_config)
+            if exp_cfg_obj.verifier_beam_config
+            else None,
+        },
     }
 
     # Weighted Best-of-N (proposal only)
-    bon_texts, bon_stops = _bon_candidates(
-        llm,
-        experiment_config,
-        problem,
-        prefix_text,
-        n=bon_n,
-        step_delimiter=step_delimiter,
-    )
-    bon_scores = _score_with_prm(prm, problem, prefix_text, bon_texts)
-    bon_aggs = _summarise_aggregates(bon_scores)
-    results["strategies"].append(
-        {
-            "name": "weighted_bon",
-            "params": {"n": bon_n},
-            "candidates": [
-                {
-                    "text": t,
-                    "stop_reason": s,
-                    "prm_scores": sc,
-                    "aggregates": agg,
-                }
-                for t, s, sc, agg in zip(
-                    bon_texts, bon_stops, bon_scores, bon_aggs, strict=True
-                )
-            ],
-        }
-    )
+    if exp_cfg_obj.wbon_config is not None:
+        bon_n = int(exp_cfg_obj.wbon_config.n)
+        bon_texts, bon_stops = _bon_candidates(
+            llm,
+            exp_cfg_obj,
+            problem,
+            prefix_text,
+            n=bon_n,
+            step_delimiter=step_delimiter,
+        )
+        bon_scores = _score_with_prm(prm, problem, prefix_text, bon_texts)
+        bon_aggs = _summarise_aggregates(bon_scores)
+        results["strategies"].append(
+            {
+                "name": "weighted_bon",
+                "params": {"n": bon_n},
+                "candidates": [
+                    {
+                        "text": t,
+                        "stop_reason": s,
+                        "prm_scores": sc,
+                        "aggregates": agg,
+                    }
+                    for t, s, sc, agg in zip(
+                        bon_texts, bon_stops, bon_scores, bon_aggs, strict=True
+                    )
+                ],
+            }
+        )
 
     # Verifier-guided beam (one-iteration, proposal only)
-    beam_texts, beam_stops = _beam_candidates(
-        llm,
-        experiment_config,
-        problem,
-        prefix_text,
-        beam_width=beam_width,
-        step_delimiter=step_delimiter,
-    )
-    beam_scores = _score_with_prm(prm, problem, prefix_text, beam_texts)
-    beam_aggs = _summarise_aggregates(beam_scores)
-    results["strategies"].append(
-        {
-            "name": "verifier_guided_beam",
-            "params": {"beam_width": beam_width},
-            "candidates": [
-                {
-                    "text": t,
-                    "stop_reason": s,
-                    "prm_scores": sc,
-                    "aggregates": agg,
-                }
-                for t, s, sc, agg in zip(
-                    beam_texts, beam_stops, beam_scores, beam_aggs, strict=True
-                )
-            ],
-        }
-    )
+    if exp_cfg_obj.verifier_beam_config is not None:
+        beam_width = int(exp_cfg_obj.verifier_beam_config.beam_width)
+        beam_texts, beam_stops = _beam_candidates(
+            llm,
+            exp_cfg_obj,
+            problem,
+            prefix_text,
+            beam_width=beam_width,
+            step_delimiter=step_delimiter,
+        )
+        beam_scores = _score_with_prm(prm, problem, prefix_text, beam_texts)
+        beam_aggs = _summarise_aggregates(beam_scores)
+        results["strategies"].append(
+            {
+                "name": "verifier_guided_beam",
+                "params": {"beam_width": beam_width},
+                "candidates": [
+                    {
+                        "text": t,
+                        "stop_reason": s,
+                        "prm_scores": sc,
+                        "aggregates": agg,
+                    }
+                    for t, s, sc, agg in zip(
+                        beam_texts, beam_stops, beam_scores, beam_aggs, strict=True
+                    )
+                ],
+            }
+        )
 
     # Write output
     out_dir = Path("./output") / run_id / "probes"
