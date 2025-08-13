@@ -68,16 +68,6 @@ class Beam:
     completion_tokens: int = 0
 
 
-@dataclass
-class GenResult:
-    index: int
-    initial_prompt: str
-    first_step_text: str
-    first_step_stop_reason: str | None
-    lookahead_text: str
-    stop_reason: str | None
-
-
 def generate_k_steps(
     templated_convs,
     lookahead_steps: int,
@@ -85,75 +75,65 @@ def generate_k_steps(
     sampling_params: SamplingParams,
     beam_width: int,
 ) -> list[Beam]:
-    gen_results = []
-    for i, text in enumerate(templated_convs):
-        for _ in range(beam_width):
-            gen_result = GenResult(
+    # First step: sample beam_width candidates per prompt
+    first_params = copy.deepcopy(sampling_params)
+    first_params.n = beam_width
+    first_outputs = llm.generate(templated_convs, first_params, use_tqdm=False)
+
+    # Collect first-step candidates
+    next_texts_all: list[list[str]] = []
+    stop_reasons_all: list[list[str]] = []
+    for out in first_outputs:
+        texts = [o.text for o in out.outputs]
+        reasons = [(o.stop_reason or "EOS") for o in out.outputs]
+        next_texts_all.append(texts)
+        stop_reasons_all.append(reasons)
+
+    # Optional greedy lookahead to help ranking
+    lookahead_texts_all: list[list[str]] = [
+        ["" for _ in range(beam_width)] for _ in templated_convs
+    ]
+    if lookahead_steps > 0:
+        greedy_params = copy.deepcopy(sampling_params)
+        greedy_params.n = 1
+        greedy_params.temperature = 0.0
+        for _ in range(lookahead_steps):
+            prompts = []
+            indices: list[tuple[int, int]] = []
+            for i, base in enumerate(templated_convs):
+                for j in range(beam_width):
+                    # skip if already EOS
+                    if stop_reasons_all[i][j] == "EOS":
+                        continue
+                    prefix = base + next_texts_all[i][j] + lookahead_texts_all[i][j]
+                    prompts.append(prefix)
+                    indices.append((i, j))
+            if not prompts:
+                break
+            outs = llm.generate(prompts, greedy_params, use_tqdm=False)
+            for (i, j), out in zip(indices, outs, strict=True):
+                delta = out.outputs[0].text
+                sr = out.outputs[0].stop_reason or "EOS"
+                lookahead_texts_all[i][j] += delta
+                stop_reasons_all[i][j] = sr
+
+    # Package into Beam-like containers expected by beam_search
+    results: list[Beam] = []
+    for i, base in enumerate(templated_convs):
+        results.append(
+            Beam(
+                prompt=base,
                 index=i,
-                initial_prompt=text,
-                first_step_text="",
-                lookahead_text="",
-                stop_reason=None,
-                first_step_stop_reason=None,
+                current_text="",
+                next_texts=next_texts_all[i],
+                lookahead_texts=lookahead_texts_all[i],
+                stop_reasons=stop_reasons_all[i],
+                best_scores=[0.0],
+                all_scores=[],
+                previous_text=None,
+                pruned=False,
+                history=[],
             )
-            gen_results.append(gen_result)
-
-    gen_sampling_params = copy.deepcopy(sampling_params)
-
-    for i in range(lookahead_steps + 1):
-        if i == 1:
-            gen_sampling_params.temperature = 0.0  # greedy for the rest of the steps
-        # get all generations that did not finish with eos
-        current_gen = [
-            gen_results[i]
-            for i in range(len(gen_results))
-            if gen_results[i].stop_reason != "EOS"
-        ]
-        gen_prompts = [
-            gen_result.initial_prompt + gen_result.lookahead_text
-            for gen_result in current_gen
-        ]
-        llm_outputs = llm.generate(gen_prompts, gen_sampling_params, use_tqdm=False)
-        for gen_result, output in zip(current_gen, llm_outputs):
-            gen_text = output.outputs[0].text
-            if i == 0:
-                gen_result.first_step_text = gen_text
-                gen_result.first_step_stop_reason = output.outputs[0].stop_reason
-                if gen_result.first_step_stop_reason is None:
-                    gen_result.first_step_stop_reason = "EOS"
-
-            gen_result.lookahead_text = gen_result.lookahead_text + gen_text
-            gen_result.stop_reason = output.outputs[0].stop_reason
-            if gen_result.stop_reason is None:
-                gen_result.stop_reason = "EOS"
-
-    outputs: list[Beam] = []
-
-    counter = 0
-    for i, text in enumerate(templated_convs):
-        next_texts = []
-        stop_reasons = []
-        lookahead_texts = []
-        for _ in range(beam_width):
-            gen_result = gen_results[counter]
-            next_texts.append(gen_result.first_step_text)
-            lookahead_texts.append(gen_result.lookahead_text)
-            stop_reasons.append(gen_result.first_step_stop_reason)
-            counter += 1
-
-        beam_result = Beam(
-            prompt=text,
-            index=i,
-            current_text="",
-            next_texts=next_texts,
-            lookahead_texts=lookahead_texts,
-            stop_reasons=stop_reasons,
-            best_scores=[0.0],
-            all_scores=[],
-            previous_text=None,
-            pruned=False,
-            history=[],
         )
-        outputs.append(beam_result)
 
-    return outputs
+    return results

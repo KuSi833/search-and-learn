@@ -13,6 +13,7 @@ from vllm import LLM  # type: ignore
 
 from sal.config import (
     BaseConfig,
+    BeamSearchConfig,
     DatasetConfig,
     ExperimentConfig,
     GeneratorConfig,
@@ -86,6 +87,13 @@ BEAM_SEARCH_CONFIG = ExperimentConfig(
         max_tokens=2048,
         agg_strategy="prod",
         search_batch_size=1,  # beam_search expects 1
+    ),
+    # Increase diversity for beam search
+    filter_duplicates=True,
+    beam_search_config=BeamSearchConfig(
+        beam_width=4,
+        num_iterations=40,
+        lookahead=1,
     ),
 )
 
