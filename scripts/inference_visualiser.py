@@ -5,6 +5,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import click
+from rich import box
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
 
 from sal.utils.qwen_math_parser import (
     extract_answer,
@@ -53,6 +58,9 @@ def _index_of_first(seq: List[str], target: str) -> int:
         return seq.index(target)
     except ValueError:
         return -1
+
+
+console = Console()
 
 
 def analyse_sample(sample: Dict[str, Any]) -> Dict[str, Any]:
@@ -161,10 +169,14 @@ def print_report(
     analysis: Dict[str, Any],
     index: Optional[int] = None,
 ) -> None:
-    print(f"Run: {run_id}")
-    print(f"File: output/{run_id}/inference_output.jsonl")
+    header = Table.grid(padding=(0, 1))
+    header.add_column(style="bold cyan")
+    header.add_column()
+    header.add_row("Run", run_id)
+    header.add_row("File", f"output/{run_id}/inference_output.jsonl")
     if index is not None:
-        print(f"Index: {index}")
+        header.add_row("Index", str(index))
+    console.print(Panel(header, title="Inference Sample", box=box.ROUNDED))
 
     uid = analysis.get("unique_id")
     subj = analysis.get("subject")
@@ -176,57 +188,79 @@ def print_report(
     ]
     meta_bits = [b for b in meta_bits if b]
     if meta_bits:
-        print("Meta: " + ", ".join(meta_bits))
+        console.print(Text("Meta: " + ", ".join(meta_bits), style="dim"))
 
-    print("-")
-    print("Problem:")
-    print(_shorten(str(analysis.get("problem") or ""), 800))
+    problem_text = _shorten(str(analysis.get("problem") or ""), 800)
+    console.print(Panel(problem_text, title="Problem", box=box.SQUARE))
 
     ans = str(analysis.get("answer") or "")
-    print("-")
-    print("Ground truth answer:")
-    print(_shorten(ans, 200))
+    console.print(Panel(_shorten(ans, 200), title="Ground truth answer", style="green"))
 
-    print("-")
-    print("Chosen prediction (raw):")
-    print(_shorten(str(analysis.get("pred") or ""), 800))
-    print(
-        f"Extracted answer: {_shorten(str(analysis.get('pred_extracted') or ''), 200)}"
+    pred_raw = _shorten(str(analysis.get("pred") or ""), 800)
+    console.print(Panel(pred_raw, title="Chosen prediction (raw)", style="yellow"))
+
+    extracted = _shorten(str(analysis.get("pred_extracted") or ""), 200)
+    raw_ok = bool(analysis.get("raw_correct"))
+    extracted_table = Table(show_header=False, box=box.SIMPLE)
+    extracted_table.add_column("key", style="bold")
+    extracted_table.add_column("value")
+    extracted_table.add_row("Extracted", extracted)
+    extracted_table.add_row(
+        "Correct", Text(str(raw_ok), style=("green" if raw_ok else "red"))
     )
-    print(f"Correct (raw extracted vs answer): {bool(analysis.get('raw_correct'))}")
+    console.print(Panel(extracted_table, box=box.ROUNDED))
 
     chosen_idx = analysis.get("chosen_idx")
     num_beams = analysis.get("num_beams")
-    print("-")
-    print(f"Beams: {num_beams}, chosen_index: {chosen_idx}")
     csp = analysis.get("chosen_score_path") or []
-    print(f"Score trajectory (chosen): {_format_float_list(list(csp))}")
     ctok = analysis.get("chosen_tokens")
+
+    beams_table = Table(show_header=False, box=box.SIMPLE)
+    beams_table.add_column("key", style="bold")
+    beams_table.add_column("value")
+    beams_table.add_row("Beams", str(num_beams))
+    beams_table.add_row("Chosen index", str(chosen_idx))
+    beams_table.add_row(
+        "Score trajectory", Text(_format_float_list(list(csp)), style="magenta")
+    )
     if ctok is not None:
-        print(f"Completion tokens (chosen): {ctok}")
+        beams_table.add_row("Completion tokens", str(ctok))
+    console.print(Panel(beams_table, title="Beam details", box=box.ROUNDED))
 
     rank = analysis.get("rank_by_last_score") or []
     if rank:
         top = rank[: min(5, len(rank))]
-        pretty = ", ".join([f"#{i}: {s:.4f}" for i, s in top])
-        print(f"Top beams by last score: {pretty}")
+        rank_table = Table(title="Top beams by last score", box=box.MINIMAL_HEAVY_HEAD)
+        rank_table.add_column("#", style="bold cyan", justify="right")
+        rank_table.add_column("score", justify="right")
+        for i, s in top:
+            rank_table.add_row(str(i), f"{s:.4f}")
+        console.print(rank_table)
 
     agg_preds = analysis.get("agg_preds") or []
     agg_correct = {k: v for k, v in (analysis.get("agg_correct") or [])}
     if agg_preds:
-        print("-")
-        print("Aggregated predictions (correctness):")
+        agg_table = Table(title="Aggregated predictions", box=box.SIMPLE_HEAVY)
+        agg_table.add_column("key", style="bold")
+        agg_table.add_column("inner")
+        agg_table.add_column("correct", justify="center")
         for k, v in agg_preds:
             inner = find_box(v) if isinstance(v, str) else ""
             ok = agg_correct.get(k, False)
-            print(f"  {k}: {inner}  -> correct={ok}")
+            agg_table.add_row(
+                k, inner, Text("✓" if ok else "✗", style=("green" if ok else "red"))
+            )
+        console.print(agg_table)
 
-    # Optionally show beginning of the solution for context
     sol = analysis.get("solution") or ""
     if isinstance(sol, str) and sol.strip():
-        print("-")
-        print("Reference solution (truncated):")
-        print(_shorten(sol, 600))
+        console.print(
+            Panel(
+                _shorten(sol, 600),
+                title="Reference solution (truncated)",
+                box=box.SQUARE,
+            )
+        )
 
 
 @click.group(help="Inference visualiser utilities")
@@ -244,10 +278,15 @@ def cmd_detail(run_id: str, index: int) -> None:
 
     records = load_jsonl(out_file)
     if not records:
-        print(f"No records found in {out_file}")
+        console.print(Text(f"No records found in {out_file}", style="red"))
         sys.exit(1)
     if index < 0 or index >= len(records):
-        print(f"Index out of range: {index} (num records = {len(records)})")
+        console.print(
+            Text(
+                f"Index out of range: {index} (num records = {len(records)})",
+                style="red",
+            )
+        )
         sys.exit(1)
 
     sample = records[index]
@@ -277,7 +316,7 @@ def cmd_overview(run_id: str) -> None:
     out_file = Path("./output") / run_id / "inference_output.jsonl"
     records = load_jsonl(out_file)
     if not records:
-        print(f"No records found in {out_file}")
+        console.print(Text(f"No records found in {out_file}", style="red"))
         sys.exit(1)
 
     from collections import defaultdict
@@ -296,25 +335,57 @@ def cmd_overview(run_id: str) -> None:
         else:
             level_to_incorrect_indices[level].append(idx)
 
-    print(f"Run: {run_id}")
-    print(f"File: output/{run_id}/inference_output.jsonl")
-    print("-")
+    console.print(
+        Panel(Text("Run overview", style="bold"), subtitle=f"{run_id}", box=box.ROUNDED)
+    )
+    summary = Table(box=box.MINIMAL_HEAVY_HEAD)
+    summary.add_column("Level", style="bold cyan")
+    summary.add_column("Total", justify="right")
+    summary.add_column("Correct", justify="right")
+    summary.add_column("Incorrect", justify="right")
+    summary.add_column("Acc %", justify="right")
     for level in sorted(level_to_total.keys()):
         total = level_to_total[level]
         correct = level_to_correct[level]
         incorrect = total - correct
-        print(f"Level: {level}")
-        print(f"  Total: {total} | Correct: {correct} | Incorrect: {incorrect}")
-        if level_to_correct_indices[level]:
-            idxs = ", ".join(map(str, level_to_correct_indices[level]))
-            print(f"  Correct indices: [{idxs}]")
-        else:
-            print("  Correct indices: []")
-        if level_to_incorrect_indices[level]:
-            idxs = ", ".join(map(str, level_to_incorrect_indices[level]))
-            print(f"  Incorrect indices: [{idxs}]")
-        else:
-            print("  Incorrect indices: []")
+        acc = (100.0 * correct / total) if total > 0 else 0.0
+        summary.add_row(
+            str(level),
+            str(total),
+            Text(str(correct), style="green"),
+            Text(str(incorrect), style="red"),
+            f"{acc:.1f}",
+        )
+    console.print(summary)
+
+    for level in sorted(level_to_total.keys()):
+        total = level_to_total[level]
+        correct = level_to_correct[level]
+        incorrect = total - correct
+        title = f"Level: {level}  |  Total: {total}  Correct: {correct}  Incorrect: {incorrect}"
+        correct_idxs = (
+            ", ".join(map(str, level_to_correct_indices[level]))
+            if level_to_correct_indices[level]
+            else ""
+        )
+        incorrect_idxs = (
+            ", ".join(map(str, level_to_incorrect_indices[level]))
+            if level_to_incorrect_indices[level]
+            else ""
+        )
+
+        idx_table = Table.grid(padding=(0, 1))
+        idx_table.add_column(style="bold green")
+        idx_table.add_column()
+        idx_table.add_row(
+            "Correct indices",
+            Text(correct_idxs if correct_idxs else "[]", style="green"),
+        )
+        idx_table.add_row(
+            "Incorrect indices",
+            Text(incorrect_idxs if incorrect_idxs else "[]", style="red"),
+        )
+        console.print(Panel(idx_table, title=title, box=box.SQUARE))
 
 
 if __name__ == "__main__":
