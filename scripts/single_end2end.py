@@ -5,7 +5,6 @@ from typing import Any, Dict, Final, List, Tuple
 
 import click
 import pyrootutils
-from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.rule import Rule
@@ -110,62 +109,31 @@ def main(index: int) -> None:
         raise RuntimeError(f"Expected 1 sample after selection; got {len(dataset)}")
     example = dataset[0]
 
-    # Header and context
-    console.print(Rule(title=f"Single E2E evaluation • index {index}"))
-    console.print(
-        Panel.fit(
-            Text(
-                example["problem"][:500]
-                + ("…" if len(example["problem"]) > 500 else "")
-            ),
-            title="Problem",
-            border_style="cyan",
-        )
-    )
-    console.print(
-        Panel.fit(
-            Text(str(example.get("answer", ""))),
-            title="Ground truth",
-            border_style="magenta",
-        )
-    )
-
     # Load models once
-    with console.status("Loading models…", spinner="dots"):
-        llm = LLM(
-            model=BASE_CONFIG.generator_config.get_model_path(),
-            gpu_memory_utilization=BASE_CONFIG.generator_config.gpu_memory_utilization,
-            enable_prefix_caching=True,
-            seed=BASE_CONFIG.seed,
-            tensor_parallel_size=1,
-            max_model_len=BASE_CONFIG.generator_config.max_model_len,
-            enforce_eager=True,
-        )
-        prm = load_prm(BASE_CONFIG.prm_config)
+    llm = LLM(
+        model=BASE_CONFIG.generator_config.get_model_path(),
+        gpu_memory_utilization=BASE_CONFIG.generator_config.gpu_memory_utilization,
+        enable_prefix_caching=True,
+        seed=BASE_CONFIG.seed,
+        tensor_parallel_size=1,
+        max_model_len=BASE_CONFIG.generator_config.max_model_len,
+        enforce_eager=True,
+    )
+    prm = load_prm(BASE_CONFIG.prm_config)
 
     # Prepare minimal input dict expected by strategy functions
     x = {"problem": [example["problem"]]}
 
-    # Stream results; no end summary
+    results: List[Dict[str, Any]] = []
+
+    # Print concise summary
+    print(f"Index: {index}")
+    print(f"Ground Truth: {example.get('answer')}")
 
     for exp in EXPERIMENTS:
         logger.info(f"Running approach={exp.approach}")
-        console.print(Rule(title=f"Approach: {exp.approach}"))
-        cfg = exp.search_config
-        console.print(
-            Panel.fit(
-                Text(
-                    f"n={cfg.n}  temp={cfg.temperature}  top_p={cfg.top_p}\n"
-                    f"max_tokens={cfg.max_tokens}  agg={cfg.agg_strategy}"
-                ),
-                title="Search config",
-                border_style="blue",
-            )
-        )
-
         if exp.approach == "best_of_n":
-            with console.status("Generating candidates…", spinner="dots"):
-                out = best_of_n(x.copy(), exp, llm, prm)
+            out = best_of_n(x.copy(), exp, llm, prm)
         # elif exp.approach == "beam_search":
         #     out = beam_search(x.copy(), exp, llm, prm)
         else:
@@ -177,46 +145,16 @@ def main(index: int) -> None:
             example, pred_text, BASE_CONFIG.evaluation_config.benchmark
         )
 
-        # Display candidate scores and previews
-        completions = out.get("completions", [[""]])[0]
-        scores = out.get("scores", [[[]]])[0]
-        token_counts = out.get("completion_tokens", [[0]])[0]
-        agg = (
-            [aggregate_scores(s, exp.search_config.agg_strategy) for s in scores]
-            if scores
-            else []
-        )
-        best_idx = int(max(range(len(agg)), key=lambda i: agg[i])) if agg else -1
-
-        table = Table(title="Candidates", box=box.SIMPLE_HEAVY)
-        table.add_column("#", justify="right", style="bold")
-        table.add_column("Score", justify="right")
-        table.add_column("Tokens", justify="right")
-        table.add_column("Preview")
-
-        def _preview(text: str, limit: int = 96) -> str:
-            t = text.replace("\n", " ")
-            return t[:limit] + ("…" if len(t) > limit else "")
-
-        for i, comp in enumerate(completions):
-            score_str = f"{agg[i]:.4f}" if agg else "-"
-            tok_str = f"{token_counts[i]}" if i < len(token_counts) else "-"
-            row_style = "bold green" if i == best_idx else None
-            table.add_row(str(i), score_str, tok_str, _preview(comp), style=row_style)
-
-        console.print(table)
-
-        # Print evaluation immediately
-        ans_panel_style = "green" if ok else "red"
-        console.print(
-            Panel(
-                Text(
-                    f"Predicted (extracted): {pred_ans}\nCorrect: {ok}",
-                    style=ans_panel_style,
-                ),
-                title="Evaluation",
-                border_style=ans_panel_style,
-            )
+        print(f"Predicted: {pred_ans}")
+        console.print(Text(f"Correct: {ok}", style="green" if ok else "red"))
+        results.append(
+            {
+                "approach": exp.approach,
+                "search_config": asdict(exp.search_config),
+                "correct": ok,
+                "pred_extracted": pred_ans,
+                "gt": gt,
+            }
         )
 
 
