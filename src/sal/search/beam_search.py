@@ -18,13 +18,13 @@ from collections import defaultdict
 
 import numpy as np
 from tqdm import tqdm
-from vllm import LLM, SamplingParams
+from vllm import LLM, SamplingParams  # type: ignore
 
 from sal.config import ExperimentConfig
 from sal.models.reward_models import PRM
 from sal.utils.score import aggregate_scores
 
-from .utils import Beam, build_conv, generate_k_steps, last
+from .utils import Beam, build_conv, generate_k_steps
 
 logger = logging.getLogger()
 
@@ -41,9 +41,12 @@ def _beam_search(
         n=1,
     )
 
+    # Keep K beams after each expansion
+    keep_k = max(1, config.search_config.n // config.beam_search_config.beam_width)
+
     beams: list[Beam] = []
     for prompt in batch_of_prompts:
-        for i in range(config.search_config.n):
+        for i in range(keep_k):
             beams.append(
                 Beam(
                     prompt=prompt,
@@ -52,7 +55,7 @@ def _beam_search(
                     next_texts=None,
                     lookahead_texts=None,
                     pruned=False,
-                    completed=False,  # New flag to track completion
+                    completed=False,
                     stop_reasons=None,
                     history=[],
                     best_scores=[],
@@ -72,21 +75,7 @@ def _beam_search(
         else:
             active_beams = [b for b in active_beams if not b.pruned]
 
-        # Duplicate active beams to ensure that we have config.n beams per iteration
-        if len(active_beams) != config.search_config.n:
-            repeats = (config.search_config.n // len(active_beams)) + 1
-            logger.debug(
-                f"Extending active_beams with {repeats} repetitions to reach size {config.search_config.n}"
-            )
-            extended_active_beams = [
-                copy.deepcopy(b)
-                for b in (active_beams * repeats)[: config.search_config.n]
-            ]
-            active_beams = extended_active_beams
-            if len(active_beams) != config.search_config.n:
-                raise ValueError(
-                    f"Expected {config.search_config.n} active beams, but got {len(active_beams)}"
-                )
+        # No replication: we explicitly control branching with beam_width
 
         if i == config.beam_search_config.num_iterations - 1:
             # Last iteration, generate to EOS
@@ -113,75 +102,93 @@ def _beam_search(
             continue_final_message=continue_final_message,
             tokenize=False,
         )
+        # Determine lookahead depth for ranking-only vs final full decoding
         lookahead = (
-            0
+            config.search_config.max_tokens
             if i == config.beam_search_config.num_iterations - 1
             else config.beam_search_config.lookahead
         )
+
+        # Expand each active beam into beam_width candidates
         gen_results = generate_k_steps(
-            templated_convs, lookahead, llm, sampling_params, 1
+            templated_convs,
+            lookahead,
+            llm,
+            sampling_params,
+            config.beam_search_config.beam_width,
         )
-        # FIXME: generate_k_steps doesn't take beam_width parameter?
 
-        prompts, completions = [], []
-        for beam, gen_result in zip(active_beams, gen_results, strict=True):
-            beam.next_texts = gen_result.next_texts
-            beam.stop_reasons = gen_result.stop_reasons
-            beam.lookahead_texts = gen_result.lookahead_texts
-            beam.completion_tokens += gen_result.completion_tokens
-            beam.current_text += beam.next_texts[0]
-            beam.history.append(beam.next_texts[0])
-
-            if (
-                beam.stop_reasons[0] == "EOS"
-                or beam.stop_reasons[0] == "length"
-                or beam.next_texts[0] == ""
+        # Build child candidates
+        candidate_beams: list[Beam] = []
+        for parent_beam, gen_result in zip(active_beams, gen_results, strict=True):
+            next_texts = gen_result.next_texts or []
+            stop_reasons = gen_result.stop_reasons or [""] * len(next_texts)
+            for j, (delta_text, stop_reason) in enumerate(
+                zip(next_texts, stop_reasons, strict=True)
             ):
-                beam.completed = True
-                completed_beams.append(beam)
-            prompts.append(beam.prompt)
-            completions.append([beam.current_text])
+                new_text = parent_beam.current_text + delta_text
+                child = Beam(
+                    prompt=parent_beam.prompt,
+                    index=j,
+                    current_text=new_text,
+                    next_texts=None,
+                    lookahead_texts=None,
+                    stop_reasons=None,
+                    pruned=False,
+                    completed=(stop_reason in ["EOS", "length"] or delta_text == ""),
+                    history=parent_beam.history
+                    + ([delta_text] if delta_text != "" else []),
+                    best_scores=[],
+                    all_scores=[],
+                    previous_text=parent_beam.current_text,
+                    completion_tokens=0,
+                )
+                candidate_beams.append(child)
 
-        scores = prm.score(prompts, completions)
-
-        agg_scores = [
-            [aggregate_scores(s, config.search_config.agg_strategy) for s in score]
-            for score in scores
-        ]
-
-        for beam, score in zip(active_beams, scores, strict=True):
-            beam.all_scores = score[0]
-
-        # Now filter active_beams and agg_scores for beams that are completed
-        agg_scores = [
-            agg_scores[i] for i, b in enumerate(active_beams) if not b.completed
-        ]
-        active_beams = [b for b in active_beams if not b.completed]
-
-        # Early stopping if all beams are completed
-        if len(active_beams) == 0:
+        if len(candidate_beams) == 0:
             break
 
-        # Filter duplicate active beams
+        # Score candidates using PRM
+        prm_prompts = [b.prompt for b in candidate_beams]
+        prm_completions = [[b.current_text] for b in candidate_beams]
+        scores = prm.score(prm_prompts, prm_completions)
+
+        # Attach scores and aggregate
+        aggregated: list[float] = []
+        for b, score in zip(candidate_beams, scores, strict=True):
+            b.all_scores = score
+            aggregated.append(
+                aggregate_scores(b.all_scores, config.search_config.agg_strategy)
+            )
+
+        # Separate completed vs continuing
+        continuing: list[tuple[float, Beam]] = []
+        for b, a in zip(candidate_beams, aggregated, strict=True):
+            if b.completed:
+                completed_beams.append(b)
+            else:
+                continuing.append((a, b))
+
+        # If enough completed, we can stop early
+        if len(completed_beams) >= config.search_config.n:
+            break
+
+        # Optional deduplication
         if config.filter_duplicates:
-            # Create a dictionary to filter duplicates and retain order
-            unique_beam_dict = {}
-            for i, b in enumerate(active_beams):
-                if b.current_text not in unique_beam_dict:
-                    unique_beam_dict[b.current_text] = (
-                        i  # Map the unique text to its index
-                    )
-            active_beams = [active_beams[i] for i in unique_beam_dict.values()]
-            agg_scores = [agg_scores[i] for i in unique_beam_dict.values()]
+            seen = set()
+            filtered: list[tuple[float, Beam]] = []
+            for a, b in continuing:
+                if b.current_text not in seen:
+                    seen.add(b.current_text)
+                    filtered.append((a, b))
+            continuing = filtered
 
-        # Get indices for top (config.n / config.beam_width) completions
-        top_indices = np.argsort(np.array(agg_scores).flatten())[
-            -(config.search_config.n // config.beam_search_config.beam_width) :
-        ]
+        if len(continuing) == 0:
+            break
 
-        for idx, beam in enumerate(active_beams):
-            if idx not in top_indices:
-                beam.pruned = True
+        # Select top-K beams to continue
+        continuing.sort(key=lambda t: t[0], reverse=True)
+        active_beams = [b for _, b in continuing[:keep_k]]
 
     # Filter completed beams for those with top config.n scores
     if config.sort_completed:

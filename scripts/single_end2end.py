@@ -64,53 +64,60 @@ BASE_CONFIG: Final[BaseConfig] = BaseConfig(
 
 n = 8
 # Define strategies to evaluate (edit to sweep hyperparameters)
+BON_CONFIG = ExperimentConfig(
+    approach="best_of_n",
+    search_config=SearchConfig(
+        n=n,
+        temperature=0.7,
+        top_p=0.8,
+        max_tokens=2048,
+        agg_strategy="prod",
+        search_batch_size=25,
+    ),
+)
+
+# Standard beam search (stepwise)
+BEAM_SEARCH_CONFIG = ExperimentConfig(
+    approach="beam_search",
+    search_config=SearchConfig(
+        n=n,
+        temperature=0.7,
+        top_p=0.8,
+        max_tokens=2048,
+        agg_strategy="prod",
+        search_batch_size=1,  # beam_search expects 1
+    ),
+)
+
+# Diverse verifier tree search (stepwise)
+DVTS_CONFIG = ExperimentConfig(
+    approach="dvts",
+    search_config=SearchConfig(
+        n=n,
+        temperature=0.7,
+        top_p=0.8,
+        max_tokens=2048,
+        agg_strategy="prod",
+    ),
+)
+
+# Particle filter (stepwise)
+PARTICLES_CONFIG = ExperimentConfig(
+    approach="particles",
+    search_config=SearchConfig(
+        n=n,
+        temperature=0.7,
+        top_p=0.8,
+        max_tokens=2048,
+        agg_strategy="prod",
+    ),
+)
+
 EXPERIMENTS: Final[List[ExperimentConfig]] = [
-    # Best-of-N
-    ExperimentConfig(
-        approach="best_of_n",
-        search_config=SearchConfig(
-            n=n,
-            temperature=0.7,
-            top_p=0.8,
-            max_tokens=2048,
-            agg_strategy="prod",
-            search_batch_size=25,
-        ),
-    ),
-    # Standard beam search (stepwise)
-    ExperimentConfig(
-        approach="beam_search",
-        search_config=SearchConfig(
-            n=n,
-            temperature=0.7,
-            top_p=0.8,
-            max_tokens=2048,
-            agg_strategy="prod",
-            search_batch_size=1,  # beam_search expects 1
-        ),
-    ),
-    # Diverse verifier tree search (stepwise)
-    ExperimentConfig(
-        approach="dvts",
-        search_config=SearchConfig(
-            n=n,
-            temperature=0.7,
-            top_p=0.8,
-            max_tokens=2048,
-            agg_strategy="prod",
-        ),
-    ),
-    # Particle filter (stepwise)
-    ExperimentConfig(
-        approach="particles",
-        search_config=SearchConfig(
-            n=n,
-            temperature=0.7,
-            top_p=0.8,
-            max_tokens=2048,
-            agg_strategy="prod",
-        ),
-    ),
+    # BON_CONFIG,
+    BEAM_SEARCH_CONFIG,
+    # DVTS_CONFIG,
+    # PARTICLES_CONFIG,
 ]
 
 
@@ -209,33 +216,46 @@ def main(index: int) -> None:
             logger.warning(f"Skipping unsupported approach: {exp.approach}")
             continue
 
-        # Build candidates table: PRM aggregate, tokens, extracted answer, preview
+        # Build candidates table: PRM aggregates (prod/mean/last/min), extracted answer
         completions = out.get("completions", [[""]])[0]
         scores = out.get("scores", [[[]]])[0]
-        agg_scores = (
-            [aggregate_scores(s, cfg.agg_strategy) for s in scores] if scores else []
-        )
+        # Compute aggregates for multiple strategies
+        agg_names: List[str] = ["prod", "mean", "last", "min"]
+        agg_by = {
+            name: (
+                [
+                    aggregate_scores(s, name)  # type: ignore[arg-type]
+                    for s in scores
+                ]
+                if scores
+                else []
+            )
+            for name in agg_names
+        }
+        primary = agg_by.get(cfg.agg_strategy, agg_by.get("prod", []))
         best_idx = (
-            int(max(range(len(agg_scores)), key=lambda i: agg_scores[i]))
-            if agg_scores
-            else -1
+            int(max(range(len(primary)), key=lambda i: primary[i])) if primary else -1
         )
 
         table = Table(title="Candidates")
         table.add_column("#", justify="right", style="bold")
-        table.add_column("PRM", justify="right")
+        table.add_column("PRM(prod)", justify="right")
+        table.add_column("PRM(mean)", justify="right")
+        table.add_column("PRM(last)", justify="right")
+        table.add_column("PRM(min)", justify="right")
         table.add_column("Answer")
-
-        # def _preview(text: str, limit: int = 80) -> str:
-        #     t = text.replace("\n", " ")
-        #     return t[:limit] + ("…" if len(t) > limit else "")
 
         benchmark = BASE_CONFIG.evaluation_config.benchmark
         for i, comp in enumerate(completions):
-            prm_val = f"{agg_scores[i]:.4f}" if agg_scores else "-"
+            vals = [
+                f"{agg_by[name][i]:.4f}"
+                if agg_by.get(name) and i < len(agg_by[name])
+                else "-"
+                for name in agg_names
+            ]
             ans = extract_answer(comp, benchmark)
             row_style = "bold green" if i == best_idx else None
-            table.add_row(str(i), prm_val, ans, style=row_style)
+            table.add_row(str(i), *vals, ans, style=row_style)
 
         console.print(table)
 

@@ -17,7 +17,7 @@ import logging
 from dataclasses import dataclass
 
 import numpy as np
-from vllm import LLM, SamplingParams
+from vllm import LLM, SamplingParams  # type: ignore
 
 logger = logging.getLogger()
 
@@ -30,7 +30,8 @@ def build_conv(
         {"role": "user", "content": prompt},
     ]
 
-    if response != "":
+    # Only include an assistant turn if we actually have content
+    if response is not None and response != "":
         conversation.append({"role": "assistant", "content": response})
 
     return conversation
@@ -54,14 +55,14 @@ def list_mean(x):
 class Beam:
     prompt: str
     index: int
-    current_text: str | None
+    current_text: str
     next_texts: list[str] | None
     lookahead_texts: list[str] | None
-    stop_reasons: list[str | None] | None
-    best_scores: list[float]  # the PRM scores
-    all_scores: list[list[float]]  # all PRM scores
+    stop_reasons: list[str] | None
+    best_scores: list[float]  # the PRM scores (optional, may be unused)
+    all_scores: list[float]  # step-wise PRM scores for this beam's current_text
     previous_text: str | None
-    pruned: False
+    pruned: bool
     history: list[str]
     completed: bool = False
     completion_tokens: int = 0
@@ -72,7 +73,7 @@ class GenResult:
     index: int
     initial_prompt: str
     first_step_text: str
-    first_step_stop_reason: str
+    first_step_stop_reason: str | None
     lookahead_text: str
     stop_reason: str | None
 
