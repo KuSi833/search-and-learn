@@ -21,7 +21,7 @@ from sal.config import (
     SearchConfig,
 )
 from sal.models.reward_models import load_prm
-from sal.search import best_of_n
+from sal.search import beam_search, best_of_n
 from sal.utils.data import get_dataset
 from sal.utils.experiment import get_model_base_path
 from sal.utils.logging import setup_logging
@@ -70,7 +70,7 @@ EXPERIMENTS: Final[List[ExperimentConfig]] = [
     ExperimentConfig(
         approach="beam_search",
         search_config=SearchConfig(
-            n=64,
+            n=16,
             temperature=0.7,
             top_p=0.8,
             max_tokens=2048,
@@ -143,8 +143,8 @@ def main(index: int) -> None:
         )
         if exp.approach == "best_of_n":
             out = best_of_n(x.copy(), exp, llm, prm)
-        # elif exp.approach == "beam_search":
-        #     out = beam_search(x.copy(), exp, llm, prm)
+        elif exp.approach == "beam_search":
+            out = beam_search(x.copy(), exp, llm, prm)
         else:
             logger.warning(f"Skipping unsupported approach: {exp.approach}")
             continue
