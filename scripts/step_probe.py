@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
+
 import json
 from dataclasses import asdict
-from pathlib import Path
 from typing import Any, Dict, Final, List, Tuple
 
 import click
@@ -16,13 +16,11 @@ from sal.config import (
     VerifierGuidedBeamConfig,
     WeightedBoNConfig,
 )
+from sal.const import PROBE_DATA_INPUT_ROOT, PROBE_OUTPUT_ROOT
 from sal.models.reward_models import load_prm
 from sal.search.utils import build_conv, generate_k_steps
 from sal.utils.experiment import get_model_base_path
 from sal.utils.score import aggregate_scores
-
-PROBE_DATA_INPUT_ROOT: Final[Path] = Path("./data/probe_data")
-PROBE_OUTPUT_ROOT: Final[Path] = Path("./output/probes/")
 
 
 def _load_probe_record(run_id: str, index: int) -> Dict[str, Any]:
