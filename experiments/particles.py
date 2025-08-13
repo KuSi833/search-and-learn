@@ -39,8 +39,8 @@ if __name__ == "__main__":
     # DATASET_CONFIG = DatasetConfig(num_samples=100)
     # DATASET_CONFIG = DatasetConfig(num_samples=500)
     DATASET_CONFIG = DatasetConfig(
-        #     dataset_indicies=get_math500_indices(subset="hard"),
-        dataset_indicies=get_math500_indices(subset="crash_debug"),
+        dataset_indicies=get_math500_indices(subset="hard"),
+        # dataset_indicies=get_math500_indices(subset="crash_debug"),
     )
     # DATASET_CONFIG = DatasetConfig(
     #     num_samples=100,
