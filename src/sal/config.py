@@ -91,6 +91,10 @@ class SamplingConfig:
 
 @dataclass
 class ParticlesConfig:
+    # Shared sampling knobs for particle proposals and scoring aggregation
+    sampling: SamplingConfig = field(default_factory=SamplingConfig)
+    # Number of SMC iterations (step expansions)
+    num_iterations: int = 40
     # Softmax temperature used for particle resampling
     resampling_temperature: float = 1.0
     # Optional: minimum number of iterations before allowing early stop

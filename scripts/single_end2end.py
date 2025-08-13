@@ -95,7 +95,7 @@ BEAM_SEARCH_CONFIG = ExperimentConfig(
         ),
         beam_width=4,
         num_iterations=40,
-        lookahead=10,
+        lookahead=40,
         filter_duplicates=True,
         sort_completed=False,
         debug=True,
@@ -110,9 +110,9 @@ PARTICLES_CONFIG = ExperimentConfig(approach="particles")
 
 EXPERIMENTS: Final[List[ExperimentConfig]] = [
     # BON_CONFIG,
-    # BEAM_SEARCH_CONFIG,
+    BEAM_SEARCH_CONFIG,
     # DVTS_CONFIG,
-    PARTICLES_CONFIG,
+    # PARTICLES_CONFIG,
 ]
 
 
