@@ -64,6 +64,7 @@ BASE_CONFIG: Final[BaseConfig] = BaseConfig(
 
 # Define strategies to evaluate (edit to sweep hyperparameters)
 EXPERIMENTS: Final[List[ExperimentConfig]] = [
+    # Best-of-N
     ExperimentConfig(
         approach="best_of_n",
         search_config=SearchConfig(
@@ -75,6 +76,7 @@ EXPERIMENTS: Final[List[ExperimentConfig]] = [
             search_batch_size=25,
         ),
     ),
+    # Standard beam search (stepwise)
     ExperimentConfig(
         approach="beam_search",
         search_config=SearchConfig(
@@ -84,6 +86,72 @@ EXPERIMENTS: Final[List[ExperimentConfig]] = [
             max_tokens=2048,
             agg_strategy="prod",
             search_batch_size=1,  # beam_search expects 1
+        ),
+    ),
+    # Diverse verifier tree search (stepwise)
+    ExperimentConfig(
+        approach="dvts",
+        search_config=SearchConfig(
+            n=16,  # multiple of beam_width (default 4)
+            temperature=0.7,
+            top_p=0.8,
+            max_tokens=2048,
+            agg_strategy="prod",
+        ),
+    ),
+    # Quantised cascade TTC (stepwise, draft+target)
+    ExperimentConfig(
+        approach="qcts",
+        search_config=SearchConfig(
+            n=16,  # multiple of beam_width
+            temperature=0.7,
+            top_p=0.8,
+            max_tokens=2048,
+            agg_strategy="prod",
+        ),
+    ),
+    # Confidence–margin cascade TTC (stepwise, draft+target)
+    ExperimentConfig(
+        approach="q2",
+        search_config=SearchConfig(
+            n=16,  # multiple of beam_width
+            temperature=0.7,
+            top_p=0.8,
+            max_tokens=2048,
+            agg_strategy="prod",
+        ),
+    ),
+    # Particle filter (stepwise)
+    ExperimentConfig(
+        approach="particles",
+        search_config=SearchConfig(
+            n=16,
+            temperature=0.7,
+            top_p=0.8,
+            max_tokens=2048,
+            agg_strategy="prod",
+        ),
+    ),
+    # Gibbs-like particle Gibbs (stepwise)
+    ExperimentConfig(
+        approach="gibbs",
+        search_config=SearchConfig(
+            n=16,
+            temperature=0.7,
+            top_p=0.8,
+            max_tokens=2048,
+            agg_strategy="prod",
+        ),
+    ),
+    # Diagnostic TTC (stepwise, writes telemetry)
+    ExperimentConfig(
+        approach="diagnostic_tts",
+        search_config=SearchConfig(
+            n=16,  # multiple of beam_width
+            temperature=0.7,
+            top_p=0.8,
+            max_tokens=2048,
+            agg_strategy="prod",
         ),
     ),
 ]
