@@ -156,7 +156,7 @@ def _beam_search(
         # Attach scores and aggregate
         aggregated: list[float] = []
         for b, score in zip(candidate_beams, scores, strict=True):
-            b.all_scores = score
+            b.all_scores = score[0]
             aggregated.append(
                 aggregate_scores(b.all_scores, config.search_config.agg_strategy)
             )
