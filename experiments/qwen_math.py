@@ -136,11 +136,11 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    # for n in [8, 16]:
-    #     for base_config in [BEST_OF_N_CONFIG, DVTS_CONFIG]:
-    #         config_variant = copy.deepcopy(base_config)
-    #         config_variant.search_config.n = n
-    #         experiment_configs.append(config_variant)
+    for n in [8, 16, 32, 64]:
+        for base_config in [BEST_OF_N_CONFIG]:
+            config_variant = copy.deepcopy(base_config)
+            config_variant.search_config.n = n
+            experiment_configs.append(config_variant)
 
     experiment_configs.append(BEST_OF_N_CONFIG)
     # experiment_configs.append(DVTS_CONFIG)
