@@ -5,6 +5,8 @@ from typing import Any, Dict, Final, List, Tuple
 
 import click
 import pyrootutils
+from rich.console import Console
+from rich.text import Text
 from vllm import LLM  # type: ignore
 
 from sal.config import (
@@ -27,6 +29,7 @@ setup_logging()
 root = pyrootutils.find_root(indicator="pyproject.toml")
 logger = logging.getLogger(__name__)
 
+console = Console()
 
 # --- Typed, versioned configuration ---
 MODEL_BASE_PATH: Final = get_model_base_path()
@@ -52,7 +55,7 @@ EXPERIMENTS: Final[List[ExperimentConfig]] = [
     ExperimentConfig(
         approach="best_of_n",
         search_config=SearchConfig(
-            n=64,
+            n=16,
             temperature=0.7,
             top_p=0.8,
             max_tokens=2048,
@@ -119,12 +122,16 @@ def main(index: int) -> None:
 
     results: List[Dict[str, Any]] = []
 
+    # Print concise summary
+    print(f"Index: {index}")
+    print(f"Ground Truth: {example.get('answer')}")
+
     for exp in EXPERIMENTS:
         logger.info(f"Running approach={exp.approach}")
         if exp.approach == "best_of_n":
             out = best_of_n(x.copy(), exp, llm, prm)
-        elif exp.approach == "beam_search":
-            out = beam_search(x.copy(), exp, llm, prm)
+        # elif exp.approach == "beam_search":
+        #     out = beam_search(x.copy(), exp, llm, prm)
         else:
             logger.warning(f"Skipping unsupported approach: {exp.approach}")
             continue
@@ -134,6 +141,8 @@ def main(index: int) -> None:
             example, pred_text, BASE_CONFIG.evaluation_config.benchmark
         )
 
+        print(f"Predicted: {pred_ans}")
+        print(Text(f"Correct: {ok}", style="green" if ok else "red"))
         results.append(
             {
                 "approach": exp.approach,
@@ -142,17 +151,6 @@ def main(index: int) -> None:
                 "pred_extracted": pred_ans,
                 "gt": gt,
             }
-        )
-
-    # Print concise summary
-    print(f"Index: {index}")
-    problem_preview = example["problem"][:120].replace("\n", " ")
-    suffix = "..." if len(example["problem"]) > 120 else ""
-    print(f"Problem: {problem_preview}{suffix}")
-    for r in results:
-        ok_str = "TRUE" if r["correct"] else "FALSE"
-        print(
-            f"- {r['approach']}: {ok_str} | temp={r['search_config']['temperature']} n={r['search_config']['n']}"
         )
 
 
