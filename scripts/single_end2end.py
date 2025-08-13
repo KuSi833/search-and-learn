@@ -52,7 +52,7 @@ EXPERIMENTS: Final[List[ExperimentConfig]] = [
     ExperimentConfig(
         approach="best_of_n",
         search_config=SearchConfig(
-            n=256,
+            n=64,
             temperature=0.7,
             top_p=0.8,
             max_tokens=2048,
@@ -63,7 +63,7 @@ EXPERIMENTS: Final[List[ExperimentConfig]] = [
     ExperimentConfig(
         approach="beam_search",
         search_config=SearchConfig(
-            n=256,
+            n=64,
             temperature=0.7,
             top_p=0.8,
             max_tokens=2048,
