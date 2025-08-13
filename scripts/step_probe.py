@@ -168,49 +168,7 @@ def _summarise_aggregates(score_vecs: List[List[float]]) -> List[Dict[str, float
     return results
 
 
-@click.command(
-    help="Probe next-step candidates from a shared prefix for selected strategies"
-)
-@click.option("--run-id", required=True, type=str)
-@click.option("--index", required=False, type=int)
-def main(run_id: str, index: Optional[int]) -> None:
-    if index is not None:
-        # Load and process single probe datum
-        _process_single_probe(run_id, index)
-    else:
-        # Load and process all probe data for this run_id
-        probe_dir = PROBE_DATA_INPUT_ROOT / run_id
-        if not probe_dir.exists():
-            click.secho(f"✗ Probe data directory not found: {probe_dir}", fg="red")
-            return
-
-        jsonl_files = list(probe_dir.glob("*.jsonl"))
-        if not jsonl_files:
-            click.secho(f"✗ No JSONL files found in {probe_dir}", fg="red")
-            return
-
-        click.echo(f"Found {len(jsonl_files)} files to process")
-
-        for jsonl_file in jsonl_files:
-            try:
-                file_index = int(jsonl_file.stem)
-                click.echo(f"Processing index {file_index}...")
-                _process_single_probe(run_id, file_index)
-            except ValueError:
-                click.secho(
-                    f"✗ Skipping file with invalid name: {jsonl_file.name}", fg="yellow"
-                )
-                continue
-
-
-def _process_single_probe(run_id: str, index: int) -> None:
-    # Load probe datum
-    datum = _load_probe_record(run_id, index)
-    problem: str = datum.get("problem", "")
-    prefix_text: str = datum.get("prefix_text", "")
-    step_delimiter: str = datum.get("step_delimiter", "\n\n")
-    fail_step: int = int(datum.get("fail_step", 1))
-
+def _get_configs() -> Tuple[BaseConfig, ExperimentConfig]:
     PROBE_DATA_INPUT_ROOT.mkdir(exist_ok=True)
     PROBE_OUTPUT_ROOT.mkdir(exist_ok=True)
 
@@ -250,17 +208,18 @@ def _process_single_probe(run_id: str, index: int) -> None:
         verifier_beam_config=VBEAM_CFG,
     )
 
-    # Load models
-    llm = LLM(
-        model=BASE_CONFIG.generator_config.get_model_path(),
-        gpu_memory_utilization=BASE_CONFIG.generator_config.gpu_memory_utilization,
-        enable_prefix_caching=True,
-        seed=BASE_CONFIG.seed,
-        tensor_parallel_size=1,
-        max_model_len=BASE_CONFIG.generator_config.max_model_len,
-        enforce_eager=True,
-    )
-    prm = load_prm(BASE_CONFIG.prm_config)
+    return BASE_CONFIG, PROBE_EXPERIMENT_CONFIG
+
+
+def _process_single_probe(
+    llm: LLM, prm, experiment_config: ExperimentConfig, run_id: str, index: int
+) -> None:
+    # Load probe datum
+    datum = _load_probe_record(run_id, index)
+    problem: str = datum.get("problem", "")
+    prefix_text: str = datum.get("prefix_text", "")
+    step_delimiter: str = datum.get("step_delimiter", "\n\n")
+    fail_step: int = int(datum.get("fail_step", 1))
 
     # Strategies
     results: Dict[str, Any] = {
@@ -271,22 +230,22 @@ def _process_single_probe(run_id: str, index: int) -> None:
         "problem": problem,
         "strategies": [],
         "config": {
-            "search": asdict(PROBE_EXPERIMENT_CONFIG.search_config),
-            "wbon": asdict(PROBE_EXPERIMENT_CONFIG.wbon_config)
-            if PROBE_EXPERIMENT_CONFIG.wbon_config
+            "search": asdict(experiment_config.search_config),
+            "wbon": asdict(experiment_config.wbon_config)
+            if experiment_config.wbon_config
             else None,
-            "verifier_beam": asdict(PROBE_EXPERIMENT_CONFIG.verifier_beam_config)
-            if PROBE_EXPERIMENT_CONFIG.verifier_beam_config
+            "verifier_beam": asdict(experiment_config.verifier_beam_config)
+            if experiment_config.verifier_beam_config
             else None,
         },
     }
 
     # Weighted Best-of-N (proposal only)
-    if PROBE_EXPERIMENT_CONFIG.wbon_config is not None:
-        bon_n = int(PROBE_EXPERIMENT_CONFIG.wbon_config.n)
+    if experiment_config.wbon_config is not None:
+        bon_n = int(experiment_config.wbon_config.n)
         bon_texts, bon_stops = _bon_candidates(
             llm,
-            PROBE_EXPERIMENT_CONFIG,
+            experiment_config,
             problem,
             prefix_text,
             n=bon_n,
@@ -313,11 +272,11 @@ def _process_single_probe(run_id: str, index: int) -> None:
         )
 
     # Verifier-guided beam (one-iteration, proposal only)
-    if PROBE_EXPERIMENT_CONFIG.verifier_beam_config is not None:
-        beam_width = int(PROBE_EXPERIMENT_CONFIG.verifier_beam_config.beam_width)
+    if experiment_config.verifier_beam_config is not None:
+        beam_width = int(experiment_config.verifier_beam_config.beam_width)
         beam_texts, beam_stops = _beam_candidates(
             llm,
-            PROBE_EXPERIMENT_CONFIG,
+            experiment_config,
             problem,
             prefix_text,
             beam_width=beam_width,
@@ -351,6 +310,55 @@ def _process_single_probe(run_id: str, index: int) -> None:
         f.write(json.dumps(results, ensure_ascii=False))
         f.write("\n")
     click.secho(f"✔ Wrote probe results to {out_path}", fg="green")
+
+
+@click.command(
+    help="Probe next-step candidates from a shared prefix for selected strategies"
+)
+@click.option("--run-id", required=True, type=str)
+@click.option("--index", required=False, type=int)
+def main(run_id: str, index: Optional[int]) -> None:
+    base_config, experiment_config = _get_configs()
+
+    # Load models once
+    llm = LLM(
+        model=base_config.generator_config.get_model_path(),
+        gpu_memory_utilization=base_config.generator_config.gpu_memory_utilization,
+        enable_prefix_caching=True,
+        seed=base_config.seed,
+        tensor_parallel_size=1,
+        max_model_len=base_config.generator_config.max_model_len,
+        enforce_eager=True,
+    )
+    prm = load_prm(base_config.prm_config)
+
+    if index is not None:
+        # Load and process single probe datum
+        _process_single_probe(llm, prm, experiment_config, run_id, index)
+    else:
+        # Load and process all probe data for this run_id
+        probe_dir = PROBE_DATA_INPUT_ROOT / run_id
+        if not probe_dir.exists():
+            click.secho(f"✗ Probe data directory not found: {probe_dir}", fg="red")
+            return
+
+        jsonl_files = list(probe_dir.glob("*.jsonl"))
+        if not jsonl_files:
+            click.secho(f"✗ No JSONL files found in {probe_dir}", fg="red")
+            return
+
+        click.echo(f"Found {len(jsonl_files)} files to process")
+
+        for jsonl_file in jsonl_files:
+            try:
+                file_index = int(jsonl_file.stem)
+                click.echo(f"Processing index {file_index}...")
+                _process_single_probe(llm, prm, experiment_config, run_id, file_index)
+            except ValueError:
+                click.secho(
+                    f"✗ Skipping file with invalid name: {jsonl_file.name}", fg="yellow"
+                )
+                continue
 
 
 if __name__ == "__main__":
