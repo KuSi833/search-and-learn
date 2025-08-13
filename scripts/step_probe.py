@@ -1,0 +1,312 @@
+#!/usr/bin/env python3
+import json
+from dataclasses import asdict
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
+
+import click
+from vllm import LLM, SamplingParams  # type: ignore
+
+from sal.config import ExperimentConfig, GeneratorConfig, PRMConfig
+from sal.models.reward_models import load_prm
+from sal.search.utils import build_conv, generate_k_steps
+from sal.utils.score import aggregate_scores
+
+
+def _load_probe_record(run_id: str, index: int) -> Dict[str, Any]:
+    path = Path("./data/probe_data") / run_id / f"{index}.jsonl"
+    if not path.exists():
+        raise FileNotFoundError(f"Probe datum not found: {path}")
+    with path.open("r", encoding="utf-8") as f:
+        line = f.readline().strip()
+        if not line:
+            raise RuntimeError(f"Empty probe datum: {path}")
+        return json.loads(line)
+
+
+def _apply_chat_template(
+    llm: LLM,
+    convs: List[List[Dict[str, str]]],
+    experiment_config: ExperimentConfig,
+    add_generation_prompt: bool,
+    continue_final_message: bool,
+) -> List[str]:
+    tokenizer = llm.get_tokenizer()
+    if experiment_config.custom_chat_template is not None:
+        tokenizer.chat_template = experiment_config.custom_chat_template
+    return tokenizer.apply_chat_template(
+        convs,
+        add_generation_prompt=add_generation_prompt,
+        continue_final_message=continue_final_message,
+        tokenize=False,
+    )
+
+
+def _bon_candidates(
+    llm: LLM,
+    experiment_config: ExperimentConfig,
+    problem: str,
+    prefix_text: str,
+    n: int,
+    step_delimiter: str,
+) -> Tuple[List[str], List[str]]:
+    conv = build_conv(problem, prefix_text, experiment_config.system_prompt)
+    templated = _apply_chat_template(
+        llm,
+        [conv],
+        experiment_config,
+        add_generation_prompt=False,
+        continue_final_message=True,
+    )[0]
+    templated_batch = [templated for _ in range(n)]
+
+    sampling_params = SamplingParams(
+        temperature=experiment_config.search_config.temperature,
+        max_tokens=experiment_config.search_config.max_tokens,
+        top_p=experiment_config.search_config.top_p,
+        stop=[step_delimiter],
+        include_stop_str_in_output=True,
+        n=1,
+        seed=experiment_config.seed,
+    )
+    responses = llm.generate(
+        templated_batch, sampling_params=sampling_params, use_tqdm=False
+    )
+    texts, stops = [], []
+    for r in responses:
+        out = r.outputs[0]
+        texts.append(out.text)
+        stops.append(out.stop_reason if out.stop_reason is not None else "EOS")
+    return texts, stops
+
+
+def _beam_candidates(
+    llm: LLM,
+    experiment_config: ExperimentConfig,
+    problem: str,
+    prefix_text: str,
+    beam_width: int,
+    step_delimiter: str,
+) -> Tuple[List[str], List[str]]:
+    conv = build_conv(problem, prefix_text, experiment_config.system_prompt)
+    templated = _apply_chat_template(
+        llm,
+        [conv],
+        experiment_config,
+        add_generation_prompt=False,
+        continue_final_message=True,
+    )
+
+    sampling_params = SamplingParams(
+        temperature=experiment_config.search_config.temperature,
+        max_tokens=experiment_config.search_config.max_tokens,
+        top_p=experiment_config.search_config.top_p,
+        stop=[step_delimiter],
+        include_stop_str_in_output=True,
+        n=1,
+        seed=experiment_config.seed,
+    )
+
+    beams = generate_k_steps(
+        templated,
+        lookahead_steps=0,
+        llm=llm,
+        sampling_params=sampling_params,
+        beam_width=beam_width,
+    )
+    # Single input → one Beam object with next_texts of length beam_width
+    next_texts = beams[0].next_texts or []
+    stop_reasons = beams[0].stop_reasons or [None] * len(next_texts)
+    stop_reasons = [s if s is not None else "EOS" for s in stop_reasons]
+    return next_texts, stop_reasons
+
+
+def _score_with_prm(
+    prm,
+    problem: str,
+    prefix_text: str,
+    candidates: List[str],
+) -> List[List[float]]:
+    prompts = [problem]
+    completions = [[prefix_text + c for c in candidates]]
+    scores = prm.score(prompts, completions)
+    # scores shape: [1][num_candidates][score_vector]
+    return scores[0]
+
+
+def _summarise_aggregates(score_vecs: List[List[float]]) -> List[Dict[str, float]]:
+    results: List[Dict[str, float]] = []
+    for vec in score_vecs:
+        results.append(
+            {
+                "last": float(aggregate_scores(vec, "last")),
+                "mean": float(aggregate_scores(vec, "mean")),
+                "min": float(aggregate_scores(vec, "min")),
+                "prod": float(aggregate_scores(vec, "prod")),
+            }
+        )
+    return results
+
+
+@click.command(
+    help="Probe next-step candidates from a shared prefix for selected strategies"
+)
+@click.option("--run-id", required=True, type=str)
+@click.option("--index", required=True, type=int)
+@click.option(
+    "--bon-n", default=8, show_default=True, type=int, help="Best-of-N samples"
+)
+@click.option(
+    "--beam-width",
+    default=4,
+    show_default=True,
+    type=int,
+    help="Beam width for verifier-guided beam probe",
+)
+@click.option("--temperature", default=0.8, show_default=True, type=float)
+@click.option("--top-p", default=1.0, show_default=True, type=float)
+@click.option("--max-tokens", default=256, show_default=True, type=int)
+@click.option(
+    "--model",
+    default=None,
+    type=str,
+    help="Generator model id or path; defaults to ExperimentConfig",
+)
+@click.option(
+    "--prm-model",
+    default=None,
+    type=str,
+    help="PRM model id; defaults to ExperimentConfig",
+)
+@click.option(
+    "--output", default=None, type=str, help="Optional explicit output file path"
+)
+def main(
+    run_id: str,
+    index: int,
+    bon_n: int,
+    beam_width: int,
+    temperature: float,
+    top_p: float,
+    max_tokens: int,
+    model: str | None,
+    prm_model: str | None,
+    output: str | None,
+) -> None:
+    # Load probe datum
+    datum = _load_probe_record(run_id, index)
+    problem: str = datum.get("problem", "")
+    prefix_text: str = datum.get("prefix_text", "")
+    step_delimiter: str = datum.get("step_delimiter", "\n\n")
+    fail_step: int = int(datum.get("fail_step", 1))
+
+    # Configure experiment and models
+    experiment_config = ExperimentConfig()
+    experiment_config.search_config.temperature = temperature
+    experiment_config.search_config.top_p = top_p
+    experiment_config.search_config.max_tokens = max_tokens
+
+    generator_config = GeneratorConfig()
+    if model is not None:
+        generator_config.name = model
+    prm_config = PRMConfig()
+    if prm_model is not None:
+        prm_config.name = prm_model
+
+    # Load models
+    llm = LLM(
+        model=generator_config.get_model_path(),
+        gpu_memory_utilization=generator_config.gpu_memory_utilization,
+        enable_prefix_caching=True,
+        seed=experiment_config.seed,
+        tensor_parallel_size=1,
+        max_model_len=generator_config.max_model_len,
+        enforce_eager=False,
+    )
+    prm = load_prm(prm_config)
+
+    # Strategies
+    results: Dict[str, Any] = {
+        "run_id": run_id,
+        "index": index,
+        "fail_step": fail_step,
+        "prefix_text": prefix_text,
+        "problem": problem,
+        "strategies": [],
+        "config": {"search": asdict(experiment_config.search_config)},
+    }
+
+    # Weighted Best-of-N (proposal only)
+    bon_texts, bon_stops = _bon_candidates(
+        llm,
+        experiment_config,
+        problem,
+        prefix_text,
+        n=bon_n,
+        step_delimiter=step_delimiter,
+    )
+    bon_scores = _score_with_prm(prm, problem, prefix_text, bon_texts)
+    bon_aggs = _summarise_aggregates(bon_scores)
+    results["strategies"].append(
+        {
+            "name": "weighted_bon",
+            "params": {"n": bon_n},
+            "candidates": [
+                {
+                    "text": t,
+                    "stop_reason": s,
+                    "prm_scores": sc,
+                    "aggregates": agg,
+                }
+                for t, s, sc, agg in zip(
+                    bon_texts, bon_stops, bon_scores, bon_aggs, strict=True
+                )
+            ],
+        }
+    )
+
+    # Verifier-guided beam (one-iteration, proposal only)
+    beam_texts, beam_stops = _beam_candidates(
+        llm,
+        experiment_config,
+        problem,
+        prefix_text,
+        beam_width=beam_width,
+        step_delimiter=step_delimiter,
+    )
+    beam_scores = _score_with_prm(prm, problem, prefix_text, beam_texts)
+    beam_aggs = _summarise_aggregates(beam_scores)
+    results["strategies"].append(
+        {
+            "name": "verifier_guided_beam",
+            "params": {"beam_width": beam_width},
+            "candidates": [
+                {
+                    "text": t,
+                    "stop_reason": s,
+                    "prm_scores": sc,
+                    "aggregates": agg,
+                }
+                for t, s, sc, agg in zip(
+                    beam_texts, beam_stops, beam_scores, beam_aggs, strict=True
+                )
+            ],
+        }
+    )
+
+    # Write output
+    out_dir = Path("./output") / run_id / "probes"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if output is None:
+        out_path = out_dir / f"idx{index}_k{fail_step}.jsonl"
+    else:
+        out_path = Path(output)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("w", encoding="utf-8") as f:
+        f.write(json.dumps(results, ensure_ascii=False))
+        f.write("\n")
+    click.secho(f"✔ Wrote probe results to {out_path}", fg="green")
+
+
+if __name__ == "__main__":
+    main()
