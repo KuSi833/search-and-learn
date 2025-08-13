@@ -62,13 +62,14 @@ BASE_CONFIG: Final[BaseConfig] = BaseConfig(
     prm_config=PRM_MODEL,
 )
 
+n = 4
 # Define strategies to evaluate (edit to sweep hyperparameters)
 EXPERIMENTS: Final[List[ExperimentConfig]] = [
     # Best-of-N
     ExperimentConfig(
         approach="best_of_n",
         search_config=SearchConfig(
-            n=16,
+            n=n,
             temperature=0.7,
             top_p=0.8,
             max_tokens=2048,
@@ -80,7 +81,7 @@ EXPERIMENTS: Final[List[ExperimentConfig]] = [
     ExperimentConfig(
         approach="beam_search",
         search_config=SearchConfig(
-            n=16,
+            n=n,
             temperature=0.7,
             top_p=0.8,
             max_tokens=2048,
@@ -92,7 +93,7 @@ EXPERIMENTS: Final[List[ExperimentConfig]] = [
     ExperimentConfig(
         approach="dvts",
         search_config=SearchConfig(
-            n=16,  # multiple of beam_width (default 4)
+            n=n,
             temperature=0.7,
             top_p=0.8,
             max_tokens=2048,
@@ -103,7 +104,7 @@ EXPERIMENTS: Final[List[ExperimentConfig]] = [
     ExperimentConfig(
         approach="qcts",
         search_config=SearchConfig(
-            n=16,  # multiple of beam_width
+            n=n,
             temperature=0.7,
             top_p=0.8,
             max_tokens=2048,
@@ -114,7 +115,7 @@ EXPERIMENTS: Final[List[ExperimentConfig]] = [
     ExperimentConfig(
         approach="q2",
         search_config=SearchConfig(
-            n=16,  # multiple of beam_width
+            n=n,
             temperature=0.7,
             top_p=0.8,
             max_tokens=2048,
@@ -125,7 +126,7 @@ EXPERIMENTS: Final[List[ExperimentConfig]] = [
     ExperimentConfig(
         approach="particles",
         search_config=SearchConfig(
-            n=16,
+            n=n,
             temperature=0.7,
             top_p=0.8,
             max_tokens=2048,
@@ -136,18 +137,7 @@ EXPERIMENTS: Final[List[ExperimentConfig]] = [
     ExperimentConfig(
         approach="gibbs",
         search_config=SearchConfig(
-            n=16,
-            temperature=0.7,
-            top_p=0.8,
-            max_tokens=2048,
-            agg_strategy="prod",
-        ),
-    ),
-    # Diagnostic TTC (stepwise, writes telemetry)
-    ExperimentConfig(
-        approach="diagnostic_tts",
-        search_config=SearchConfig(
-            n=16,  # multiple of beam_width
+            n=n,
             temperature=0.7,
             top_p=0.8,
             max_tokens=2048,
@@ -255,7 +245,6 @@ def main(index: int) -> None:
         # Build candidates table: PRM aggregate, tokens, extracted answer, preview
         completions = out.get("completions", [[""]])[0]
         scores = out.get("scores", [[[]]])[0]
-        token_counts = out.get("completion_tokens", [[0]])[0]
         agg_scores = (
             [aggregate_scores(s, cfg.agg_strategy) for s in scores] if scores else []
         )
@@ -268,7 +257,6 @@ def main(index: int) -> None:
         table = Table(title="Candidates")
         table.add_column("#", justify="right", style="bold")
         table.add_column("PRM", justify="right")
-        table.add_column("Tokens", justify="right")
         table.add_column("Answer")
         table.add_column("Preview")
 
@@ -279,12 +267,9 @@ def main(index: int) -> None:
         benchmark = BASE_CONFIG.evaluation_config.benchmark
         for i, comp in enumerate(completions):
             prm_val = f"{agg_scores[i]:.4f}" if agg_scores else "-"
-            tok_str = f"{token_counts[i]}" if i < len(token_counts) else "-"
             ans = extract_answer(comp, benchmark)
             row_style = "bold green" if i == best_idx else None
-            table.add_row(
-                str(i), prm_val, tok_str, ans, _preview(comp), style=row_style
-            )
+            table.add_row(str(i), prm_val, ans, _preview(comp), style=row_style)
 
         console.print(table)
 
