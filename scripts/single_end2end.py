@@ -258,18 +258,17 @@ def main(index: int) -> None:
         table.add_column("#", justify="right", style="bold")
         table.add_column("PRM", justify="right")
         table.add_column("Answer")
-        table.add_column("Preview")
 
-        def _preview(text: str, limit: int = 80) -> str:
-            t = text.replace("\n", " ")
-            return t[:limit] + ("…" if len(t) > limit else "")
+        # def _preview(text: str, limit: int = 80) -> str:
+        #     t = text.replace("\n", " ")
+        #     return t[:limit] + ("…" if len(t) > limit else "")
 
         benchmark = BASE_CONFIG.evaluation_config.benchmark
         for i, comp in enumerate(completions):
             prm_val = f"{agg_scores[i]:.4f}" if agg_scores else "-"
             ans = extract_answer(comp, benchmark)
             row_style = "bold green" if i == best_idx else None
-            table.add_row(str(i), prm_val, ans, _preview(comp), style=row_style)
+            table.add_row(str(i), prm_val, ans, style=row_style)
 
         console.print(table)
 
