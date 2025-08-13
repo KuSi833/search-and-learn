@@ -62,7 +62,7 @@ BASE_CONFIG: Final[BaseConfig] = BaseConfig(
     prm_config=PRM_MODEL,
 )
 
-n = 4
+n = 8
 # Define strategies to evaluate (edit to sweep hyperparameters)
 EXPERIMENTS: Final[List[ExperimentConfig]] = [
     # Best-of-N
