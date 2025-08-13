@@ -2,15 +2,15 @@ import copy
 from typing import List
 
 from dotenv import load_dotenv
-from networkx import expected_degree_graph
 
 from sal.config import (
     BaseConfig,
+    BestOfNConfig,
     DatasetConfig,
     ExperimentConfig,
     GeneratorConfig,
     PRMConfig,
-    SearchConfig,
+    SamplingConfig,
     WandbConfig,
 )
 from sal.test_time_compute import run
@@ -57,9 +57,8 @@ if __name__ == "__main__":
 
     WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
 
-    # DATASET_CONFIG = DatasetConfig(num_samples=100)
-    DATASET_CONFIG = DatasetConfig(dataset_indicies=get_math500_indices(subset="hard"))
-    # DATASET_CONFIG = DatasetConfig(num_samples=500)  # FULL DATASET
+    # Run full MATH-500 (no index restriction)
+    DATASET_CONFIG = DatasetConfig()
     # DATASET_CONFIG = DatasetConfig(
     #     dataset_name="HuggingFaceH4/aime_2024"
     # )  # FULL DATASET
@@ -71,26 +70,22 @@ if __name__ == "__main__":
         dataset_config=DATASET_CONFIG,
     )
 
-    BEAM_SEARCH_CONFIG = ExperimentConfig(
-        filter_duplicates=True,
-        approach="beam_search",
-        search_config=SearchConfig(
-            n=4,
-            search_batch_size=1,  # DO NOT CHANGE
+    # Best-of-N baseline
+    BEST_OF_N_CONFIG = ExperimentConfig(
+        approach="best_of_n",
+        bon=BestOfNConfig(
+            sampling=SamplingConfig(
+                n=4,
+                temperature=0.7,
+                top_p=0.8,
+                max_tokens=2048,
+                agg_strategy="prod",
+                search_batch_size=50,
+            ),
+            debug=False,
         ),
         wandb_config=WANDB_CONFIG,
     )
-
-    # BEST_OF_N_CONFIG = ExperimentConfig(
-    #     filter_duplicates=True,
-    #     sort_completed=True,
-    #     approach="best_of_n",
-    #     search_config=SearchConfig(
-    #         n=4,
-    #         search_batch_size=50,
-    #     ),
-    #     wandb_config=WANDB_CONFIG,
-    # )
 
     # DVTS_CONFIG = ExperimentConfig(
     #     approach="dvts",
@@ -103,46 +98,16 @@ if __name__ == "__main__":
     #     wandb_config=WANDB_CONFIG,
     # )
 
-    DVTS_CONFIG = ExperimentConfig(
-        approach="dvts",
-        custom_chat_template=None,
-        search_config=SearchConfig(
-            n=4,
-            temperature=0.7,  # Their exact setting (you had 0.8)
-            top_p=0.8,  # Their exact setting (you had 1.0)
-            prm_batch_size=4,
-            search_batch_size=50,
-            max_tokens=2048,
-            agg_strategy="prod",
-        ),
-        wandb_config=WANDB_CONFIG,
-    )
-
-    BEST_OF_N_CONFIG = ExperimentConfig(
-        filter_duplicates=True,
-        sort_completed=True,
-        approach="best_of_n",
-        search_config=SearchConfig(
-            n=4,
-            temperature=0.7,  # Their exact setting (you had 0.8)
-            top_p=0.8,  # Their exact setting (you had 1.0)
-            prm_batch_size=4,
-            search_batch_size=50,
-            max_tokens=2048,
-            agg_strategy="prod",
-        ),
-        wandb_config=WANDB_CONFIG,
-    )
+    # Optional: DVTS or other strategies can be re-added here with their own configs
 
     experiment_configs: List[ExperimentConfig] = []
 
-    for n in [8, 16, 32, 64]:
-        for base_config in [BEST_OF_N_CONFIG]:
-            config_variant = copy.deepcopy(base_config)
-            config_variant.search_config.n = n
-            experiment_configs.append(config_variant)
+    for n in [4]:
+        config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
+        config_variant.bon.sampling.n = n
+        experiment_configs.append(config_variant)
 
+    # Also include the base n=4
     experiment_configs.append(BEST_OF_N_CONFIG)
-    # experiment_configs.append(DVTS_CONFIG)
 
     run(BASE_CONFIG, experiment_configs)
