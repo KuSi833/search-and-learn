@@ -71,7 +71,6 @@ def _particles(
         top_p=experiment_config.search_config.top_p,
         stop=["\n\n"],
         include_stop_str_in_output=True,
-        seed=experiment_config.seed,
         n=1,
     )
 
@@ -80,7 +79,6 @@ def _particles(
         temperature=experiment_config.search_config.temperature,
         max_tokens=experiment_config.search_config.max_tokens,
         top_p=experiment_config.search_config.top_p,
-        seed=experiment_config.seed,
         n=1,
     )
 
