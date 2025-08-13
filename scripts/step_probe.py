@@ -199,10 +199,7 @@ PROBE_EXPERIMENT_CONFIG: Final[ExperimentConfig] = ExperimentConfig(
 )
 @click.option("--run-id", required=True, type=str)
 @click.option("--index", required=True, type=int)
-@click.option(
-    "--output", default=None, type=str, help="Optional explicit output file path"
-)
-def main(run_id: str, index: int, output: str | None) -> None:
+def main(run_id: str, index: int) -> None:
     # Load probe datum
     datum = _load_probe_record(run_id, index)
     problem: str = datum.get("problem", "")
@@ -309,11 +306,7 @@ def main(run_id: str, index: int, output: str | None) -> None:
     # Write output
     out_dir = Path("./output") / run_id / "probes"
     out_dir.mkdir(parents=True, exist_ok=True)
-    if output is None:
-        out_path = out_dir / f"idx{index}_k{fail_step}.jsonl"
-    else:
-        out_path = Path(output)
-        out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"idx{index}_k{fail_step}.jsonl"
     with out_path.open("w", encoding="utf-8") as f:
         f.write(json.dumps(results, ensure_ascii=False))
         f.write("\n")
