@@ -121,7 +121,84 @@ def _particles(
                 final_sampling_params if use_final else step_sampling_params
             )
 
-            # Build conversations and apply chat template per particle depending on whether this is the first step
+            # Build conversations
+            convs = []
+            is_first_step_flags = []
+            for i in active_indices:
+                conv = build_conv(
+                    prompt, particles[i].current_text, experiment_config.system_prompt
+                )
+                convs.append(conv)
+                is_first_step_flags.append(len(particles[i].current_text) == 0)
+
+            # Measure token lengths of current prompts and truncate assistant text if needed
+            # to respect the model's maximum context window, while reserving a small budget
+            # for generation tokens.
+            # Determine model context window from tokenizer if available
+            max_ctx = getattr(tokenizer, "model_max_length", 4096)
+            try:
+                max_ctx = int(max_ctx)
+            except Exception:
+                max_ctx = 4096
+            # Guard against HF's very large sentinel values
+            if max_ctx is None or max_ctx > 100000:
+                max_ctx = 4096
+            # Reserve some room for generation so we can still emit a concluding token or two.
+            # Cap reserve by the configured max_tokens for this step.
+            gen_reserve = int(min(64, max(1, step_sampling_params.max_tokens)))
+
+            # Tokenise current templated convs to get accurate prompt lengths
+            # We must apply the same flags as generation will use on this iteration
+            first_idxs = [j for j, f in enumerate(is_first_step_flags) if f]
+            cont_idxs = [j for j, f in enumerate(is_first_step_flags) if not f]
+            prompt_token_lens_map: dict[int, int] = {}
+            if first_idxs:
+                first_convs = [convs[j] for j in first_idxs]
+                first_tok = tokenizer.apply_chat_template(
+                    first_convs,
+                    add_generation_prompt=True,
+                    continue_final_message=False,
+                    tokenize=True,
+                )
+                for local_idx, ids in zip(first_idxs, first_tok, strict=True):
+                    prompt_token_lens_map[local_idx] = len(ids)
+            if cont_idxs:
+                cont_convs = [convs[j] for j in cont_idxs]
+                cont_tok = tokenizer.apply_chat_template(
+                    cont_convs,
+                    add_generation_prompt=False,
+                    continue_final_message=True,
+                    tokenize=True,
+                )
+                for local_idx, ids in zip(cont_idxs, cont_tok, strict=True):
+                    prompt_token_lens_map[local_idx] = len(ids)
+
+            # Truncate assistant text from the left when over budget
+            for local_idx, global_idx in enumerate(active_indices):
+                current_len = int(prompt_token_lens_map.get(local_idx, 0))
+                if current_len <= max_ctx:
+                    continue
+                # Estimate how many assistant tokens we can keep
+                assistant_text = particles[global_idx].current_text or ""
+                assistant_token_ids = tokenizer.encode(
+                    assistant_text, add_special_tokens=False
+                )
+                # Approximate base length (system+user and formatting) by removing assistant content length
+                base_len_est = max(0, current_len - len(assistant_token_ids))
+                budget_for_assistant = max(0, max_ctx - gen_reserve - base_len_est)
+                if budget_for_assistant <= 0:
+                    # No budget left; mark as completed to avoid further growth
+                    particles[global_idx].current_text = ""
+                    particles[global_idx].completed = True
+                    continue
+                if len(assistant_token_ids) > budget_for_assistant:
+                    # Keep only the most recent tokens to preserve recency
+                    keep_ids = assistant_token_ids[-budget_for_assistant:]
+                    particles[global_idx].current_text = tokenizer.decode(
+                        keep_ids, skip_special_tokens=True
+                    )
+
+            # Rebuild convs after possible truncation
             convs = []
             is_first_step_flags = []
             for i in active_indices:
@@ -132,12 +209,8 @@ def _particles(
                 is_first_step_flags.append(len(particles[i].current_text) == 0)
 
             # Partition into first-step and continuation to set chat template flags correctly
-            first_idxs = [
-                j for j, is_first in enumerate(is_first_step_flags) if is_first
-            ]
-            cont_idxs = [
-                j for j, is_first in enumerate(is_first_step_flags) if not is_first
-            ]
+            first_idxs = [j for j, f in enumerate(is_first_step_flags) if f]
+            cont_idxs = [j for j, f in enumerate(is_first_step_flags) if not f]
 
             templated_convs_map: dict[int, str] = {}
             if first_idxs:
@@ -162,6 +235,30 @@ def _particles(
                     templated_convs_map[local_idx] = text
             templated_convs = [templated_convs_map[j] for j in range(len(convs))]
 
+            # Compute available token budget per particle and cap max_tokens to force early end when close to limit
+            # Use accurate token counts by tokenising the final templated prompts.
+            prompt_token_lens_map = {}
+            if first_idxs:
+                first_convs = [convs[j] for j in first_idxs]
+                first_tok = tokenizer.apply_chat_template(
+                    first_convs,
+                    add_generation_prompt=True,
+                    continue_final_message=False,
+                    tokenize=True,
+                )
+                for local_idx, ids in zip(first_idxs, first_tok, strict=True):
+                    prompt_token_lens_map[local_idx] = len(ids)
+            if cont_idxs:
+                cont_convs = [convs[j] for j in cont_idxs]
+                cont_tok = tokenizer.apply_chat_template(
+                    cont_convs,
+                    add_generation_prompt=False,
+                    continue_final_message=True,
+                    tokenize=True,
+                )
+                for local_idx, ids in zip(cont_idxs, cont_tok, strict=True):
+                    prompt_token_lens_map[local_idx] = len(ids)
+
             # Generate one step for each active particle with unique seeds to promote diversity
             for idx, conv in zip(active_indices, templated_convs, strict=True):
                 per_particle_params = copy.deepcopy(sampling_params)
@@ -177,6 +274,20 @@ def _particles(
                     )
                     base_temp = float(sampling_params.temperature or 0.0)
                     per_particle_params.temperature = max(0.0, base_temp + jitter)
+                # Force early end if we are near token limit for this particle
+                local_idx = active_indices.index(idx)
+                curr_prompt_len = int(prompt_token_lens_map.get(local_idx, 0))
+                if curr_prompt_len >= max_ctx:
+                    # Prompt already exceeds model context even after truncation; skip generation
+                    particles[idx].completed = True
+                    particles[idx].last_stop_reason = "length"
+                    continue
+                else:
+                    available_new = max(0, max_ctx - curr_prompt_len)
+                    per_particle_params.max_tokens = int(
+                        min(per_particle_params.max_tokens, available_new)
+                    )
+
                 per_particle_params.seed = (
                     int(experiment_config.seed) + int(iteration) * 1000003 + int(idx)
                 )
@@ -193,7 +304,11 @@ def _particles(
                 ) + gen_text
                 particles[idx].last_stop_reason = stop_reason
                 # Heuristic completion: boxed indicates final answer, or EOS when forcing final step
-                if "boxed{" in particles[idx].current_text or stop_reason == "EOS":
+                if (
+                    "boxed{" in particles[idx].current_text
+                    or stop_reason == "EOS"
+                    or per_particle_params.max_tokens == 0
+                ):
                     particles[idx].completed = True
 
             # PRM scoring for all particles (active and completed) to compute resampling weights
