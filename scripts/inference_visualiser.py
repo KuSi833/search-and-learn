@@ -63,6 +63,25 @@ def _index_of_first(seq: List[str], target: str) -> int:
 console = Console()
 
 
+# Default assumed prediction key used across the tool (ensemble-style). Assumes weighted@4.
+ASSUMED_PRED_KEY = "pred_weighted@4"
+
+
+def _split_steps(text: str) -> List[str]:
+    # Split on double newlines which demarcate steps in generation
+    if not isinstance(text, str) or not text.strip():
+        return []
+    parts = [p.strip() for p in text.split("\n\n")]
+    return [p for p in parts if p]
+
+
+def _score_style(value: float) -> str:
+    try:
+        return "green" if float(value) >= 0 else "red"
+    except Exception:
+        return "white"
+
+
 def analyse_sample(sample: Dict[str, Any]) -> Dict[str, Any]:
     # Extract key fields with fallbacks
     problem = sample.get("problem") or sample.get("question") or ""
@@ -134,6 +153,23 @@ def analyse_sample(sample: Dict[str, Any]) -> Dict[str, Any]:
     except Exception:
         raw_correct = False
 
+    # Assumed prediction (e.g., weighted@n=4) and correctness
+    assumed_pred_key = ASSUMED_PRED_KEY
+    assumed_pred_text = sample.get(assumed_pred_key)
+    if isinstance(assumed_pred_text, str):
+        assumed_inner = find_box(assumed_pred_text)
+        assumed_extracted = (
+            assumed_inner
+            if assumed_inner
+            else extract_answer(assumed_pred_text, "math")
+        )
+    else:
+        assumed_extracted = ""
+    try:
+        assumed_correct = math_equal(assumed_extracted, answer)
+    except Exception:
+        assumed_correct = False
+
     # Build ranking by final score if available
     rank: List[Tuple[int, float]] = []
     if scores and all(isinstance(s, list) for s in scores):
@@ -153,6 +189,10 @@ def analyse_sample(sample: Dict[str, Any]) -> Dict[str, Any]:
         "chosen_idx": chosen_idx,
         "pred": pred,
         "pred_extracted": extracted_pred,
+        "assumed_pred_key": assumed_pred_key,
+        "assumed_pred_text": assumed_pred_text,
+        "assumed_pred_extracted": assumed_extracted,
+        "assumed_correct": assumed_correct,
         "raw_correct": raw_correct,
         "chosen_score_path": chosen_score_path,
         "chosen_tokens": chosen_tokens,
@@ -201,13 +241,28 @@ def print_report(
 
     extracted = _shorten(str(analysis.get("pred_extracted") or ""), 200)
     raw_ok = bool(analysis.get("raw_correct"))
-    extracted_table = Table(show_header=False, box=box.SIMPLE)
-    extracted_table.add_column("key", style="bold")
-    extracted_table.add_column("value")
-    extracted_table.add_row("Extracted", extracted)
-    extracted_table.add_row(
-        "Correct", Text(str(raw_ok), style=("green" if raw_ok else "red"))
+
+    assumed_key = str(analysis.get("assumed_pred_key") or ASSUMED_PRED_KEY)
+    assumed_text = str(analysis.get("assumed_pred_text") or "")
+    assumed_extracted = _shorten(str(analysis.get("assumed_pred_extracted") or ""), 200)
+    assumed_ok = bool(analysis.get("assumed_correct"))
+
+    extracted_table = Table(
+        title="Answer extraction & correctness", box=box.SIMPLE_HEAVY
     )
+    extracted_table.add_column("Field", style="bold")
+    extracted_table.add_column("Value")
+    extracted_table.add_row("Raw extracted", extracted)
+    extracted_table.add_row(
+        "Raw correct", Text(str(raw_ok), style=("green" if raw_ok else "red"))
+    )
+    if assumed_text:
+        extracted_table.add_row("Assumed key", assumed_key)
+        extracted_table.add_row("Assumed extracted", assumed_extracted)
+        extracted_table.add_row(
+            "Assumed correct",
+            Text(str(assumed_ok), style=("green" if assumed_ok else "red")),
+        )
     console.print(Panel(extracted_table, box=box.ROUNDED))
 
     chosen_idx = analysis.get("chosen_idx")
@@ -226,6 +281,66 @@ def print_report(
     if ctok is not None:
         beams_table.add_row("Completion tokens", str(ctok))
     console.print(Panel(beams_table, title="Beam details", box=box.ROUNDED))
+
+    # Visualise solution steps with scores
+    full_pred_text = str(analysis.get("pred") or "")
+    steps = _split_steps(full_pred_text)
+    step_scores: List[float] = []
+    try:
+        step_scores = [float(x) for x in (analysis.get("chosen_score_path") or [])]
+    except Exception:
+        step_scores = []
+    n_rows = min(len(steps), len(step_scores)) if step_scores else len(steps)
+    if steps:
+        steps_table = Table(box=box.MINIMAL_HEAVY_HEAD, show_lines=True)
+        steps_table.add_column("#", style="bold cyan", justify="right")
+        steps_table.add_column("Step", overflow="fold")
+        steps_table.add_column("Score", justify="right")
+        steps_table.add_column("Mean", justify="right")
+        steps_table.add_column("Min", justify="right")
+        steps_table.add_column("Last", justify="right")
+        steps_table.add_column("Prod", justify="right")
+
+        running_sum: float = 0.0
+        running_min: Optional[float] = None
+        running_prod: Optional[float] = None
+        for i in range(n_rows):
+            s_text = steps[i]
+            if step_scores:
+                s_val = float(step_scores[i])
+                running_sum += s_val
+                running_min = s_val if running_min is None else min(running_min, s_val)
+                running_prod = s_val if running_prod is None else running_prod * s_val
+                mean_val = running_sum / (i + 1)
+                last_val = s_val
+                steps_table.add_row(
+                    str(i + 1),
+                    s_text,
+                    Text(f"{s_val:+.4f}", style=_score_style(s_val)),
+                    Text(f"{mean_val:+.4f}", style=_score_style(mean_val)),
+                    Text(
+                        f"{(running_min if running_min is not None else 0.0):+.4f}",
+                        style=_score_style(
+                            running_min if running_min is not None else 0.0
+                        ),
+                    ),
+                    Text(f"{last_val:+.4f}", style=_score_style(last_val)),
+                    Text(
+                        f"{(running_prod if running_prod is not None else 0.0):+.4f}",
+                        style=_score_style(
+                            running_prod if running_prod is not None else 0.0
+                        ),
+                    ),
+                )
+            else:
+                steps_table.add_row(str(i + 1), s_text, "-", "-", "-", "-", "-")
+
+        note: Optional[str] = None
+        if step_scores and len(steps) != len(step_scores):
+            note = f"Note: steps ($${len(steps)}$$) and scores ($${len(step_scores)}$$) lengths differ; showing first $${n_rows}$$."
+        console.print(
+            Panel(steps_table, title="Solution steps", subtitle=note, box=box.ROUNDED)
+        )
 
     rank = analysis.get("rank_by_last_score") or []
     if rank:
@@ -256,8 +371,8 @@ def print_report(
     if isinstance(sol, str) and sol.strip():
         console.print(
             Panel(
-                _shorten(sol, 600),
-                title="Reference solution (truncated)",
+                sol,
+                title="Reference solution",
                 box=box.SQUARE,
             )
         )
@@ -297,10 +412,14 @@ def cmd_detail(run_id: str, index: int) -> None:
 def _record_level_and_correct(rec: Dict[str, Any]) -> Tuple[str, bool]:
     level = str(rec.get("level", "unknown"))
     answer = str(rec.get("answer", ""))
-    pred = str(rec.get("pred", ""))
-    extracted_pred = extract_answer(pred, "math") if isinstance(pred, str) else ""
+    assumed_text = rec.get(ASSUMED_PRED_KEY)
+    if isinstance(assumed_text, str):
+        inner = find_box(assumed_text)
+        extracted = inner if inner else extract_answer(assumed_text, "math")
+    else:
+        extracted = ""
     try:
-        is_correct = math_equal(extracted_pred, answer)
+        is_correct = math_equal(extracted, answer)
     except Exception:
         is_correct = False
     return level, bool(is_correct)
