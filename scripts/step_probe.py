@@ -7,6 +7,7 @@ from typing import Any, Dict, Final, List, Tuple
 
 import click
 import pyrootutils
+from git import Optional
 from vllm import LLM, SamplingParams  # type: ignore
 
 from sal.config import (
@@ -171,8 +172,38 @@ def _summarise_aggregates(score_vecs: List[List[float]]) -> List[Dict[str, float
     help="Probe next-step candidates from a shared prefix for selected strategies"
 )
 @click.option("--run-id", required=True, type=str)
-@click.option("--index", required=True, type=int)
-def main(run_id: str, index: int) -> None:
+@click.option("--index", required=False, type=int)
+def main(run_id: str, index: Optional[int]) -> None:
+    if index is not None:
+        # Load and process single probe datum
+        _process_single_probe(run_id, index)
+    else:
+        # Load and process all probe data for this run_id
+        probe_dir = PROBE_DATA_INPUT_ROOT / run_id
+        if not probe_dir.exists():
+            click.secho(f"✗ Probe data directory not found: {probe_dir}", fg="red")
+            return
+
+        jsonl_files = list(probe_dir.glob("*.jsonl"))
+        if not jsonl_files:
+            click.secho(f"✗ No JSONL files found in {probe_dir}", fg="red")
+            return
+
+        click.echo(f"Found {len(jsonl_files)} files to process")
+
+        for jsonl_file in jsonl_files:
+            try:
+                file_index = int(jsonl_file.stem)
+                click.echo(f"Processing index {file_index}...")
+                _process_single_probe(run_id, file_index)
+            except ValueError:
+                click.secho(
+                    f"✗ Skipping file with invalid name: {jsonl_file.name}", fg="yellow"
+                )
+                continue
+
+
+def _process_single_probe(run_id: str, index: int) -> None:
     # Load probe datum
     datum = _load_probe_record(run_id, index)
     problem: str = datum.get("problem", "")
