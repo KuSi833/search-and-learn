@@ -132,6 +132,15 @@ def main(index: int) -> None:
 
     for exp in EXPERIMENTS:
         logger.info(f"Running approach={exp.approach}")
+        cfg = exp.search_config
+        console.print(
+            Rule(
+                title=(
+                    f"Approach: {exp.approach} — n={cfg.n}, temp={cfg.temperature}, "
+                    f"top_p={cfg.top_p}, max_tokens={cfg.max_tokens}, agg={cfg.agg_strategy}"
+                )
+            )
+        )
         if exp.approach == "best_of_n":
             out = best_of_n(x.copy(), exp, llm, prm)
         # elif exp.approach == "beam_search":
@@ -139,6 +148,42 @@ def main(index: int) -> None:
         else:
             logger.warning(f"Skipping unsupported approach: {exp.approach}")
             continue
+
+        # Build candidates table: PRM aggregate, tokens, extracted answer, preview
+        completions = out.get("completions", [[""]])[0]
+        scores = out.get("scores", [[[]]])[0]
+        token_counts = out.get("completion_tokens", [[0]])[0]
+        agg_scores = (
+            [aggregate_scores(s, cfg.agg_strategy) for s in scores] if scores else []
+        )
+        best_idx = (
+            int(max(range(len(agg_scores)), key=lambda i: agg_scores[i]))
+            if agg_scores
+            else -1
+        )
+
+        table = Table(title="Candidates")
+        table.add_column("#", justify="right", style="bold")
+        table.add_column("PRM", justify="right")
+        table.add_column("Tokens", justify="right")
+        table.add_column("Answer")
+        table.add_column("Preview")
+
+        def _preview(text: str, limit: int = 80) -> str:
+            t = text.replace("\n", " ")
+            return t[:limit] + ("…" if len(t) > limit else "")
+
+        benchmark = BASE_CONFIG.evaluation_config.benchmark
+        for i, comp in enumerate(completions):
+            prm_val = f"{agg_scores[i]:.4f}" if agg_scores else "-"
+            tok_str = f"{token_counts[i]}" if i < len(token_counts) else "-"
+            ans = extract_answer(comp, benchmark)
+            row_style = "bold green" if i == best_idx else None
+            table.add_row(
+                str(i), prm_val, tok_str, ans, _preview(comp), style=row_style
+            )
+
+        console.print(table)
 
         pred_text = out.get("pred", [""])[0]
         ok, pred_ans, gt = _evaluate_correct(
