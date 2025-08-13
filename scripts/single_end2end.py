@@ -98,7 +98,7 @@ BEAM_SEARCH_CONFIG = ExperimentConfig(
         lookahead=2,
         filter_duplicates=True,
         sort_completed=False,
-        debug=False,
+        debug=True,
     ),
 )
 
