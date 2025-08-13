@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+import logging
+from dataclasses import asdict
+from typing import Any, Dict, Final, List, Tuple
+
+import click
+import pyrootutils
+from vllm import LLM  # type: ignore
+
+from sal.config import (
+    BaseConfig,
+    DatasetConfig,
+    ExperimentConfig,
+    GeneratorConfig,
+    PRMConfig,
+    SearchConfig,
+)
+from sal.models.reward_models import load_prm
+from sal.search import beam_search, best_of_n
+from sal.utils.data import get_dataset
+from sal.utils.experiment import get_model_base_path
+from sal.utils.logging import setup_logging
+from sal.utils.qwen_math_parser import extract_answer, math_equal
+
+setup_logging()
+
+root = pyrootutils.find_root(indicator="pyproject.toml")
+logger = logging.getLogger(__name__)
+
+
+# --- Typed, versioned configuration ---
+MODEL_BASE_PATH: Final = get_model_base_path()
+
+INSTRUCT_MODEL: Final[GeneratorConfig] = GeneratorConfig(
+    base_path=MODEL_BASE_PATH,
+    name="Qwen/Qwen2.5-Math-7B-Instruct",
+    parameter_count="7B",
+)
+
+PRM_MODEL: Final[PRMConfig] = PRMConfig(
+    base_path=MODEL_BASE_PATH,
+    name="Qwen/Qwen2.5-Math-PRM-7B",
+)
+
+BASE_CONFIG: Final[BaseConfig] = BaseConfig(
+    generator_config=INSTRUCT_MODEL,
+    prm_config=PRM_MODEL,
+)
+
+# Define strategies to evaluate (edit to sweep hyperparameters)
+EXPERIMENTS: Final[List[ExperimentConfig]] = [
+    ExperimentConfig(
+        approach="best_of_n",
+        search_config=SearchConfig(
+            n=8,
+            temperature=0.7,
+            top_p=0.8,
+            max_tokens=2048,
+            agg_strategy="prod",
+            search_batch_size=25,
+        ),
+    ),
+    ExperimentConfig(
+        approach="beam_search",
+        search_config=SearchConfig(
+            n=4,
+            temperature=0.7,
+            top_p=0.8,
+            max_tokens=2048,
+            agg_strategy="prod",
+            search_batch_size=1,  # beam_search expects 1
+        ),
+    ),
+]
+
+
+def _evaluate_correct(
+    example: Dict[str, Any], pred_text: str, benchmark: str
+) -> Tuple[bool, str, str]:
+    # Extract gold answer and predicted answer for comparison
+    if benchmark == "math":
+        gt = str(example.get("answer", ""))
+    else:
+        # Fallback for other datasets: try common fields
+        gt = str(example.get("answer", example.get("gt", "")))
+    pred_ans = extract_answer(pred_text, benchmark)
+    try:
+        ok = bool(math_equal(pred_ans, gt))
+    except Exception:
+        ok = False
+    return ok, pred_ans, gt
+
+
+@click.command(help="Run full end-to-end strategies on a single dataset index (no W&B)")
+@click.option("--index", required=True, type=int, help="Dataset index to evaluate")
+def main(index: int) -> None:
+    # Configure dataset to a single index
+    ds_cfg = DatasetConfig(**asdict(BASE_CONFIG.dataset_config))
+    ds_cfg.dataset_indicies = {index}
+    dataset = get_dataset(ds_cfg)
+    if len(dataset) != 1:
+        raise RuntimeError(f"Expected 1 sample after selection; got {len(dataset)}")
+    example = dataset[0]
+
+    # Load models once
+    llm = LLM(
+        model=BASE_CONFIG.generator_config.get_model_path(),
+        gpu_memory_utilization=BASE_CONFIG.generator_config.gpu_memory_utilization,
+        enable_prefix_caching=True,
+        seed=BASE_CONFIG.seed,
+        tensor_parallel_size=1,
+        max_model_len=BASE_CONFIG.generator_config.max_model_len,
+        enforce_eager=True,
+    )
+    prm = load_prm(BASE_CONFIG.prm_config)
+
+    # Prepare minimal input dict expected by strategy functions
+    x = {"problem": [example["problem"]]}
+
+    results: List[Dict[str, Any]] = []
+
+    for exp in EXPERIMENTS:
+        logger.info(f"Running approach={exp.approach}")
+        if exp.approach == "best_of_n":
+            out = best_of_n(x.copy(), exp, llm, prm)
+        elif exp.approach == "beam_search":
+            out = beam_search(x.copy(), exp, llm, prm)
+        else:
+            logger.warning(f"Skipping unsupported approach: {exp.approach}")
+            continue
+
+        pred_text = out.get("pred", [""])[0]
+        ok, pred_ans, gt = _evaluate_correct(
+            example, pred_text, BASE_CONFIG.evaluation_config.benchmark
+        )
+
+        results.append(
+            {
+                "approach": exp.approach,
+                "search_config": asdict(exp.search_config),
+                "correct": ok,
+                "pred_extracted": pred_ans,
+                "gt": gt,
+            }
+        )
+
+    # Print concise summary
+    print(f"Index: {index}")
+    problem_preview = example["problem"][:120].replace("\n", " ")
+    suffix = "..." if len(example["problem"]) > 120 else ""
+    print(f"Problem: {problem_preview}{suffix}")
+    for r in results:
+        ok_str = "TRUE" if r["correct"] else "FALSE"
+        print(
+            f"- {r['approach']}: {ok_str} | temp={r['search_config']['temperature']} n={r['search_config']['n']}"
+        )
+
+
+if __name__ == "__main__":
+    main()
