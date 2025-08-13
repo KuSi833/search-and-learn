@@ -14,8 +14,7 @@
 # limitations under the License.
 
 import numpy as np
-from torch import seed
-from vllm import LLM, SamplingParams
+from vllm import LLM, SamplingParams  # type: ignore
 
 from sal.config import ExperimentConfig
 from sal.models.reward_models import PRM
@@ -43,9 +42,7 @@ def best_of_n(x, experiment_config: ExperimentConfig, llm: LLM, prm: PRM):
     # Duplicate convs to generate config.n completions per prompt so we can do continous batching
     # This makes [p1, p2, p3, p4] become [p1, p1, p2, p2, p3, p3, p4, p4] for e.g. config.n=2
     templated_convs = [
-        c
-        for conv in templated_convs
-        for c in [conv] * experiment_config.search_config.n
+        c for conv in templated_convs for c in [conv] * experiment_config.bon.sampling.n
     ]
 
     # Initialize empty lists for completions and completion tokens
@@ -53,11 +50,10 @@ def best_of_n(x, experiment_config: ExperimentConfig, llm: LLM, prm: PRM):
     completion_tokens = [[] for _ in range(len(x["problem"]))]
 
     sampling_params = SamplingParams(
-        temperature=experiment_config.search_config.temperature,
-        max_tokens=experiment_config.search_config.max_tokens,
-        top_p=experiment_config.search_config.top_p,
-        # seed=experiment_config.seed,
-        n=1,  # Since we've already duplicated the prompt_token_ids, we only need to generate 1 completion per prompt
+        temperature=experiment_config.bon.sampling.temperature,
+        max_tokens=experiment_config.bon.sampling.max_tokens,
+        top_p=experiment_config.bon.sampling.top_p,
+        n=1,
     )
 
     responses = llm.generate(
@@ -66,43 +62,43 @@ def best_of_n(x, experiment_config: ExperimentConfig, llm: LLM, prm: PRM):
         use_tqdm=True,
     )
 
-    if len(responses) != len(x["problem"]) * experiment_config.search_config.n:
+    if len(responses) != len(x["problem"]) * experiment_config.bon.sampling.n:
         raise ValueError(
-            f"Generated {len(responses)} responses instead of {len(x['problem'] * experiment_config.n)}"
+            f"Generated {len(responses)} responses instead of {len(x['problem']) * experiment_config.bon.sampling.n}"
         )
 
     for i in range(len(completions)):
         completions[i] = [
             output.text
             for r in responses[
-                i * experiment_config.search_config.n : (i + 1)
-                * experiment_config.search_config.n
+                i * experiment_config.bon.sampling.n : (i + 1)
+                * experiment_config.bon.sampling.n
             ]
             for output in r.outputs
         ]
         completion_tokens[i] = [
             len(output.token_ids)
             for r in responses[
-                i * experiment_config.search_config.n : (i + 1)
-                * experiment_config.search_config.n
+                i * experiment_config.bon.sampling.n : (i + 1)
+                * experiment_config.bon.sampling.n
             ]
             for output in r.outputs
         ]
 
     # Check we generated the correct number of completions for each prompt
     for c in completions:
-        if len(c) != experiment_config.search_config.n:
+        if len(c) != experiment_config.bon.sampling.n:
             raise ValueError(
-                f"Generated {len(c)} completions instead of {experiment_config.search_config.n}"
+                f"Generated {len(c)} completions instead of {experiment_config.bon.sampling.n}"
             )
 
     scores = prm.score(x["problem"], completions)
     agg_scores = [
         [
-            aggregate_scores(s, experiment_config.search_config.agg_strategy)
-            for s in score
+            aggregate_scores(step_scores, experiment_config.bon.sampling.agg_strategy)
+            for step_scores in per_completion
         ]
-        for score in scores
+        for per_completion in scores
     ]
 
     # Select the completion with the highest score

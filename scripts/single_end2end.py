@@ -14,11 +14,12 @@ from vllm import LLM  # type: ignore
 from sal.config import (
     BaseConfig,
     BeamSearchConfig,
+    BestOfNConfig,
     DatasetConfig,
     ExperimentConfig,
     GeneratorConfig,
     PRMConfig,
-    SearchConfig,
+    SamplingConfig,
 )
 from sal.models.reward_models import load_prm
 from sal.search import (
@@ -67,59 +68,45 @@ n = 8
 # Define strategies to evaluate (edit to sweep hyperparameters)
 BON_CONFIG = ExperimentConfig(
     approach="best_of_n",
-    search_config=SearchConfig(
-        n=n,
-        temperature=0.7,
-        top_p=0.8,
-        max_tokens=2048,
-        agg_strategy="prod",
-        search_batch_size=25,
+    bon=BestOfNConfig(
+        sampling=SamplingConfig(
+            n=n,
+            temperature=0.7,
+            top_p=0.8,
+            max_tokens=2048,
+            agg_strategy="prod",
+            search_batch_size=25,
+        ),
+        debug=False,
     ),
 )
 
 # Standard beam search (stepwise)
 BEAM_SEARCH_CONFIG = ExperimentConfig(
     approach="beam_search",
-    search_config=SearchConfig(
-        n=n,
-        temperature=0.7,
-        top_p=0.8,
-        max_tokens=2048,
-        agg_strategy="prod",
-        search_batch_size=1,  # beam_search expects 1
-    ),
-    # Increase diversity for beam search
-    filter_duplicates=True,
-    beam_search_config=BeamSearchConfig(
+    beam=BeamSearchConfig(
+        sampling=SamplingConfig(
+            n=n,
+            temperature=0.7,
+            top_p=0.8,
+            max_tokens=2048,
+            agg_strategy="prod",
+            search_batch_size=1,
+        ),
         beam_width=4,
         num_iterations=40,
-        lookahead=1,
+        lookahead=2,
+        filter_duplicates=True,
+        sort_completed=False,
+        debug=False,
     ),
 )
 
 # Diverse verifier tree search (stepwise)
-DVTS_CONFIG = ExperimentConfig(
-    approach="dvts",
-    search_config=SearchConfig(
-        n=n,
-        temperature=0.7,
-        top_p=0.8,
-        max_tokens=2048,
-        agg_strategy="prod",
-    ),
-)
+DVTS_CONFIG = ExperimentConfig(approach="dvts")
 
 # Particle filter (stepwise)
-PARTICLES_CONFIG = ExperimentConfig(
-    approach="particles",
-    search_config=SearchConfig(
-        n=n,
-        temperature=0.7,
-        top_p=0.8,
-        max_tokens=2048,
-        agg_strategy="prod",
-    ),
-)
+PARTICLES_CONFIG = ExperimentConfig(approach="particles")
 
 EXPERIMENTS: Final[List[ExperimentConfig]] = [
     BON_CONFIG,
@@ -194,7 +181,7 @@ def main(index: int) -> None:
 
     for exp in EXPERIMENTS:
         logger.info(f"Running approach={exp.approach}")
-        cfg = exp.search_config
+        cfg = exp.beam.sampling if exp.approach == "beam_search" else exp.bon.sampling
         console.print(
             Rule(
                 title=(
@@ -274,10 +261,13 @@ def main(index: int) -> None:
 
         print(f"Predicted: {pred_ans}")
         console.print(Text(f"Correct: {ok}", style="green" if ok else "red"))
+        cfg_dict = (
+            asdict(exp.beam) if exp.approach == "beam_search" else asdict(exp.bon)
+        )
         results.append(
             {
                 "approach": exp.approach,
-                "search_config": asdict(exp.search_config),
+                "config": cfg_dict,
                 "correct": ok,
                 "pred_extracted": pred_ans,
                 "gt": gt,

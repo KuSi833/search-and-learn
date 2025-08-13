@@ -29,20 +29,25 @@ from .utils import Beam, build_conv, generate_k_steps
 logger = logging.getLogger()
 
 
+def _trim(t: str, n: int = 160) -> str:
+    return (t[:n] + "…") if len(t) > n else t
+
+
 def _beam_search(
     batch_of_prompts, config: ExperimentConfig, llm: LLM, prm: PRM
 ) -> list[Beam]:
+    sampling = config.beam.sampling
     sampling_params = SamplingParams(
-        temperature=config.search_config.temperature,
-        max_tokens=config.search_config.max_tokens,
-        top_p=config.search_config.top_p,
+        temperature=sampling.temperature,
+        max_tokens=sampling.max_tokens,
+        top_p=sampling.top_p,
         stop=["\n\n"],
         include_stop_str_in_output=True,
         n=1,
     )
 
     # Keep K beams after each expansion
-    keep_k = max(1, config.search_config.n // config.beam_search_config.beam_width)
+    keep_k = max(1, sampling.n // config.beam.beam_width)
 
     beams: list[Beam] = []
     for prompt in batch_of_prompts:
@@ -67,9 +72,7 @@ def _beam_search(
 
     completed_beams: list[Beam] = []
 
-    for i in tqdm(
-        range(config.beam_search_config.num_iterations), desc="Beam search iterations"
-    ):
+    for i in tqdm(range(config.beam.num_iterations), desc="Beam search iterations"):
         if i == 0:
             active_beams = [b for b in beams if not b.pruned]
         else:
@@ -77,12 +80,12 @@ def _beam_search(
 
         # No replication: we explicitly control branching with beam_width
 
-        if i == config.beam_search_config.num_iterations - 1:
+        if i == config.beam.num_iterations - 1:
             # Last iteration, generate to EOS
             sampling_params = SamplingParams(
-                temperature=config.search_config.temperature,
-                max_tokens=config.search_config.max_tokens,
-                top_p=config.search_config.top_p,
+                temperature=sampling.temperature,
+                max_tokens=sampling.max_tokens,
+                top_p=sampling.top_p,
                 n=1,
             )
 
@@ -104,9 +107,9 @@ def _beam_search(
         )
         # Determine lookahead depth for ranking-only vs final full decoding
         lookahead = (
-            config.search_config.max_tokens
-            if i == config.beam_search_config.num_iterations - 1
-            else config.beam_search_config.lookahead
+            sampling.max_tokens
+            if i == config.beam.num_iterations - 1
+            else config.beam.lookahead
         )
 
         # Expand each active beam into beam_width candidates
@@ -115,7 +118,7 @@ def _beam_search(
             lookahead,
             llm,
             sampling_params,
-            config.beam_search_config.beam_width,
+            config.beam.beam_width,
         )
 
         # Build child candidates
@@ -155,11 +158,45 @@ def _beam_search(
 
         # Attach scores and aggregate
         aggregated: list[float] = []
-        for b, score in zip(candidate_beams, scores, strict=True):
-            b.all_scores = score[0]
-            aggregated.append(
-                aggregate_scores(b.all_scores, config.search_config.agg_strategy)
+        for b, per_completion in zip(candidate_beams, scores, strict=True):
+            # PRM returns list[list[float]] per question, with one entry per completion
+            b.all_scores = per_completion[0]
+            aggregated.append(aggregate_scores(b.all_scores, sampling.agg_strategy))
+
+        if config.beam.debug:
+            logger.debug(
+                f"Iteration {i}: expanded {len(active_beams)} beams -> {len(candidate_beams)} candidates"
             )
+            for parent_idx, (parent, gen_result) in enumerate(
+                zip(active_beams, gen_results, strict=True)
+            ):
+                child_slice = candidate_beams[
+                    parent_idx * config.beam.beam_width : (parent_idx + 1)
+                    * config.beam.beam_width
+                ]
+                scores_slice = aggregated[
+                    parent_idx * config.beam.beam_width : (parent_idx + 1)
+                    * config.beam.beam_width
+                ]
+                logger.debug(
+                    "Parent[%d]: '%s'",
+                    parent_idx,
+                    _trim(parent.current_text.replace("\n", " ")),
+                )
+                for k, (child, a) in enumerate(
+                    zip(child_slice, scores_slice, strict=True)
+                ):
+                    logger.debug(
+                        "  ├─ Child[%d]: agg=%.4f stop=%s text='%s'",
+                        k,
+                        a,
+                        "completed" if child.completed else "",
+                        _trim(
+                            (child.current_text[len(parent.current_text) :]).replace(
+                                "\n", " "
+                            )
+                        ),
+                    )
 
         # Separate completed vs continuing
         continuing: list[tuple[float, Beam]] = []
@@ -170,11 +207,11 @@ def _beam_search(
                 continuing.append((a, b))
 
         # If enough completed, we can stop early
-        if len(completed_beams) >= config.search_config.n:
+        if len(completed_beams) >= sampling.n:
             break
 
         # Optional deduplication
-        if config.filter_duplicates:
+        if config.beam.filter_duplicates:
             seen = set()
             filtered: list[tuple[float, Beam]] = []
             for a, b in continuing:
@@ -188,29 +225,50 @@ def _beam_search(
 
         # Select top-K beams to continue
         continuing.sort(key=lambda t: t[0], reverse=True)
-        active_beams = [b for _, b in continuing[:keep_k]]
+        chosen = continuing[:keep_k]
+        active_beams = [b for _, b in chosen]
+
+        if config.beam.debug:
+            logger.debug("Selected top-%d beams:", keep_k)
+            for rank, (a, bsel) in enumerate(chosen):
+                logger.debug(
+                    "  #%d agg=%.4f text='%s'",
+                    rank,
+                    a,
+                    _trim(bsel.current_text.replace("\n", " ")),
+                )
 
     # Filter completed beams for those with top config.n scores
-    if config.sort_completed:
+    if config.beam.sort_completed:
         completed_beams = sorted(
             completed_beams,
-            key=lambda b: aggregate_scores(
-                b.all_scores, config.search_config.agg_strategy
-            ),
+            key=lambda b: aggregate_scores(b.all_scores, sampling.agg_strategy),
             reverse=True,
-        )[: config.search_config.n]
+        )[: sampling.n]
     else:
-        completed_beams = completed_beams[: config.search_config.n]
+        completed_beams = completed_beams[: sampling.n]
 
-    if len(completed_beams) != config.search_config.n:
+    if config.beam.debug:
+        logger.debug("Final completed beams (top %d):", len(completed_beams))
+        for idx, b in enumerate(completed_beams):
+            logger.debug(
+                "  [%d] agg=%.4f text='%s'",
+                idx,
+                aggregate_scores(b.all_scores, sampling.agg_strategy),
+                (
+                    b.current_text.replace("\n", " ")[:200]
+                    + ("…" if len(b.current_text) > 200 else "")
+                ),
+            )
+
+    if len(completed_beams) != sampling.n:
         # If we don't have enough completed_beams, duplicate until we reach config.n
-        repeats = (config.search_config.n // len(completed_beams)) + 1
+        repeats = (sampling.n // len(completed_beams)) + 1
         logger.debug(
-            f"Extending completed_beams with {repeats} repetitions to reach size {config.search_config.n}"
+            f"Extending completed_beams with {repeats} repetitions to reach size {sampling.n}"
         )
         extended_completed_beams = [
-            copy.deepcopy(b)
-            for b in (completed_beams * repeats)[: config.search_config.n]
+            copy.deepcopy(b) for b in (completed_beams * repeats)[: sampling.n]
         ]
         completed_beams = extended_completed_beams
 
@@ -232,7 +290,7 @@ def beam_search(examples, experiment_config: ExperimentConfig, llm: LLM, prm: PR
         beams = grouped_results[p]
         completions = [b.current_text for b in beams]
         agg_scores = [
-            aggregate_scores(b.all_scores, experiment_config.search_config.agg_strategy)
+            aggregate_scores(b.all_scores, experiment_config.beam.sampling.agg_strategy)
             for b in beams
         ]
         pred = completions[np.argmax(agg_scores)]
