@@ -95,7 +95,7 @@ def best_of_n(x, experiment_config: ExperimentConfig, llm: LLM, prm: PRM):
     scores = prm.score(x["problem"], completions)
     agg_scores = [
         [
-            aggregate_scores(step_scores, experiment_config.bon.sampling.agg_strategy)
+            aggregate_scores(step_scores, experiment_config.bon.sampling.agg_strategy)  # type: ignore[arg-type]
             for step_scores in per_completion
         ]
         for per_completion in scores

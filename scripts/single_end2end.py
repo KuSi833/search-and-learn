@@ -95,7 +95,7 @@ BEAM_SEARCH_CONFIG = ExperimentConfig(
         ),
         beam_width=4,
         num_iterations=40,
-        lookahead=2,
+        lookahead=10,
         filter_duplicates=True,
         sort_completed=False,
         debug=True,

@@ -160,7 +160,7 @@ def _beam_search(
         aggregated: list[float] = []
         for b, per_completion in zip(candidate_beams, scores, strict=True):
             # PRM returns list[list[float]] per question, with one entry per completion
-            b.all_scores = per_completion[0]
+            b.all_scores = per_completion[0]  # type: ignore[assignment]
             aggregated.append(aggregate_scores(b.all_scores, sampling.agg_strategy))
 
         if config.beam.debug:
