@@ -63,7 +63,7 @@ def probe(direction: str, host: str) -> None:
                 )
 
                 conn.local(
-                    f"rsync -avz --progress {conn_host}:{remote_path} {local_path}"
+                    f"rsync -avz --progress {conn_host}:{remote_path}/ {local_path}"
                 )
 
     except Exception as e:

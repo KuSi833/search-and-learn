@@ -227,7 +227,7 @@ def main(run_id: str, index: int) -> None:
         seed=BASE_CONFIG.seed,
         tensor_parallel_size=1,
         max_model_len=BASE_CONFIG.generator_config.max_model_len,
-        enforce_eager=False,
+        enforce_eager=True,
     )
     prm = load_prm(BASE_CONFIG.prm_config)
 
