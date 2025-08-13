@@ -55,8 +55,8 @@ def probe(direction: str, host: str) -> None:
 
             elif direction == "pull":
                 # Sync remote output to local
-                remote_path = f"{remote_root}/output/probes/"
-                local_path = str(PROBE_OUTPUT_ROOT) + "/"
+                local_path = PROBE_OUTPUT_ROOT
+                remote_path = Path(remote_root) / PROBE_OUTPUT_ROOT
 
                 click.echo(
                     f"Syncing output from {conn_host}:{remote_path} to {local_path}"
