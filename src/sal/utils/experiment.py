@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Dict, Literal, Set
 
 # Curated MATH-500 subsets. Extend as needed.
-Math500Subset = Literal["hard"]
+Math500Subset = Literal["hard", "crash_debug"]
 _MATH500_SUBSETS: Dict[Math500Subset, Set[int]] = {
     "hard": {
         9,
@@ -92,20 +92,19 @@ _MATH500_SUBSETS: Dict[Math500Subset, Set[int]] = {
         494,
         497,
     },
+    "crash_debug": {
+        340,
+        352,
+        355,
+        359,
+        372,
+        381,
+        385,
+        392,
+        400,
+        401,
+    },
 }
-
-
-def get_math500_debug_indices() -> Set[int]:
-    """Return a small subset of the hard MATH-500 indices for debugging.
-
-    This is a subset of the hard indices that starts from around index 56
-    where crashes have been observed, useful for reproducing and debugging issues.
-    """
-    # Take indices 56-65 from the hard set for debugging
-    hard_indices = _MATH500_SUBSETS["hard"]
-    hard_list = sorted(list(hard_indices))
-    debug_indices = hard_list[56:66]  # 10 examples starting from where it crashed
-    return set(debug_indices)
 
 
 def get_math500_indices(subset: Math500Subset) -> Set[int]:
