@@ -6,7 +6,6 @@ from typing import Any, Dict, Final, List, Tuple
 import click
 import pyrootutils
 from rich.console import Console
-from rich.panel import Panel
 from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
@@ -21,7 +20,16 @@ from sal.config import (
     SearchConfig,
 )
 from sal.models.reward_models import load_prm
-from sal.search import beam_search, best_of_n
+from sal.search import (
+    beam_search,
+    best_of_n,
+    diagnostic_tts,
+    dvts,
+    gibbs,
+    particles,
+    q2,
+    qcts,
+)
 from sal.utils.data import get_dataset
 from sal.utils.experiment import get_model_base_path
 from sal.utils.logging import setup_logging
@@ -120,6 +128,20 @@ def main(index: int) -> None:
         enforce_eager=True,
     )
     prm = load_prm(BASE_CONFIG.prm_config)
+    # Optional draft LLM for cascaded approaches
+    draft_llm = (
+        LLM(
+            model=BASE_CONFIG.draft_config.get_model_path(),
+            gpu_memory_utilization=BASE_CONFIG.draft_config.gpu_memory_utilization,
+            enable_prefix_caching=True,
+            seed=BASE_CONFIG.seed,
+            tensor_parallel_size=1,
+            max_model_len=BASE_CONFIG.draft_config.max_model_len,
+            enforce_eager=True,
+        )
+        if BASE_CONFIG.draft_config is not None
+        else None
+    )
 
     # Prepare minimal input dict expected by strategy functions
     x = {"problem": [example["problem"]]}
@@ -145,6 +167,19 @@ def main(index: int) -> None:
             out = best_of_n(x.copy(), exp, llm, prm)
         elif exp.approach == "beam_search":
             out = beam_search(x.copy(), exp, llm, prm)
+        elif exp.approach == "dvts":
+            out = dvts(x.copy(), exp, llm, prm)
+        elif exp.approach == "particles":
+            out = particles(x.copy(), exp, llm, prm)
+        elif exp.approach == "gibbs":
+            out = gibbs(x.copy(), exp, llm, prm)
+        elif exp.approach == "q2":
+            out = q2(x.copy(), exp, llm, draft_llm or llm, prm)
+        elif exp.approach == "qcts":
+            out = qcts(x.copy(), exp, llm, draft_llm or llm, prm)
+        elif exp.approach == "diagnostic_tts":
+            output_dir = str((root / "output" / "single_end2end").as_posix())
+            out = diagnostic_tts(x.copy(), exp, draft_llm or llm, llm, prm, output_dir)
         else:
             logger.warning(f"Skipping unsupported approach: {exp.approach}")
             continue
