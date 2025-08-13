@@ -14,7 +14,11 @@ from sal.config import (
     WandbConfig,
 )
 from sal.test_time_compute import run
-from sal.utils.experiment import get_math500_indices, get_model_base_path
+from sal.utils.experiment import (
+    get_math500_debug_indices,
+    get_math500_indices,
+    get_model_base_path,
+)
 
 if __name__ == "__main__":
     load_dotenv()
@@ -35,8 +39,11 @@ if __name__ == "__main__":
     WANDB_CONFIG = WandbConfig(tags=set(["particles", "ps1"]))
     # DATASET_CONFIG = DatasetConfig(num_samples=100)
     # DATASET_CONFIG = DatasetConfig(num_samples=500)
+    # DATASET_CONFIG = DatasetConfig(
+    #     dataset_indicies=get_math500_indices(subset="hard"),
+    # )
     DATASET_CONFIG = DatasetConfig(
-        dataset_indicies=get_math500_indices(subset="hard"),
+        dataset_indicies=get_math500_debug_indices(),
     )
     # DATASET_CONFIG = DatasetConfig(
     #     num_samples=100,
