@@ -41,7 +41,7 @@ def probe(direction: str, host: str) -> None:
             if direction == "push":
                 # Sync local probe_data to remote
                 local_path = PROBE_DATA_INPUT_ROOT
-                remote_path = Path(remote_root) / PROBE_DATA_INPUT_ROOT.name
+                remote_path = Path(remote_root) / PROBE_DATA_INPUT_ROOT
 
                 conn.run(f"mkdir -p {remote_path}")
 
