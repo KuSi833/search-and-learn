@@ -114,7 +114,7 @@ PARTICLES_CONFIG = ExperimentConfig(
 )
 
 EXPERIMENTS: Final[List[ExperimentConfig]] = [
-    # BON_CONFIG,
+    BON_CONFIG,
     BEAM_SEARCH_CONFIG,
     # DVTS_CONFIG,
     # PARTICLES_CONFIG,
