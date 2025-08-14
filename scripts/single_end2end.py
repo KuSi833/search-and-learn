@@ -68,6 +68,7 @@ n = 8
 # Define strategies to evaluate (edit to sweep hyperparameters)
 BON_CONFIG = ExperimentConfig(
     approach="best_of_n",
+    search_batch_size=25,
     bon=BestOfNConfig(
         sampling=SamplingConfig(
             n=n,
@@ -75,7 +76,6 @@ BON_CONFIG = ExperimentConfig(
             top_p=0.8,
             max_tokens=2048,
             agg_strategy="prod",
-            search_batch_size=25,
         ),
         debug=False,
     ),
@@ -84,6 +84,7 @@ BON_CONFIG = ExperimentConfig(
 # Standard beam search (stepwise)
 BEAM_SEARCH_CONFIG = ExperimentConfig(
     approach="beam_search",
+    search_batch_size=1,
     beam=BeamSearchConfig(
         sampling=SamplingConfig(
             n=n,
@@ -91,7 +92,6 @@ BEAM_SEARCH_CONFIG = ExperimentConfig(
             top_p=0.8,
             max_tokens=2048,
             agg_strategy="prod",
-            search_batch_size=1,
         ),
         beam_width=4,
         num_iterations=40,
@@ -110,9 +110,9 @@ PARTICLES_CONFIG = ExperimentConfig(approach="particles")
 
 EXPERIMENTS: Final[List[ExperimentConfig]] = [
     BON_CONFIG,
-    # BEAM_SEARCH_CONFIG,
+    BEAM_SEARCH_CONFIG,
     # DVTS_CONFIG,
-    PARTICLES_CONFIG,
+    # PARTICLES_CONFIG,
 ]
 
 
