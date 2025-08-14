@@ -49,7 +49,7 @@ if __name__ == "__main__":
         parameter_count="1.5B",
     )
 
-    WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
+    WANDB_CONFIG = WandbConfig(tags=set(["beam_sweep"]))
 
     PRM_CONFIG = PRMConfig(
         base_path=model_base_path,
