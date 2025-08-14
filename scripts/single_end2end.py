@@ -93,7 +93,7 @@ BEAM_SEARCH_CONFIG = ExperimentConfig(
             max_tokens=2048,
             agg_strategy="prod",
         ),
-        beam_width=4,
+        beam_width=16,
         num_iterations=40,
         # lookahead=40,
         filter_duplicates=True,
