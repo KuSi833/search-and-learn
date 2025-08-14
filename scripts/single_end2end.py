@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import copy
 import logging
 from dataclasses import asdict
 from typing import Any, Dict, Final, List, Tuple
@@ -64,57 +65,6 @@ BASE_CONFIG: Final[BaseConfig] = BaseConfig(
     prm_config=PRM_MODEL,
 )
 
-n = 32
-# Define strategies to evaluate (edit to sweep hyperparameters)
-BON_CONFIG = ExperimentConfig(
-    approach="best_of_n",
-    search_batch_size=25,
-    bon=BestOfNConfig(
-        sampling=SamplingConfig(
-            n=n,
-            temperature=0.7,
-            top_p=0.8,
-            max_tokens=2048,
-            agg_strategy="prod",
-        ),
-        debug=False,
-    ),
-)
-
-# Standard beam search (stepwise)
-BEAM_SEARCH_CONFIG = ExperimentConfig(
-    approach="beam_search",
-    search_batch_size=1,
-    beam=BeamSearchConfig(
-        sampling=SamplingConfig(
-            n=n,
-            temperature=0.7,
-            top_p=0.8,
-            max_tokens=2048,
-            agg_strategy="prod",
-        ),
-        beam_width=16,
-        num_iterations=40,
-        # lookahead=40,
-        filter_duplicates=True,
-        sort_completed=False,
-        debug=True,
-    ),
-)
-
-# Diverse verifier tree search (stepwise)
-DVTS_CONFIG = ExperimentConfig(approach="dvts")
-
-# Particle filter (stepwise)
-PARTICLES_CONFIG = ExperimentConfig(approach="particles")
-
-EXPERIMENTS: Final[List[ExperimentConfig]] = [
-    BON_CONFIG,
-    BEAM_SEARCH_CONFIG,
-    # DVTS_CONFIG,
-    # PARTICLES_CONFIG,
-]
-
 
 def _evaluate_correct(
     example: Dict[str, Any], pred_text: str, benchmark: str
@@ -179,7 +129,55 @@ def main(index: int) -> None:
     print(f"Index: {index}")
     print(f"Ground Truth: {example.get('answer')}")
 
-    for exp in EXPERIMENTS:
+    beam_width = 4
+    # Define strategies to evaluate (edit to sweep hyperparameters)
+    BON_CONFIG = ExperimentConfig(
+        approach="best_of_n",
+        search_batch_size=25,
+        bon=BestOfNConfig(
+            sampling=SamplingConfig(
+                n=beam_width,
+                temperature=0.7,
+                top_p=0.8,
+                max_tokens=2048,
+                agg_strategy="prod",
+            ),
+            debug=False,
+        ),
+    )
+
+    # Standard beam search (stepwise)
+    BEAM_SEARCH_CONFIG = ExperimentConfig(
+        approach="beam_search",
+        search_batch_size=1,
+        beam=BeamSearchConfig(
+            sampling=SamplingConfig(
+                n=beam_width,
+                temperature=0.7,
+                top_p=0.8,
+                max_tokens=2048,
+                agg_strategy="prod",
+            ),
+            beam_width=4,
+            num_iterations=40,
+            # lookahead=40,
+            filter_duplicates=True,
+            sort_completed=False,
+            debug=True,
+        ),
+    )
+
+    DVTS_CONFIG = ExperimentConfig(approach="dvts")
+    PARTICLES_CONFIG = ExperimentConfig(approach="particles")
+
+    experiments: List[ExperimentConfig] = []
+
+    for beam_width in [4, 8, 16, 32]:
+        cfg = copy.deepcopy(BEAM_SEARCH_CONFIG)
+        cfg.beam.beam_width = beam_width
+        experiments.append(cfg)
+
+    for exp in experiments:
         logger.info(f"Running approach={exp.approach}")
         cfg = exp.beam.sampling if exp.approach == "beam_search" else exp.bon.sampling
         console.print(
