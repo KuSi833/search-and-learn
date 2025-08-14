@@ -56,13 +56,13 @@ if __name__ == "__main__":
         name="Qwen/Qwen2.5-Math-PRM-7B",
     )
 
-    # DATASET_CONFIG = DatasetConfig(num_samples=500)
+    DATASET_CONFIG = DatasetConfig(num_samples=500)
     # DATASET_CONFIG = DatasetConfig(num_samples=10)
-    DATASET_CONFIG = DatasetConfig(
-        # dataset_name="HuggingFaceH4/aime_2024",
-        dataset_name="HuggingFaceH4/MATH-500",
-        dataset_indicies=get_math500_indices(subset="hard_bon"),
-    )
+    # DATASET_CONFIG = DatasetConfig(
+    #     # dataset_name="HuggingFaceH4/aime_2024",
+    #     dataset_name="HuggingFaceH4/MATH-500",
+    #     dataset_indicies=get_math500_indices(subset="hard_bon"),
+    # )
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
@@ -92,13 +92,13 @@ if __name__ == "__main__":
         search_batch_size=1,
         beam=BeamSearchConfig(
             sampling=SamplingConfig(
-                n=8,
+                n=4,
                 temperature=0.7,
                 top_p=0.8,
                 max_tokens=2048,
                 agg_strategy="prod",
             ),
-            beam_width=4,
+            beam_width=16,
             num_iterations=40,
             filter_duplicates=False,
             sort_completed=False,
@@ -110,6 +110,7 @@ if __name__ == "__main__":
     experiment_configs: List[ExperimentConfig] = []
 
     experiment_configs.append(BEST_OF_N_CONFIG)
+    experiment_configs.append(BEAM_SEARCH_CONFIG)
 
     # for n in [4, 8]:
     #     for beam_width in [4, 8, 16]:
