@@ -104,15 +104,18 @@ if __name__ == "__main__":
             sort_completed=False,
             debug=False,
         ),
+        wandb_config=WANDB_CONFIG,
     )
 
     experiment_configs: List[ExperimentConfig] = []
 
-    for n in [4, 8]:
-        for beam_width in [4, 8, 16]:
-            config_variant = copy.deepcopy(BEAM_SEARCH_CONFIG)
-            config_variant.beam.sampling.n = n
-            config_variant.beam.beam_width = beam_width
-            experiment_configs.append(config_variant)
+    experiment_configs.append(BEST_OF_N_CONFIG)
+
+    # for n in [4, 8]:
+    #     for beam_width in [4, 8, 16]:
+    #         config_variant = copy.deepcopy(BEAM_SEARCH_CONFIG)
+    #         config_variant.beam.sampling.n = n
+    #         config_variant.beam.beam_width = beam_width
+    #         experiment_configs.append(config_variant)
 
     run(BASE_CONFIG, experiment_configs)
