@@ -103,10 +103,10 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    for n in [4]:
-        config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
-        config_variant.bon.sampling.n = n
-        experiment_configs.append(config_variant)
+    # for n in [4]:
+    #     config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
+    #     config_variant.bon.sampling.n = n
+    #     experiment_configs.append(config_variant)
 
     # Also include the base n=4
     experiment_configs.append(BEST_OF_N_CONFIG)
