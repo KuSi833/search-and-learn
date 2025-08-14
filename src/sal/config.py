@@ -84,7 +84,6 @@ class SamplingConfig:
     temperature: float = 0.8
     top_p: float = 1.0
     prm_batch_size: int = 4
-    search_batch_size: int = 25
     max_tokens: int = 2048
     agg_strategy: Literal["last", "min", "prod", "sum", "mean"] = "last"
 
@@ -203,6 +202,8 @@ class ExperimentConfig:
     # Probe-only adapters
     wbon_config: Optional[WeightedBoNConfig] = None
     verifier_beam_config: Optional[VerifierGuidedBeamConfig] = None
+
+    search_batch_size: int = 25
 
     approach: Literal[
         "best_of_n",

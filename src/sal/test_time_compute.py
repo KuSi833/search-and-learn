@@ -226,7 +226,7 @@ class ExperimentRunner:
             dataset = self.dataset.map(
                 approach_fn,
                 batched=True,
-                batch_size=experiment_config.search_config.search_batch_size,
+                batch_size=experiment_config.search_batch_size,
                 fn_kwargs=fn_kwargs,
                 desc="Running search",
                 load_from_cache_file=False,

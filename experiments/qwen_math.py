@@ -80,10 +80,10 @@ if __name__ == "__main__":
                 top_p=0.8,
                 max_tokens=2048,
                 agg_strategy="prod",
-                search_batch_size=50,
             ),
             debug=False,
         ),
+        search_batch_size=50,
         wandb_config=WANDB_CONFIG,
     )
 
