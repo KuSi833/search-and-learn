@@ -493,26 +493,12 @@ def extract_answer(pred_str, data_name, use_last_number=True):
         tmp = pred_str.split("final answer is $", 1)[1]
         pred = tmp.split("$. I hope", 1)[0].strip()
     elif "boxed" in pred_str:
-        ans = pred_str.split("boxed")[-1]
-        if len(ans) == 0:
-            a = ""
-        elif ans[0] == "{":
-            stack = 1
-            a = ""
-            for c in ans[1:]:
-                if c == "{":
-                    stack += 1
-                    a += c
-                elif c == "}":
-                    stack -= 1
-                    if stack == 0:
-                        break
-                    a += c
-                else:
-                    a += c
+        pattern = r"\\boxed\{([^}]+)\}"
+        matches = re.findall(pattern, pred_str)
+        if matches:
+            pred = matches[-1]
         else:
-            a = ans.split("$")[0].strip()
-        pred = a
+            pred = ""
     elif "he answer is" in pred_str:
         pred = pred_str.split("he answer is")[-1].strip()
     elif "final answer is" in pred_str:

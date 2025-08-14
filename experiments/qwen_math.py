@@ -58,11 +58,13 @@ if __name__ == "__main__":
     WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
 
     # Run full MATH-500 (no index restriction)
-    DATASET_CONFIG = DatasetConfig(num_samples=500)
+    # DATASET_CONFIG = DatasetConfig(num_samples=500)
     # DATASET_CONFIG = DatasetConfig(num_samples=10)
-    # DATASET_CONFIG = DatasetConfig(
-    #     dataset_name="HuggingFaceH4/aime_2024"
-    # )  # FULL DATASET
+    DATASET_CONFIG = DatasetConfig(
+        # dataset_name="HuggingFaceH4/aime_2024",
+        dataset_name="HuggingFaceH4/MATH-500",
+        dataset_indicies=get_math500_indices(subset="bad_parsing"),
+    )  # FULL DATASET
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
