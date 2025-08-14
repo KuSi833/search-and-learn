@@ -129,14 +129,13 @@ def main(index: int) -> None:
     print(f"Index: {index}")
     print(f"Ground Truth: {example.get('answer')}")
 
-    beam_width = 4
     # Define strategies to evaluate (edit to sweep hyperparameters)
     BON_CONFIG = ExperimentConfig(
         approach="best_of_n",
         search_batch_size=25,
         bon=BestOfNConfig(
             sampling=SamplingConfig(
-                n=beam_width,
+                n=4,
                 temperature=0.7,
                 top_p=0.8,
                 max_tokens=2048,
@@ -152,7 +151,7 @@ def main(index: int) -> None:
         search_batch_size=1,
         beam=BeamSearchConfig(
             sampling=SamplingConfig(
-                n=beam_width,
+                n=8,
                 temperature=0.7,
                 top_p=0.8,
                 max_tokens=2048,
