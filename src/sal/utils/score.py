@@ -54,11 +54,8 @@ def score(
     dataset = dataset.map(
         lambda x: {"agg_scores": [aggregate_scores(s, "last") for s in x["scores"]]}
     )
-    subsets = [
-        2**i
-        for i in range(experiment_config.search_config.n)
-        if 2**i <= experiment_config.search_config.n
-    ]
+    total_n = experiment_config.n
+    subsets = [2**i for i in range(total_n) if 2**i <= total_n]
     for n in tqdm(subsets, desc="Computing majority & weighted predictions"):
         dataset = dataset.map(
             subsample_completions,

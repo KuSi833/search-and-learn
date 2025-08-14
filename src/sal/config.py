@@ -225,19 +225,34 @@ class ExperimentConfig:
     seed: int = 0
 
     def __post_init__(self):
-        # Backwards compatibility: allow legacy fields if present by copying into new scheme
-        # Note: existing codepaths should migrate to using self.beam.sampling or self.bon.sampling
-        if hasattr(self, "search_config") and isinstance(
-            getattr(self, "search_config"), SamplingConfig
-        ):
-            # Legacy attribute present; do nothing
-            pass
-
         # Derived attributes for legacy callers
         if self.approach == "beam_search":
-            if self.beam.sampling.search_batch_size != 1:
+            if self.search_batch_size != 1:
                 raise ValueError("search_batch_size should be 1 for beam_search")
         if self.approach in ["dvts", "qcts", "q2", "diagnostic_tts"]:
             if self.beam.sampling.n % self.beam.beam_width != 0:
                 raise ValueError("n should be a multiple of beam_width")
             self.n_beams = self.beam.sampling.n // self.beam.beam_width
+
+    # Unified accessor for the active sampling configuration based on approach
+    def get_sampling(self) -> SamplingConfig:
+        if self.approach == "best_of_n":
+            return self.bon.sampling
+        if self.approach in [
+            "beam_search",
+            "dvts",
+            "qcts",
+            "q2",
+            "diagnostic_tts",
+        ]:
+            return self.beam.sampling
+        if self.approach in ["particles", "gibbs"]:
+            return self.particles_config.sampling
+        raise ValueError(
+            f"Unsupported approach for sampling resolution: {self.approach}"
+        )
+
+    # Convenience accessor for the active n
+    @property
+    def n(self) -> int:
+        return self.get_sampling().n
