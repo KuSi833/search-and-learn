@@ -64,7 +64,7 @@ BASE_CONFIG: Final[BaseConfig] = BaseConfig(
     prm_config=PRM_MODEL,
 )
 
-n = 8
+n = 32
 # Define strategies to evaluate (edit to sweep hyperparameters)
 BON_CONFIG = ExperimentConfig(
     approach="best_of_n",
@@ -95,7 +95,7 @@ BEAM_SEARCH_CONFIG = ExperimentConfig(
         ),
         beam_width=4,
         num_iterations=40,
-        lookahead=40,
+        # lookahead=40,
         filter_duplicates=True,
         sort_completed=False,
         debug=True,
