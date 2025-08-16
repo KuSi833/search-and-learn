@@ -56,7 +56,6 @@ def best_of_n(x, experiment_config: ExperimentConfig, llm: LLM, prm: PRM):
         temperature=experiment_config.search_config.temperature,
         max_tokens=experiment_config.search_config.max_tokens,
         top_p=experiment_config.search_config.top_p,
-        seed=experiment_config.seed,
         n=1,  # Since we've already duplicated the prompt_token_ids, we only need to generate 1 completion per prompt
     )
 
