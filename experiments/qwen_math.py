@@ -58,8 +58,8 @@ if __name__ == "__main__":
     WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
 
     # DATASET_CONFIG = DatasetConfig(num_samples=100)
-    DATASET_CONFIG = DatasetConfig(dataset_indicies=get_math500_indices(subset="hard"))
-    # DATASET_CONFIG = DatasetConfig(num_samples=500)  # FULL DATASET
+    # DATASET_CONFIG = DatasetConfig(dataset_indicies=get_math500_indices(subset="hard"))
+    DATASET_CONFIG = DatasetConfig(num_samples=500)  # FULL DATASET
     # DATASET_CONFIG = DatasetConfig(
     #     dataset_name="HuggingFaceH4/aime_2024"
     # )  # FULL DATASET
