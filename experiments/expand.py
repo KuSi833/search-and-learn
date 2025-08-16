@@ -5,11 +5,12 @@ from dotenv import load_dotenv
 
 from sal.config import (
     BaseConfig,
+    BestOfNConfig,
     DatasetConfig,
     ExperimentConfig,
     GeneratorConfig,
     PRMConfig,
-    SearchConfig,
+    SamplingConfig,
     WandbConfig,
 )
 from sal.test_time_compute_new import run
@@ -29,24 +30,19 @@ BASE_CONFIG = BaseConfig(
     dataset_config=DatasetConfig(num_samples=1),
 )
 
-BEAM_SEARCH_CONFIG = ExperimentConfig(
-    filter_duplicates=True,
-    approach="beam_search",
-    search_config=SearchConfig(
-        n=4,
-        search_batch_size=1,
-    ),
-    wandb_config=WANDB_CONFIG,
-)
-
-BASE_BEST_OF_N_CONFIG = ExperimentConfig(
-    filter_duplicates=True,
-    sort_completed=True,
+BEST_OF_N_CONFIG = ExperimentConfig(
     approach="best_of_n",
-    search_config=SearchConfig(
-        n=4,
-        search_batch_size=25,
+    bon=BestOfNConfig(
+        sampling=SamplingConfig(
+            n=4,
+            temperature=0.7,
+            top_p=0.8,
+            max_tokens=2048,
+            agg_strategy="prod",
+        ),
+        debug=False,
     ),
+    search_batch_size=50,
     wandb_config=WANDB_CONFIG,
 )
 
@@ -55,9 +51,8 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    for n in [2]:
-        experiment_copy = copy.deepcopy(BASE_BEST_OF_N_CONFIG)
-        experiment_copy.search_config.n = n
+    for n in [1]:
+        experiment_copy = copy.deepcopy(BEST_OF_N_CONFIG)
 
         experiment_configs.append(experiment_copy)
 
