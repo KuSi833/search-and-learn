@@ -6,6 +6,7 @@ from networkx import expected_degree_graph
 
 from sal.config import (
     BaseConfig,
+    BeamSearchConfig,
     DatasetConfig,
     ExperimentConfig,
     GeneratorConfig,
@@ -78,6 +79,9 @@ if __name__ == "__main__":
             n=4,
             search_batch_size=1,  # DO NOT CHANGE
         ),
+        beam_search_config=BeamSearchConfig(
+            beam_width=4,
+        ),
         wandb_config=WANDB_CONFIG,
     )
 
@@ -137,13 +141,13 @@ if __name__ == "__main__":
     experiment_configs: List[ExperimentConfig] = []
 
     # for n in [8, 16, 32, 64]:
-    for _ in range(4):
-        for base_config in [BEST_OF_N_CONFIG, BEAM_SEARCH_CONFIG]:
-            config_variant = copy.deepcopy(base_config)
-            # config_variant.search_config.n = n
-            experiment_configs.append(config_variant)
+    for _ in range(2):
+        config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
+        experiment_configs.append(config_variant)
 
-    experiment_configs.append(BEST_OF_N_CONFIG)
-    # experiment_configs.append(DVTS_CONFIG)
+    for beam_width in range(4, 8, 16):
+        config_variant = copy.deepcopy(BEAM_SEARCH_CONFIG)
+        config_variant.beam_search_config.beam_width = beam_width
+        experiment_configs.append(config_variant)
 
     run(BASE_CONFIG, experiment_configs)
