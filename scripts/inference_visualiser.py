@@ -428,16 +428,9 @@ def cmd_overview(run_id: str) -> None:
     is_flag=True,
     help="Show correct answers as well as incorrect ones",
 )
-@click.option(
-    "--benchmark",
-    default=Benchmark.MATH500.value,
-    type=click.Choice([b.value for b in Benchmark]),
-    help="Benchmark to use for answer extraction",
-)
 def question_answer(run_id: str, show_correct: bool, benchmark: str) -> None:
     out_file = Path("./output") / run_id / "inference_output.jsonl"
     records = load_jsonl(out_file)
-    benchmark_enum = Benchmark(benchmark)
 
     # Organise incorrect answers by level
     level_to_incorrect: Dict[str, List[QuestionAnswer]] = defaultdict(list)
@@ -463,6 +456,49 @@ def question_answer(run_id: str, show_correct: bool, benchmark: str) -> None:
                     (f" {qa.unique_id}", "dim"),
                 )
             )
+
+
+@cli.command(name="extract-incorrect")
+@click.option(
+    "--run-id", required=True, type=str, help="W&B run id (directory under ./output)"
+)
+@click.option(
+    "--benchmark",
+    default=Benchmark.MATH500.value,
+    type=click.Choice([b.value for b in Benchmark]),
+    help="Benchmark to use for answer extraction",
+)
+@click.option("--name", required=True, type=str, help="Name for the subset file")
+def extract_incorrect(run_id: str, benchmark: str, name: str) -> None:
+    benchmark_enum = Benchmark(benchmark)
+    out_file = Path("./output") / run_id / "inference_output.jsonl"
+    records = load_jsonl(out_file)
+
+    # Collect unique_ids of incorrectly answered questions
+    incorrect_unique_ids = []
+
+    for rec in records:
+        qa = _get_question_answer_from_record(rec)
+        if not qa.is_correct:
+            incorrect_unique_ids.append(qa.unique_id)
+
+    # Sort the unique_ids for consistency
+    incorrect_unique_ids.sort()
+
+    # Save to JSON file
+    output_dir = Path("data/benchmark_subsets") / benchmark_enum.value
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_file = output_dir / f"{name}.json"
+
+    with open(output_file, "w") as f:
+        json.dump(incorrect_unique_ids, f, indent=2)
+
+    console.print(
+        Text.assemble(
+            f"Saved {len(incorrect_unique_ids)} incorrect unique_ids to ",
+            (str(output_file), "yellow"),
+        )
+    )
 
 
 if __name__ == "__main__":
