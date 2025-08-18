@@ -6,17 +6,17 @@ This logic is largely copied from the Hendrycks' MATH release (math_equivalence)
 - https://github.com/deepseek-ai/DeepSeek-Math/blob/main/evaluation/eval/eval_utils.py
 """
 
-import re
-import regex
 import multiprocessing
+import re
+from collections import defaultdict
 from math import isclose
 from typing import Union
-from collections import defaultdict
 
-from sympy import simplify, N
-from sympy.parsing.sympy_parser import parse_expr
-from sympy.parsing.latex import parse_latex
+import regex
 from latex2sympy2 import latex2sympy
+from sympy import N, simplify
+from sympy.parsing.latex import parse_latex
+from sympy.parsing.sympy_parser import parse_expr
 
 # from .parser import choice_answer_clean, strip_string
 # from parser import choice_answer_clean

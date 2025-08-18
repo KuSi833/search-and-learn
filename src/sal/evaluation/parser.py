@@ -1,10 +1,10 @@
-import random
-import regex
 import re
-import sympy
+from typing import Any, Dict
+
+import regex
 from latex2sympy2 import latex2sympy
-from typing import TypeVar, Iterable, List, Union, Any, Dict
 from word2number import w2n
+
 from sal.evaluation.utils import *
 
 
@@ -563,6 +563,7 @@ def extract_answer(pred_str, data_name, use_last_number=True):
     if pred != "" and pred[-1] == "/":
         pred = pred[:-1]
     pred = strip_string(pred, skip_unit=data_name in ["carp_en", "minerva_math"])
+
     return pred
 
 

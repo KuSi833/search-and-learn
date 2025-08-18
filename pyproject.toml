@@ -50,3 +50,8 @@ deploy = [
   "transformers<4.54.0",
   "vllm==0.9.2",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]

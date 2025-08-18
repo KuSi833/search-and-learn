@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import sys
+from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -12,8 +13,12 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from sal.config import ExperimentConfig
-from sal.utils.score import score
+from sal.evaluation.evaluate import evaluate_single_dataset
+from sal.evaluation.grader import math_equal
+from sal.evaluation.parser import extract_answer, find_box
+from sal.utils.logging import setup_logging
+
+setup_logging()
 
 
 def load_jsonl(path: Path) -> List[Dict[str, Any]]:
@@ -63,6 +68,7 @@ console = Console()
 
 # Default assumed prediction key used across the tool (ensemble-style). Assumes weighted@4.
 ASSUMED_PRED_KEY = "pred_weighted@4"
+BENCHMARK = "math"
 
 
 def _split_steps(text: str) -> List[str]:
@@ -81,100 +87,26 @@ def _score_style(value: float) -> str:
 
 
 def analyse_sample(sample: Dict[str, Any]) -> Dict[str, Any]:
-    # Extract key fields with fallbacks
-    problem = sample.get("problem") or sample.get("question") or ""
-    solution = sample.get("solution", "")
-    answer = sample.get("answer", "")
-    unique_id = sample.get("unique_id") or sample.get("id")
-    subject = sample.get("subject")
-    level = sample.get("level")
+    # Extract key fields (throw if not found)
+    problem: str = sample["problem"]
+    solution: str = sample["solution"]
+    answer: str = sample["answer"]
+    unique_id: str = sample["unique_id"]
+    subject: str = sample["subject"]
+    level: int = sample["level"]
 
-    completions: List[str] = sample.get("completions", [])
-    pred: str = sample.get("pred", "")
-    scores: List[List[float]] = sample.get("scores", [])
-    completion_tokens = sample.get("completion_tokens")
+    completions: List[str] = sample["completions"]
+    pred: str = sample["pred"]
+    # scores: List[List[float]] = sample.get("scores", [])
+    completion_tokens: Any = sample["completion_tokens"]
 
-    # Locate chosen completion among beams (fallback by highest last-score if not found)
-    chosen_idx = _index_of_first(completions, pred)
-    if chosen_idx < 0 and scores:
-        # Fallback: choose beam with largest last score
-        try:
-            last_scores = [
-                s[-1] if isinstance(s, list) and len(s) > 0 else float("-inf")
-                for s in scores
-            ]
-            chosen_idx = (
-                int(max(range(len(last_scores)), key=lambda i: last_scores[i]))
-                if last_scores
-                else -1
-            )
-        except Exception:
-            chosen_idx = -1
+    # Assuming I am actually wondering about ASSUMED_PRED_KEY accuracy
+    pred = sample[ASSUMED_PRED_KEY]
 
-    chosen_score_path: List[float] = (
-        scores[chosen_idx] if 0 <= chosen_idx < len(scores) else []
-    )
-    chosen_tokens: Any = None
-    if isinstance(completion_tokens, list) and 0 <= chosen_idx < len(completion_tokens):
-        chosen_tokens = completion_tokens[chosen_idx]
-    elif isinstance(completion_tokens, int):
-        chosen_tokens = completion_tokens
+    answer_extracted = extract_answer(answer, BENCHMARK)
+    pred_extracted = extract_answer(pred, BENCHMARK)
 
-    # Extract boxed answers for ensemble-style preds if present
-    agg_preds: List[Tuple[str, str]] = []  # (key, value)
-    for k, v in sample.items():
-        if isinstance(k, str) and isinstance(v, str):
-            if (
-                k.startswith("pred_weighted@")
-                or k.startswith("pred_maj@")
-                or k.startswith("pred_naive@")
-            ):
-                agg_preds.append((k, v))
-    agg_preds.sort(key=lambda kv: kv[0])
-
-    # Compute correctness signals
-    # For the raw pred: attempt to extract an answer from the text
-    extracted_pred = extract_answer(pred, "math") if isinstance(pred, str) else ""
-    # Boxed ensemble preds → extract inside box
-    agg_correct: List[Tuple[str, bool]] = []
-    for k, v in agg_preds:
-        boxed_inner = find_box(v) if isinstance(v, str) else ""
-        try:
-            ok = math_equal(boxed_inner, answer)
-        except Exception:
-            ok = False
-        agg_correct.append((k, ok))
-
-    # Correctness for the extracted raw pred
-    try:
-        raw_correct = math_equal(extracted_pred, answer)
-    except Exception:
-        raw_correct = False
-
-    # Assumed prediction (e.g., weighted@n=4) and correctness
-    assumed_pred_key = ASSUMED_PRED_KEY
-    assumed_pred_text = sample.get(assumed_pred_key)
-    if isinstance(assumed_pred_text, str):
-        assumed_inner = find_box(assumed_pred_text)
-        assumed_extracted = (
-            assumed_inner
-            if assumed_inner
-            else extract_answer(assumed_pred_text, "math")
-        )
-    else:
-        assumed_extracted = ""
-    try:
-        assumed_correct = math_equal(assumed_extracted, answer)
-    except Exception:
-        assumed_correct = False
-
-    # Build ranking by final score if available
-    rank: List[Tuple[int, float]] = []
-    if scores and all(isinstance(s, list) for s in scores):
-        for i, s in enumerate(scores):
-            if s:
-                rank.append((i, float(s[-1])))
-        rank.sort(key=lambda t: t[1], reverse=True)
+    assumed_correct = math_equal(answer_extracted, pred_extracted)
 
     return {
         "unique_id": unique_id,
@@ -184,26 +116,15 @@ def analyse_sample(sample: Dict[str, Any]) -> Dict[str, Any]:
         "solution": solution,
         "answer": answer,
         "num_beams": len(completions),
-        "chosen_idx": chosen_idx,
         "pred": pred,
-        "pred_extracted": extracted_pred,
-        "assumed_pred_key": assumed_pred_key,
-        "assumed_pred_text": assumed_pred_text,
-        "assumed_pred_extracted": assumed_extracted,
+        "pred_extracted": pred_extracted,
         "assumed_correct": assumed_correct,
-        "raw_correct": raw_correct,
-        "chosen_score_path": chosen_score_path,
-        "chosen_tokens": chosen_tokens,
-        "rank_by_last_score": rank,
-        "agg_preds": agg_preds,
-        "agg_correct": agg_correct,
         "completion_tokens": completion_tokens,
     }
 
 
 def print_report(
     run_id: str,
-    sample: Dict[str, Any],
     analysis: Dict[str, Any],
     index: Optional[int] = None,
 ) -> None:
@@ -404,23 +325,20 @@ def cmd_detail(run_id: str, index: int) -> None:
 
     sample = records[index]
     analysis = analyse_sample(sample)
-    print_report(run_id, sample, analysis, index=index)
+    print_report(run_id, analysis, index)
 
 
 def _record_level_and_correct(rec: Dict[str, Any]) -> Tuple[str, bool]:
-    level = str(rec.get("level", "unknown"))
-    answer = str(rec.get("answer", ""))
-    assumed_text = rec.get(ASSUMED_PRED_KEY)
-    if isinstance(assumed_text, str):
-        inner = find_box(assumed_text)
-        extracted = inner if inner else extract_answer(assumed_text, "math")
-    else:
-        extracted = ""
-    try:
-        is_correct = math_equal(extracted, answer)
-    except Exception:
-        is_correct = False
-    return level, bool(is_correct)
+    level: str = rec["level"]
+    answer: str = rec["answer"]
+    pred: str = rec[ASSUMED_PRED_KEY]
+
+    answer_extracted = extract_answer(answer, BENCHMARK)
+    pred_extracted = extract_answer(pred, BENCHMARK)
+
+    is_correct = math_equal(answer_extracted, pred_extracted)
+
+    return level, is_correct
 
 
 @cli.command(
@@ -435,8 +353,6 @@ def cmd_overview(run_id: str) -> None:
     if not records:
         console.print(Text(f"No records found in {out_file}", style="red"))
         sys.exit(1)
-
-    from collections import defaultdict
 
     level_to_total: Dict[str, int] = defaultdict(int)
     level_to_correct: Dict[str, int] = defaultdict(int)
@@ -510,17 +426,12 @@ def cmd_overview(run_id: str) -> None:
     "--run-id", required=True, type=str, help="W&B run id (directory under ./output)"
 )
 def question_answer(run_id: str) -> None:
-    print("WTF")
     out_file = Path("./output") / run_id / "inference_output.jsonl"
 
     jsonl_data = list(load_jsonl(out_file))
     dataset = Dataset.from_list(jsonl_data)
 
-    # print(dataset)
-
-    # def parse_gt(x):
-    #     x["gt_cot"], x["gt"] = parse_ground_truth(x, "math")
-    #     return x
+    print(dataset)
 
     # dataset = dataset.map(
     #     parse_gt,
@@ -529,10 +440,30 @@ def question_answer(run_id: str) -> None:
     #     load_from_cache_file=False,
     # )
 
-    experiment_config = ExperimentConfig()
-    dataset = score(dataset, experiment_config, 4)
+    # experiment_config = ExperimentConfig()
+    # dataset = score(dataset, experiment_config, 4)
 
-    # for idx, rec in enumerate(records):
+    evaluate_single_dataset(
+        benchmark="math",
+        dataset=dataset,
+        dataset_col="pred",
+        output_file=Path("./out.res"),
+    )
+
+    # for row in dataset:
+    #     answer = row.get("answer")
+    #     pred = row.get("pred_weighted@4")
+
+    #     # answer_canonical = "\\boxed{" + memoized_canonical_form(answer) + "}"
+    #     # pred_canonical = memoized_canonical_form(pred)
+    #     # print(answer_canonical)
+    #     # print(pred_canonical)
+
+    #     ok = answer_canonical == pred_canonical
+    #     if not ok:
+    #         # print(f"{answer} : {pred}")
+    #         print(f"{answer_canonical} : {pred_canonical}")
+    # for idx, rec in enumerate(dataset):
     #     unique_id = rec.get("unique_id")
     #     answer = rec.get("answer")
     #     assumed_text = rec.get("pred_weighted@4")
@@ -541,7 +472,7 @@ def question_answer(run_id: str) -> None:
     #         answer_map = extract_answer_map()
     #         # print(inner)
     #         print(f"{unique_id:40} {assumed_text} -> {inner} : {answer}")
-    # extracted = extract_answer(assumed_text, "math")
+    # # extracted = extract_answer(assumed_text, "math")
     # exit()
     #     extracted = inner if inner else
 
