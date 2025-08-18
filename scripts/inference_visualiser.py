@@ -439,11 +439,13 @@ def question_answer(run_id: str, show_correct: bool) -> None:
             is_correct = item["is_correct"]
             if is_correct and not show_correct:
                 continue
+            color = "green" if is_correct else "red"
+            equality_symbol = "==" if is_correct else "!="
             console.print(
                 Text.assemble(
                     (
-                        f"{item['answer_extracted']} != {item['pred_extracted']}",
-                        "green" if is_correct else "red",
+                        f"{item['answer_extracted']} {equality_symbol} {item['pred_extracted']}",
+                        color,
                     ),
                     (f" {item['idx'], item['unique_id']}", "dim"),
                 )
