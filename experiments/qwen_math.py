@@ -61,7 +61,7 @@ if __name__ == "__main__":
     # DATASET_CONFIG = DatasetConfig(num_samples=100)
     # DATASET_CONFIG = DatasetConfig(dataset_indicies=get_math500_indices(subset="hard"))
     DATASET_CONFIG = DatasetConfig(
-        dataset_indicies=get_math500_indices(subset="crash_debug2")
+        dataset_indicies=get_math500_indices(subset="bon_hard_2")
     )
     # DATASET_CONFIG = DatasetConfig(num_samples=500)  # FULL DATASET
     # DATASET_CONFIG = DatasetConfig(
@@ -144,11 +144,12 @@ if __name__ == "__main__":
     experiment_configs: List[ExperimentConfig] = []
 
     # for n in [8, 16, 32, 64]:
-    # for _ in range(2):
-    #     config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
-    #     experiment_configs.append(config_variant)
+    for _ in range(1):
+        config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
+        experiment_configs.append(config_variant)
 
-    for beam_width in range(4, 8, 16):
+    # for beam_width in range(4, 8, 16):
+    for beam_width in range(4):
         config_variant = copy.deepcopy(BEAM_SEARCH_CONFIG)
         config_variant.beam_search_config.beam_width = beam_width
         experiment_configs.append(config_variant)
