@@ -86,24 +86,6 @@ def _score_style(value: float) -> str:
         return "white"
 
 
-def analyse_sample(sample: Dict[str, Any]) -> Dict[str, Any]:
-    # Extract key fields (throw if not found)
-
-    return {
-        "unique_id": unique_id,
-        "subject": subject,
-        "level": level,
-        "problem": problem,
-        "solution": solution,
-        "answer": answer,
-        "num_beams": len(completions),
-        "pred": pred,
-        "pred_extracted": pred_extracted,
-        "assumed_correct": assumed_correct,
-        "completion_tokens": completion_tokens,
-    }
-
-
 def print_report(
     run_id: str,
     sample: Dict[str, Any],
@@ -119,6 +101,9 @@ def print_report(
     # completions: List[str] = sample["completions"]
     # scores: List[List[float]] = sample.get("scores", [])
     # completion_tokens: Any = sample["completion_tokens"]
+
+    SHOW_PRED_TEXT = False
+    SHOW_SOLUTION_TEXT = False
 
     header = Table.grid(padding=(0, 1))
     header.add_column(style="bold cyan")
@@ -149,10 +134,6 @@ def print_report(
         Panel(_shorten(answer, 200), title="Ground truth answer", style="green")
     )
 
-    console.print(
-        Panel(_shorten(pred_text, 800), title="Chosen prediction (raw)", style="yellow")
-    )
-
     extracted_table = Table(
         title="Answer extraction & correctness", box=box.SIMPLE_HEAVY
     )
@@ -165,6 +146,9 @@ def print_report(
         Text(str(assumed_correct), style=("green" if assumed_correct else "red")),
     )
     console.print(Panel(extracted_table, box=box.ROUNDED))
+
+    if SHOW_PRED_TEXT:
+        console.print(Panel(pred_text, title="Chosen prediction (raw)", style="yellow"))
 
     # chosen_idx = sample.get("chosen_idx")
     # num_beams = sample.get("num_beams")
@@ -238,9 +222,10 @@ def print_report(
         note: Optional[str] = None
         if step_scores and len(steps) != len(step_scores):
             note = f"Note: steps ($${len(steps)}$$) and scores ($${len(step_scores)}$$) lengths differ; showing first $${n_rows}$$."
-        console.print(
-            Panel(steps_table, title="Solution steps", subtitle=note, box=box.ROUNDED)
-        )
+        # Uncomment to print solution steps
+        # console.print(
+        #     Panel(steps_table, title="Solution steps", subtitle=note, box=box.ROUNDED)
+        # )
 
     # rank = sample.get("rank_by_last_score") or []
     # if rank:
@@ -267,13 +252,14 @@ def print_report(
     #         )
     #     console.print(agg_table)
 
-    console.print(
-        Panel(
-            solution,
-            title="Reference solution",
-            box=box.SQUARE,
+    if SHOW_SOLUTION_TEXT:
+        console.print(
+            Panel(
+                solution,
+                title="Reference solution",
+                box=box.SQUARE,
+            )
         )
-    )
 
 
 @click.group(help="Inference visualiser utilities")
@@ -409,54 +395,43 @@ def cmd_overview(run_id: str) -> None:
 )
 def question_answer(run_id: str) -> None:
     out_file = Path("./output") / run_id / "inference_output.jsonl"
+    records = load_jsonl(out_file)
 
-    jsonl_data = list(load_jsonl(out_file))
-    dataset = Dataset.from_list(jsonl_data)
+    # Organise incorrect answers by level
+    level_to_incorrect: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
 
-    print(dataset)
+    for rec in records:
+        level = rec["level"]
+        answer = rec["answer"]
+        unique_id: str = rec["unique_id"]
+        # subject: str = rec["subject"]
+        pred = rec[ASSUMED_PRED_KEY]
 
-    # dataset = dataset.map(
-    #     parse_gt,
-    #     desc="Parsing ground truth",
-    #     num_proc=4,
-    #     load_from_cache_file=False,
-    # )
+        answer_extracted = extract_answer(_wrap_in_boxed(answer), BENCHMARK)
+        pred_extracted = extract_answer(pred, BENCHMARK)
 
-    # experiment_config = ExperimentConfig()
-    # dataset = score(dataset, experiment_config, 4)
+        is_correct = math_equal(answer_extracted, pred_extracted)
 
-    evaluate_single_dataset(
-        benchmark="math",
-        dataset=dataset,
-        dataset_col="pred",
-        output_file=Path("./out.res"),
-    )
+        if not is_correct:
+            level_to_incorrect[level].append(
+                {
+                    "answer_extracted": answer_extracted,
+                    "pred_extracted": pred_extracted,
+                    "unique_id": unique_id,
+                    "level": level,
+                }
+            )
 
-    # for row in dataset:
-    #     answer = row.get("answer")
-    #     pred = row.get("pred_weighted@4")
-
-    #     # answer_canonical = "\\boxed{" + memoized_canonical_form(answer) + "}"
-    #     # pred_canonical = memoized_canonical_form(pred)
-    #     # print(answer_canonical)
-    #     # print(pred_canonical)
-
-    #     ok = answer_canonical == pred_canonical
-    #     if not ok:
-    #         # print(f"{answer} : {pred}")
-    #         print(f"{answer_canonical} : {pred_canonical}")
-    # for idx, rec in enumerate(dataset):
-    #     unique_id = rec.get("unique_id")
-    #     answer = rec.get("answer")
-    #     assumed_text = rec.get("pred_weighted@4")
-    #     if isinstance(assumed_text, str):
-    #         inner = find_box(assumed_text)
-    #         answer_map = extract_answer_map()
-    #         # print(inner)
-    #         print(f"{unique_id:40} {assumed_text} -> {inner} : {answer}")
-    # # extracted = extract_answer(assumed_text, "math")
-    # exit()
-    #     extracted = inner if inner else
+    # Print organised by level
+    for level in sorted(level_to_incorrect.keys()):
+        console.print(f"\n[bold cyan]Level {level}:[/bold cyan]")
+        for item in level_to_incorrect[level]:
+            console.print(
+                Text.assemble(
+                    (f"{item['answer_extracted']} != {item['pred_extracted']}", "red"),
+                    (f" ({item['unique_id']}, level: {item['level']})", "dim"),
+                )
+            )
 
 
 if __name__ == "__main__":
