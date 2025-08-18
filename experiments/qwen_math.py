@@ -141,9 +141,9 @@ if __name__ == "__main__":
     experiment_configs: List[ExperimentConfig] = []
 
     # for n in [8, 16, 32, 64]:
-    for _ in range(2):
-        config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
-        experiment_configs.append(config_variant)
+    # for _ in range(2):
+    #     config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
+    #     experiment_configs.append(config_variant)
 
     for beam_width in range(4, 8, 16):
         config_variant = copy.deepcopy(BEAM_SEARCH_CONFIG)

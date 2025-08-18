@@ -117,6 +117,8 @@ def print_report(
     pred_raw = find_box(pred_text)
     pred_extracted = extract_answer(pred, BENCHMARK)
 
+    print(sample[ASSUMED_PRED_KEY])
+
     assumed_correct = math_equal(answer_extracted, pred_extracted)
 
     meta_bits = [
@@ -141,6 +143,7 @@ def print_report(
     extracted_table.add_column("Value")
     extracted_table.add_row("Assumed pred key", ASSUMED_PRED_KEY)
     extracted_table.add_row("Prediction (Raw)", pred_raw)
+    extracted_table.add_row("Prediction (Extracted)", pred_extracted)
     extracted_table.add_row(
         "Correct?",
         Text(str(assumed_correct), style=("green" if assumed_correct else "red")),
@@ -400,7 +403,7 @@ def question_answer(run_id: str) -> None:
     # Organise incorrect answers by level
     level_to_incorrect: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
 
-    for rec in records:
+    for idx, rec in enumerate(records):
         level = rec["level"]
         answer = rec["answer"]
         unique_id: str = rec["unique_id"]
@@ -415,6 +418,7 @@ def question_answer(run_id: str) -> None:
         if not is_correct:
             level_to_incorrect[level].append(
                 {
+                    "idx": idx,
                     "answer_extracted": answer_extracted,
                     "pred_extracted": pred_extracted,
                     "unique_id": unique_id,
@@ -429,7 +433,7 @@ def question_answer(run_id: str) -> None:
             console.print(
                 Text.assemble(
                     (f"{item['answer_extracted']} != {item['pred_extracted']}", "red"),
-                    (f" ({item['unique_id']}, level: {item['level']})", "dim"),
+                    (f" {item['idx'], item['unique_id']}", "dim"),
                 )
             )
 
