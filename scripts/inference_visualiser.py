@@ -88,25 +88,6 @@ def _score_style(value: float) -> str:
 
 def analyse_sample(sample: Dict[str, Any]) -> Dict[str, Any]:
     # Extract key fields (throw if not found)
-    problem: str = sample["problem"]
-    solution: str = sample["solution"]
-    answer: str = sample["answer"]
-    unique_id: str = sample["unique_id"]
-    subject: str = sample["subject"]
-    level: int = sample["level"]
-
-    completions: List[str] = sample["completions"]
-    pred: str = sample["pred"]
-    # scores: List[List[float]] = sample.get("scores", [])
-    completion_tokens: Any = sample["completion_tokens"]
-
-    # Assuming I am actually wondering about ASSUMED_PRED_KEY accuracy
-    pred = sample[ASSUMED_PRED_KEY]
-
-    answer_extracted = extract_answer(answer, BENCHMARK)
-    pred_extracted = extract_answer(pred, BENCHMARK)
-
-    assumed_correct = math_equal(answer_extracted, pred_extracted)
 
     return {
         "unique_id": unique_id,
@@ -125,88 +106,88 @@ def analyse_sample(sample: Dict[str, Any]) -> Dict[str, Any]:
 
 def print_report(
     run_id: str,
-    analysis: Dict[str, Any],
-    index: Optional[int] = None,
+    sample: Dict[str, Any],
 ) -> None:
+    problem: str = sample["problem"]
+    solution: str = sample["solution"]
+    answer: str = sample["answer"]
+    unique_id: str = sample["unique_id"]
+    subject: str = sample["subject"]
+    level: int = sample["level"]
+    pred_text: str = sample["pred"]  # prediction text
+    pred = sample[ASSUMED_PRED_KEY]  # just the prediction
+    # completions: List[str] = sample["completions"]
+    # scores: List[List[float]] = sample.get("scores", [])
+    # completion_tokens: Any = sample["completion_tokens"]
+
     header = Table.grid(padding=(0, 1))
     header.add_column(style="bold cyan")
     header.add_column()
     header.add_row("Run", run_id)
     header.add_row("File", f"output/{run_id}/inference_output.jsonl")
-    if index is not None:
-        header.add_row("Index", str(index))
     console.print(Panel(header, title="Inference Sample", box=box.ROUNDED))
 
-    uid = analysis.get("unique_id")
-    subj = analysis.get("subject")
-    level = analysis.get("level")
+    # Assuming I am actually wondering about ASSUMED_PRED_KEY accuracy
+    answer_extracted = extract_answer(_wrap_in_boxed(answer), BENCHMARK)
+    pred_raw = find_box(pred_text)
+    pred_extracted = extract_answer(pred, BENCHMARK)
+
+    assumed_correct = math_equal(answer_extracted, pred_extracted)
+
     meta_bits = [
-        f"id={uid}" if uid is not None else None,
-        f"subject={subj}" if subj is not None else None,
-        f"level={level}" if level is not None else None,
+        f"id={unique_id}",
+        f"subject={subject}",
+        f"level={level}",
     ]
     meta_bits = [b for b in meta_bits if b]
     if meta_bits:
         console.print(Text("Meta: " + ", ".join(meta_bits), style="dim"))
 
-    problem_text = _shorten(str(analysis.get("problem") or ""), 800)
-    console.print(Panel(problem_text, title="Problem", box=box.SQUARE))
+    console.print(Panel(_shorten(problem, 800), title="Problem", box=box.SQUARE))
 
-    ans = str(analysis.get("answer") or "")
-    console.print(Panel(_shorten(ans, 200), title="Ground truth answer", style="green"))
+    console.print(
+        Panel(_shorten(answer, 200), title="Ground truth answer", style="green")
+    )
 
-    pred_raw = _shorten(str(analysis.get("pred") or ""), 800)
-    console.print(Panel(pred_raw, title="Chosen prediction (raw)", style="yellow"))
-
-    extracted = _shorten(str(analysis.get("pred_extracted") or ""), 200)
-    raw_ok = bool(analysis.get("raw_correct"))
-
-    assumed_key = str(analysis.get("assumed_pred_key") or ASSUMED_PRED_KEY)
-    assumed_text = str(analysis.get("assumed_pred_text") or "")
-    assumed_extracted = _shorten(str(analysis.get("assumed_pred_extracted") or ""), 200)
-    assumed_ok = bool(analysis.get("assumed_correct"))
+    console.print(
+        Panel(_shorten(pred_text, 800), title="Chosen prediction (raw)", style="yellow")
+    )
 
     extracted_table = Table(
         title="Answer extraction & correctness", box=box.SIMPLE_HEAVY
     )
     extracted_table.add_column("Field", style="bold")
     extracted_table.add_column("Value")
-    extracted_table.add_row("Raw extracted", extracted)
+    extracted_table.add_row("Assumed pred key", ASSUMED_PRED_KEY)
+    extracted_table.add_row("Prediction (Raw)", pred_raw)
     extracted_table.add_row(
-        "Raw correct", Text(str(raw_ok), style=("green" if raw_ok else "red"))
+        "Correct?",
+        Text(str(assumed_correct), style=("green" if assumed_correct else "red")),
     )
-    if assumed_text:
-        extracted_table.add_row("Assumed key", assumed_key)
-        extracted_table.add_row("Assumed extracted", assumed_extracted)
-        extracted_table.add_row(
-            "Assumed correct",
-            Text(str(assumed_ok), style=("green" if assumed_ok else "red")),
-        )
     console.print(Panel(extracted_table, box=box.ROUNDED))
 
-    chosen_idx = analysis.get("chosen_idx")
-    num_beams = analysis.get("num_beams")
-    csp = analysis.get("chosen_score_path") or []
-    ctok = analysis.get("chosen_tokens")
+    # chosen_idx = sample.get("chosen_idx")
+    # num_beams = sample.get("num_beams")
+    # csp = sample.get("chosen_score_path") or []
+    # ctok = sample.get("chosen_tokens")
 
-    beams_table = Table(show_header=False, box=box.SIMPLE)
-    beams_table.add_column("key", style="bold")
-    beams_table.add_column("value")
-    beams_table.add_row("Beams", str(num_beams))
-    beams_table.add_row("Chosen index", str(chosen_idx))
-    beams_table.add_row(
-        "Score trajectory", Text(_format_float_list(list(csp)), style="magenta")
-    )
-    if ctok is not None:
-        beams_table.add_row("Completion tokens", str(ctok))
-    console.print(Panel(beams_table, title="Beam details", box=box.ROUNDED))
+    # beams_table = Table(show_header=False, box=box.SIMPLE)
+    # beams_table.add_column("key", style="bold")
+    # beams_table.add_column("value")
+    # beams_table.add_row("Beams", str(num_beams))
+    # beams_table.add_row("Chosen index", str(chosen_idx))
+    # beams_table.add_row(
+    #     "Score trajectory", Text(_format_float_list(list(csp)), style="magenta")
+    # )
+    # if ctok is not None:
+    #     beams_table.add_row("Completion tokens", str(ctok))
+    # console.print(Panel(beams_table, title="Beam details", box=box.ROUNDED))
 
     # Visualise solution steps with scores
-    full_pred_text = str(analysis.get("pred") or "")
-    steps = _split_steps(full_pred_text)
+    steps = _split_steps(pred_text)
     step_scores: List[float] = []
     try:
-        step_scores = [float(x) for x in (analysis.get("chosen_score_path") or [])]
+        step_scores = [float(x) for x in (sample.get("chosen_score_path") or [])]
     except Exception:
         step_scores = []
     n_rows = min(len(steps), len(step_scores)) if step_scores else len(steps)
@@ -261,40 +242,38 @@ def print_report(
             Panel(steps_table, title="Solution steps", subtitle=note, box=box.ROUNDED)
         )
 
-    rank = analysis.get("rank_by_last_score") or []
-    if rank:
-        top = rank[: min(5, len(rank))]
-        rank_table = Table(title="Top beams by last score", box=box.MINIMAL_HEAVY_HEAD)
-        rank_table.add_column("#", style="bold cyan", justify="right")
-        rank_table.add_column("score", justify="right")
-        for i, s in top:
-            rank_table.add_row(str(i), f"{s:.4f}")
-        console.print(rank_table)
+    # rank = sample.get("rank_by_last_score") or []
+    # if rank:
+    #     top = rank[: min(5, len(rank))]
+    #     rank_table = Table(title="Top beams by last score", box=box.MINIMAL_HEAVY_HEAD)
+    #     rank_table.add_column("#", style="bold cyan", justify="right")
+    #     rank_table.add_column("score", justify="right")
+    #     for i, s in top:
+    #         rank_table.add_row(str(i), f"{s:.4f}")
+    #     console.print(rank_table)
 
-    agg_preds = analysis.get("agg_preds") or []
-    agg_correct = {k: v for k, v in (analysis.get("agg_correct") or [])}
-    if agg_preds:
-        agg_table = Table(title="Aggregated predictions", box=box.SIMPLE_HEAVY)
-        agg_table.add_column("key", style="bold")
-        agg_table.add_column("inner")
-        agg_table.add_column("correct", justify="center")
-        for k, v in agg_preds:
-            inner = find_box(v) if isinstance(v, str) else ""
-            ok = agg_correct.get(k, False)
-            agg_table.add_row(
-                k, inner, Text("✓" if ok else "✗", style=("green" if ok else "red"))
-            )
-        console.print(agg_table)
+    # agg_preds = sample.get("agg_preds") or []
+    # agg_correct = {k: v for k, v in (sample.get("agg_correct") or [])}
+    # if agg_preds:
+    #     agg_table = Table(title="Aggregated predictions", box=box.SIMPLE_HEAVY)
+    #     agg_table.add_column("key", style="bold")
+    #     agg_table.add_column("inner")
+    #     agg_table.add_column("correct", justify="center")
+    #     for k, v in agg_preds:
+    #         inner = find_box(v) if isinstance(v, str) else ""
+    #         ok = agg_correct.get(k, False)
+    #         agg_table.add_row(
+    #             k, inner, Text("✓" if ok else "✗", style=("green" if ok else "red"))
+    #         )
+    #     console.print(agg_table)
 
-    sol = analysis.get("solution") or ""
-    if isinstance(sol, str) and sol.strip():
-        console.print(
-            Panel(
-                sol,
-                title="Reference solution",
-                box=box.SQUARE,
-            )
+    console.print(
+        Panel(
+            solution,
+            title="Reference solution",
+            box=box.SQUARE,
         )
+    )
 
 
 @click.group(help="Inference visualiser utilities")
@@ -324,8 +303,11 @@ def cmd_detail(run_id: str, index: int) -> None:
         sys.exit(1)
 
     sample = records[index]
-    analysis = analyse_sample(sample)
-    print_report(run_id, analysis, index)
+    print_report(run_id, sample)
+
+
+def _wrap_in_boxed(s: str) -> str:
+    return r"\boxed{" + s + "}"
 
 
 def _record_level_and_correct(rec: Dict[str, Any]) -> Tuple[str, bool]:
@@ -333,7 +315,7 @@ def _record_level_and_correct(rec: Dict[str, Any]) -> Tuple[str, bool]:
     answer: str = rec["answer"]
     pred: str = rec[ASSUMED_PRED_KEY]
 
-    answer_extracted = extract_answer(answer, BENCHMARK)
+    answer_extracted = extract_answer(_wrap_in_boxed(answer), BENCHMARK)
     pred_extracted = extract_answer(pred, BENCHMARK)
 
     is_correct = math_equal(answer_extracted, pred_extracted)
