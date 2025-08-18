@@ -242,7 +242,8 @@ def evaluate_single_dataset(
             "voting_ns": voting_ns,
             "avg_acc": avg_acc,
         }
-        wandb.log(result_json)
+        if wandb.run is not None:
+            wandb.log(result_json)
 
     else:
         # Regular evaluation
