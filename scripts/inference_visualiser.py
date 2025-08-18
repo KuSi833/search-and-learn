@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import click
 from datasets import Dataset
+from matplotlib.pyplot import show
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
@@ -396,7 +397,12 @@ def cmd_overview(run_id: str) -> None:
 @click.option(
     "--run-id", required=True, type=str, help="W&B run id (directory under ./output)"
 )
-def question_answer(run_id: str) -> None:
+@click.option(
+    "--show-correct",
+    is_flag=True,
+    help="Show correct answers as well as incorrect ones",
+)
+def question_answer(run_id: str, show_correct: bool) -> None:
     out_file = Path("./output") / run_id / "inference_output.jsonl"
     records = load_jsonl(out_file)
 
@@ -415,24 +421,30 @@ def question_answer(run_id: str) -> None:
 
         is_correct = math_equal(answer_extracted, pred_extracted)
 
-        if not is_correct:
-            level_to_incorrect[level].append(
-                {
-                    "idx": idx,
-                    "answer_extracted": answer_extracted,
-                    "pred_extracted": pred_extracted,
-                    "unique_id": unique_id,
-                    "level": level,
-                }
-            )
+        level_to_incorrect[level].append(
+            {
+                "idx": idx,
+                "answer_extracted": answer_extracted,
+                "pred_extracted": pred_extracted,
+                "unique_id": unique_id,
+                "level": level,
+                "is_correct": is_correct,
+            }
+        )
 
     # Print organised by level
     for level in sorted(level_to_incorrect.keys()):
         console.print(f"\n[bold cyan]Level {level}:[/bold cyan]")
         for item in level_to_incorrect[level]:
+            is_correct = item["is_correct"]
+            if is_correct and not show_correct:
+                continue
             console.print(
                 Text.assemble(
-                    (f"{item['answer_extracted']} != {item['pred_extracted']}", "red"),
+                    (
+                        f"{item['answer_extracted']} != {item['pred_extracted']}",
+                        "green" if is_correct else "red",
+                    ),
                     (f" {item['idx'], item['unique_id']}", "dim"),
                 )
             )

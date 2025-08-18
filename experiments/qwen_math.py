@@ -80,7 +80,12 @@ if __name__ == "__main__":
         approach="beam_search",
         search_config=SearchConfig(
             n=4,
-            search_batch_size=1,  # DO NOT CHANGE
+            temperature=0.7,  # Their exact setting (you had 0.8)
+            top_p=0.8,  # Their exact setting (you had 1.0)
+            prm_batch_size=4,
+            search_batch_size=1,
+            max_tokens=2048,
+            agg_strategy="prod",
         ),
         beam_search_config=BeamSearchConfig(
             beam_width=4,
@@ -144,12 +149,11 @@ if __name__ == "__main__":
     experiment_configs: List[ExperimentConfig] = []
 
     # for n in [8, 16, 32, 64]:
-    for _ in range(1):
-        config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
-        experiment_configs.append(config_variant)
+    # for _ in range(1):
+    #     config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
+    #     experiment_configs.append(config_variant)
 
-    # for beam_width in range(4, 8, 16):
-    for beam_width in range(4):
+    for beam_width in [16, 8, 4]:
         config_variant = copy.deepcopy(BEAM_SEARCH_CONFIG)
         config_variant.beam_search_config.beam_width = beam_width
         experiment_configs.append(config_variant)
