@@ -2,10 +2,12 @@
 import json
 import sys
 from collections import defaultdict
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import click
+from attr import dataclass
 from datasets import Dataset
 from matplotlib.pyplot import show
 from rich import box
@@ -17,9 +19,20 @@ from rich.text import Text
 from sal.evaluation.evaluate import evaluate_single_dataset
 from sal.evaluation.grader import math_equal
 from sal.evaluation.parser import extract_answer, find_box
+from sal.utils.constants import Benchmark
+from sal.utils.data import BenchmarkMapping
 from sal.utils.logging import setup_logging
 
 setup_logging()
+
+
+@dataclass
+class QuestionAnswer:
+    unique_id: str
+    answer_extracted: str
+    pred_extracted: str
+    is_correct: bool
+    level: str
 
 
 def load_jsonl(path: Path) -> List[Dict[str, Any]]:
@@ -300,17 +313,26 @@ def _wrap_in_boxed(s: str) -> str:
     return r"\boxed{" + s + "}"
 
 
-def _record_level_and_correct(rec: Dict[str, Any]) -> Tuple[str, bool]:
-    level: str = rec["level"]
-    answer: str = rec["answer"]
-    pred: str = rec[ASSUMED_PRED_KEY]
+def _get_question_answer_from_record(rec: Dict[str, Any]) -> QuestionAnswer:
+    level = rec["level"]
+    answer = rec["answer"]
+    unique_id: str = rec["unique_id"]
+    pred = rec[ASSUMED_PRED_KEY]
 
     answer_extracted = extract_answer(_wrap_in_boxed(answer), BENCHMARK)
     pred_extracted = extract_answer(pred, BENCHMARK)
 
     is_correct = math_equal(answer_extracted, pred_extracted)
 
-    return level, is_correct
+    return QuestionAnswer(
+        unique_id, answer_extracted, pred_extracted, is_correct, level
+    )
+
+
+def _shorted_unique_name_math(name: str) -> str:
+    _, subject, idx_with_json = name.split("/")
+    idx = idx_with_json.split(".")[0]
+    return f"{subject}/{idx}"
 
 
 @cli.command(
@@ -328,17 +350,14 @@ def cmd_overview(run_id: str) -> None:
 
     level_to_total: Dict[str, int] = defaultdict(int)
     level_to_correct: Dict[str, int] = defaultdict(int)
-    level_to_correct_indices: Dict[str, List[int]] = defaultdict(list)
-    level_to_incorrect_indices: Dict[str, List[int]] = defaultdict(list)
+    level_to_qa: Dict[str, List[QuestionAnswer]] = defaultdict(list)
 
-    for idx, rec in enumerate(records):
-        level, correct = _record_level_and_correct(rec)
-        level_to_total[level] += 1
-        if correct:
-            level_to_correct[level] += 1
-            level_to_correct_indices[level].append(idx)
-        else:
-            level_to_incorrect_indices[level].append(idx)
+    for rec in records:
+        qa = _get_question_answer_from_record(rec)
+        level_to_total[qa.level] += 1
+        if qa.is_correct:
+            level_to_correct[qa.level] += 1
+        level_to_qa[qa.level].append(qa)
 
     console.print(
         Panel(Text("Run overview", style="bold"), subtitle=f"{run_id}", box=box.ROUNDED)
@@ -363,20 +382,27 @@ def cmd_overview(run_id: str) -> None:
         )
     console.print(summary)
 
+    benchmark_mapping = BenchmarkMapping("math500")
+
     for level in sorted(level_to_total.keys()):
         total = level_to_total[level]
         correct = level_to_correct[level]
         incorrect = total - correct
         title = f"Level: {level}  |  Total: {total}  Correct: {correct}  Incorrect: {incorrect}"
-        correct_idxs = (
-            ", ".join(map(str, level_to_correct_indices[level]))
-            if level_to_correct_indices[level]
-            else ""
+
+        correct_idxs = ", ".join(
+            [
+                benchmark_mapping.get_index(qa.unique_id)
+                for qa in level_to_qa[level]
+                if qa.is_correct
+            ]
         )
-        incorrect_idxs = (
-            ", ".join(map(str, level_to_incorrect_indices[level]))
-            if level_to_incorrect_indices[level]
-            else ""
+        incorrect_idxs = ", ".join(
+            [
+                benchmark_mapping.get_index(qa.unique_id)
+                for qa in level_to_qa[level]
+                if not qa.is_correct
+            ]
         )
 
         idx_table = Table.grid(padding=(0, 1))
@@ -402,54 +428,39 @@ def cmd_overview(run_id: str) -> None:
     is_flag=True,
     help="Show correct answers as well as incorrect ones",
 )
-def question_answer(run_id: str, show_correct: bool) -> None:
+@click.option(
+    "--benchmark",
+    default=Benchmark.MATH500.value,
+    type=click.Choice([b.value for b in Benchmark]),
+    help="Benchmark to use for answer extraction",
+)
+def question_answer(run_id: str, show_correct: bool, benchmark: str) -> None:
     out_file = Path("./output") / run_id / "inference_output.jsonl"
     records = load_jsonl(out_file)
+    benchmark_enum = Benchmark(benchmark)
 
     # Organise incorrect answers by level
-    level_to_incorrect: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    level_to_incorrect: Dict[str, List[QuestionAnswer]] = defaultdict(list)
 
-    for idx, rec in enumerate(records):
-        level = rec["level"]
-        answer = rec["answer"]
-        unique_id: str = rec["unique_id"]
-        # subject: str = rec["subject"]
-        pred = rec[ASSUMED_PRED_KEY]
-
-        answer_extracted = extract_answer(_wrap_in_boxed(answer), BENCHMARK)
-        pred_extracted = extract_answer(pred, BENCHMARK)
-
-        is_correct = math_equal(answer_extracted, pred_extracted)
-
-        level_to_incorrect[level].append(
-            {
-                "idx": idx,
-                "answer_extracted": answer_extracted,
-                "pred_extracted": pred_extracted,
-                "unique_id": unique_id,
-                "level": level,
-                "is_correct": is_correct,
-            }
-        )
+    for rec in records:
+        qa = _get_question_answer_from_record(rec)
+        level_to_incorrect[qa.level].append(qa)
 
     # Print organised by level
     for level in sorted(level_to_incorrect.keys()):
         console.print(f"\n[bold cyan]Level {level}:[/bold cyan]")
-        for item in sorted(
-            level_to_incorrect[level], key=lambda item: item["unique_id"]
-        ):
-            is_correct = item["is_correct"]
-            if is_correct and not show_correct:
+        for qa in sorted(level_to_incorrect[level], key=lambda qa: qa.unique_id):
+            if qa.is_correct and not show_correct:
                 continue
-            color = "green" if is_correct else "red"
-            equality_symbol = "==" if is_correct else "!="
+            color = "green" if qa.is_correct else "red"
+            equality_symbol = "==" if qa.is_correct else "!="
             console.print(
                 Text.assemble(
                     (
-                        f"{item['answer_extracted']} {equality_symbol} {item['pred_extracted']}",
+                        f"{qa.answer_extracted} {equality_symbol} {qa.pred_extracted}",
                         color,
                     ),
-                    (f" {item['unique_id']}", "dim"),
+                    (f" {qa.unique_id}", "dim"),
                 )
             )
 

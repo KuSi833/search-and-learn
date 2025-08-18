@@ -1,6 +1,5 @@
 import pytest
 from datasets import load_dataset
-from matplotlib.pyplot import findobj
 
 from sal.evaluation.parser import extract_answer, find_box
 
@@ -9,6 +8,13 @@ def test_find_box_simple():
     pred_str = "Therefore, the factored form is boxed{(a + 5)(b + 2)}."
     inner = find_box(pred_str)
     assert inner.replace(" ", "") == "(a+5)(b+2)".replace(" ", "")
+
+
+def test_extract_answer_fraction():
+    pred_str = r"The answer is \boxed{\frac{243}{625}}."
+    answer_str = r"\frac{243}{625}"
+    extracted = extract_answer(pred_str, "math")
+    assert extracted == r"\frac{243}{625}"
 
 
 @pytest.mark.slow
@@ -28,24 +34,7 @@ def test_extract_answer_math500_entire_dataset(row):
 
 if __name__ == "__main__":
     ds = load_dataset("HuggingFaceH4/MATH-500", split="test")
-    for row in ds:
-        solution = row["solution"]
-        answer = row["answer"]
-
-        # pred = find_box(solution)
-        original = find_box(solution)
-        pred = extract_answer(solution, "math")
-
-        if pred != answer:
-            print(f"{pred} {answer}   original: {original}")
-
-            answer_boxed = extract_answer(r"\boxed{" + answer + "}", "math")
-            print(pred == answer_boxed)
-    # for solution in solutions:
-    #     try:
-    #         pred = extract_answer(solution, "math")
-    #     except Exception as e:
-    #         pytest.fail(
-    #             f"extract_answer failed on example with prompt: {solution[:120]}... Error: {e}"
-    #         )
-    #     assert answer == pred
+    for idx, row in enumerate(ds):
+        print(
+            f"{idx}: {row['unique_id']}",
+        )

@@ -56,7 +56,8 @@ if __name__ == "__main__":
     )
     # PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
-    WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
+    # WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
+    WANDB_CONFIG = WandbConfig(tags=set([]))
 
     # DATASET_CONFIG = DatasetConfig(num_samples=100)
     # DATASET_CONFIG = DatasetConfig(dataset_indicies=get_math500_indices(subset="hard"))

@@ -10,13 +10,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 
 from datasets import Dataset, load_dataset
 
 from sal.config import DatasetConfig
+from sal.utils.constants import DATASETS
 
 logger = logging.getLogger()
+
+
+class BenchmarkMapping:
+    """Simple mapping cache for benchmark datasets."""
+
+    def __init__(self, dataset_name: str):
+        self.file = DATASETS[dataset_name]["file"]
+        with open(self.file, "r") as f:
+            data = json.load(f)
+        self._id_to_unique = data
+        self._unique_to_id = {v: k for k, v in data.items()}
+
+    def get_unique_id(self, index: str) -> str:
+        """Get unique_id from index."""
+        return self._id_to_unique[index]
+
+    def get_index(self, unique_id: str) -> str:
+        """Get index from unique_id."""
+        return self._unique_to_id[unique_id]
 
 
 def get_dataset(config: DatasetConfig) -> Dataset:
