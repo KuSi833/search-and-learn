@@ -5,17 +5,15 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import click
+from datasets import Dataset
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from sal.utils.qwen_math_parser import (
-    extract_answer,
-    find_box,
-    math_equal,
-)
+from sal.config import ExperimentConfig
+from sal.utils.score import score
 
 
 def load_jsonl(path: Path) -> List[Dict[str, Any]]:
@@ -505,6 +503,47 @@ def cmd_overview(run_id: str) -> None:
             Text(incorrect_idxs if incorrect_idxs else "[]", style="red"),
         )
         console.print(Panel(idx_table, title=title, box=box.SQUARE))
+
+
+@cli.command(name="question-answer")
+@click.option(
+    "--run-id", required=True, type=str, help="W&B run id (directory under ./output)"
+)
+def question_answer(run_id: str) -> None:
+    print("WTF")
+    out_file = Path("./output") / run_id / "inference_output.jsonl"
+
+    jsonl_data = list(load_jsonl(out_file))
+    dataset = Dataset.from_list(jsonl_data)
+
+    # print(dataset)
+
+    # def parse_gt(x):
+    #     x["gt_cot"], x["gt"] = parse_ground_truth(x, "math")
+    #     return x
+
+    # dataset = dataset.map(
+    #     parse_gt,
+    #     desc="Parsing ground truth",
+    #     num_proc=4,
+    #     load_from_cache_file=False,
+    # )
+
+    experiment_config = ExperimentConfig()
+    dataset = score(dataset, experiment_config, 4)
+
+    # for idx, rec in enumerate(records):
+    #     unique_id = rec.get("unique_id")
+    #     answer = rec.get("answer")
+    #     assumed_text = rec.get("pred_weighted@4")
+    #     if isinstance(assumed_text, str):
+    #         inner = find_box(assumed_text)
+    #         answer_map = extract_answer_map()
+    #         # print(inner)
+    #         print(f"{unique_id:40} {assumed_text} -> {inner} : {answer}")
+    # extracted = extract_answer(assumed_text, "math")
+    # exit()
+    #     extracted = inner if inner else
 
 
 if __name__ == "__main__":
