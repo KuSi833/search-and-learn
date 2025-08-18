@@ -435,7 +435,9 @@ def question_answer(run_id: str, show_correct: bool) -> None:
     # Print organised by level
     for level in sorted(level_to_incorrect.keys()):
         console.print(f"\n[bold cyan]Level {level}:[/bold cyan]")
-        for item in level_to_incorrect[level]:
+        for item in sorted(
+            level_to_incorrect[level], key=lambda item: item["unique_id"]
+        ):
             is_correct = item["is_correct"]
             if is_correct and not show_correct:
                 continue
@@ -447,7 +449,7 @@ def question_answer(run_id: str, show_correct: bool) -> None:
                         f"{item['answer_extracted']} {equality_symbol} {item['pred_extracted']}",
                         color,
                     ),
-                    (f" {item['idx'], item['unique_id']}", "dim"),
+                    (f" {item['unique_id']}", "dim"),
                 )
             )
 

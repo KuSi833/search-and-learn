@@ -50,7 +50,7 @@ class RemoteConfig:
             "merlin",
         }
     )
-    remotes_to_exclude: Set[str] = field(default_factory=lambda: set())
+    # remotes_to_exclude: Set[str] = field(default_factory=lambda: set())
 
     def get_remotes_to_exclude(self) -> str:
         return ",".join(self.remotes_to_exclude)
