@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Dict, Literal, Set
 
 # Curated MATH-500 subsets. Extend as needed.
-Math500Subset = Literal["hard", "crash_debug"]
+Math500Subset = Literal["hard", "crash_debug", "crash_debug2"]
 _MATH500_SUBSETS: Dict[Math500Subset, Set[int]] = {
     "hard": {
         9,
@@ -104,6 +104,7 @@ _MATH500_SUBSETS: Dict[Math500Subset, Set[int]] = {
         400,
         401,
     },
+    "crash_debug2": {100, 101, 102, 103},
 }
 
 
