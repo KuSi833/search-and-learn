@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 import json
-import os
 
 import click
 from datasets import load_dataset
+from rich.console import Console
 
-from sal.utils.constants import DATASETS
+from sal.utils.constants import BENCHMARK_MAPPINGS_ROOT, DATASETS
+
+console = Console()
 
 
 def generate_mapping(dataset_name: str):
@@ -23,11 +25,12 @@ def generate_mapping(dataset_name: str):
 
     mapping = {str(idx): row[unique_id_key] for idx, row in enumerate(ds)}
 
-    os.makedirs(os.path.dirname(config["file"]), exist_ok=True)
-    with open(config["file"], "w") as f:
+    output_file = BENCHMARK_MAPPINGS_ROOT / config["hf_name"] / "mapping.json"
+    output_file.parent.mkdir(exist_ok=True, parents=True)
+    with open(output_file, "w") as f:
         json.dump(mapping, f, indent=2)
 
-    print(f"Saved mapping to {config['file']}")
+    console.print(f"Saved mapping to [yellow]{output_file}")
 
 
 @click.command()

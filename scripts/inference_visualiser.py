@@ -7,19 +7,15 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import click
-from attr import dataclass
-from datasets import Dataset
-from matplotlib.pyplot import show
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from sal.evaluation.evaluate import evaluate_single_dataset
 from sal.evaluation.grader import math_equal
 from sal.evaluation.parser import extract_answer, find_box
-from sal.utils.constants import Benchmark
+from sal.utils.constants import BENCHMARK_SUBSETS_ROOT, DATASETS, Benchmark
 from sal.utils.data import BenchmarkMapping
 from sal.utils.logging import setup_logging
 
@@ -486,7 +482,7 @@ def extract_incorrect(run_id: str, benchmark: str, name: str) -> None:
     incorrect_unique_ids.sort()
 
     # Save to JSON file
-    output_dir = Path("data/benchmark_subsets") / benchmark_enum.value
+    output_dir = BENCHMARK_SUBSETS_ROOT / DATASETS[benchmark_enum.value]["hf_name"]
     output_dir.mkdir(parents=True, exist_ok=True)
     output_file = output_dir / f"{name}.json"
 

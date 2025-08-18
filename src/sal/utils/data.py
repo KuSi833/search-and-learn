@@ -16,7 +16,7 @@ import logging
 from datasets import Dataset, load_dataset
 
 from sal.config import DatasetConfig
-from sal.utils.constants import DATASETS
+from sal.utils.constants import BENCHMARK_MAPPINGS_ROOT, DATASETS
 
 logger = logging.getLogger()
 
@@ -25,7 +25,8 @@ class BenchmarkMapping:
     """Simple mapping cache for benchmark datasets."""
 
     def __init__(self, dataset_name: str):
-        self.file = DATASETS[dataset_name]["file"]
+        config = DATASETS[dataset_name]
+        self.file = BENCHMARK_MAPPINGS_ROOT / config["hf_name"] / "mapping.json"
         with open(self.file, "r") as f:
             data = json.load(f)
         self._id_to_unique = data
