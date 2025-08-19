@@ -424,7 +424,7 @@ def cmd_overview(run_id: str) -> None:
     is_flag=True,
     help="Show correct answers as well as incorrect ones",
 )
-def question_answer(run_id: str, show_correct: bool, benchmark: str) -> None:
+def question_answer(run_id: str, show_correct: bool) -> None:
     out_file = Path("./output") / run_id / "inference_output.jsonl"
     records = load_jsonl(out_file)
 
