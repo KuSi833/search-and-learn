@@ -1002,6 +1002,189 @@ def _summarise_uncertainty(metrics: List[Dict[str, Any]], labels: List[bool]) ->
     console.print(ft_table)
 
 
+def _get_confidence(sample: Dict[str, Any], metric: str) -> float:
+    """Return a scalar confidence for a sample using existing metrics.
+
+    Falls back to 0.0 if unavailable.
+    """
+    try:
+        m = _compute_uncertainty_metrics(sample)
+        v = m.get(metric, 0.0)
+        return float(v) if v is not None else 0.0
+    except Exception:
+        return 0.0
+
+
+def _is_correct_record(rec: Dict[str, Any]) -> bool:
+    qa = _get_question_answer_from_record(rec)
+    return bool(qa.is_correct)
+
+
+def _load_subset_ids(path: str) -> List[str]:
+    """Load a subset JSON that may be a list of ids or a dict with unique_ids."""
+    with open(path, "r") as f:
+        obj = json.load(f)
+    if isinstance(obj, list):
+        return [str(x) for x in obj]
+    if isinstance(obj, dict):
+        ids = obj.get("unique_ids")
+        if isinstance(ids, list):
+            return [str(x) for x in ids]
+    return []
+
+
+@cli.command(
+    name="fuse-confidence",
+    help=(
+        "Offline confidence-based fusion between two runs on the intersection (or subset). "
+        "For each sample, pick the run with higher confidence (metric) and report fused accuracy."
+    ),
+)
+@click.option("--run-a-id", required=True, type=str, help="Baseline/original run id")
+@click.option("--run-b-id", required=True, type=str, help="Alternative run id")
+@click.option(
+    "--metric",
+    default="group_top_frac",
+    type=click.Choice(
+        [
+            "agreement_ratio",
+            "entropy_freq",
+            "entropy_weighted",
+            "prm_margin",
+            "prm_top_frac",
+            "group_top_frac",
+            "prm_std",
+            "prm_mean",
+        ]
+    ),
+    help="Confidence metric used to select per-sample",
+)
+@click.option(
+    "--delta",
+    default=0.0,
+    type=float,
+    help=(
+        "Optional minimum margin required for switching from run A to run B (B_conf > A_conf + delta)."
+    ),
+)
+@click.option(
+    "--min-b-conf",
+    default=None,
+    type=float,
+    help=(
+        "Optional absolute confidence threshold for run B; switch only if B_conf >= min_b_conf."
+    ),
+)
+@click.option(
+    "--max-a-conf",
+    default=None,
+    type=float,
+    help=(
+        "Optional absolute confidence cap for run A; switch only if A_conf <= max_a_conf."
+    ),
+)
+@click.option(
+    "--subset",
+    type=str,
+    default=None,
+    help=(
+        "Optional path to subset JSON; may be a list of unique_ids or an object with unique_ids."
+    ),
+)
+def fuse_confidence(
+    run_a_id: str,
+    run_b_id: str,
+    metric: str,
+    delta: float,
+    min_b_conf: Optional[float],
+    max_a_conf: Optional[float],
+    subset: Optional[str],
+) -> None:
+    file_a = Path("./output") / run_a_id / "inference_output.jsonl"
+    file_b = Path("./output") / run_b_id / "inference_output.jsonl"
+    recs_a = {rec["unique_id"]: rec for rec in load_jsonl(file_a)}
+    recs_b = {rec["unique_id"]: rec for rec in load_jsonl(file_b)}
+
+    if subset is not None:
+        ids = set(_load_subset_ids(subset))
+        candidate_ids = [uid for uid in ids if uid in recs_a and uid in recs_b]
+    else:
+        candidate_ids = list(set(recs_a.keys()) & set(recs_b.keys()))
+
+    if not candidate_ids:
+        console.print(Text("No overlapping unique_ids to fuse", style="red"))
+        sys.exit(1)
+
+    # Acc helper
+    def _acc(records_map: Dict[str, Dict[str, Any]], ids: List[str]) -> float:
+        return (
+            100.0
+            * sum(1 for uid in ids if _is_correct_record(records_map[uid]))
+            / len(ids)
+            if ids
+            else 0.0
+        )
+
+    # Baselines on intersection
+    acc_a = _acc(recs_a, candidate_ids)
+    acc_b = _acc(recs_b, candidate_ids)
+
+    # Build fused selection
+    fused_correct = 0
+    chosen_b = 0
+    flips_pos = 0  # F->T relative to A
+    flips_neg = 0  # T->F relative to A
+
+    for uid in candidate_ids:
+        ra = recs_a[uid]
+        rb = recs_b[uid]
+        ca = _get_confidence(ra, metric)
+        cb = _get_confidence(rb, metric)
+
+        choose_b = cb > (ca + delta)
+        if choose_b and (min_b_conf is not None) and not (cb >= float(min_b_conf)):
+            choose_b = False
+        if choose_b and (max_a_conf is not None) and not (ca <= float(max_a_conf)):
+            choose_b = False
+
+        rec = rb if choose_b else ra
+        if choose_b:
+            chosen_b += 1
+
+        a_ok = _is_correct_record(ra)
+        fused_ok = _is_correct_record(rec)
+        fused_correct += 1 if fused_ok else 0
+
+        if (not a_ok) and fused_ok:
+            flips_pos += 1
+        elif a_ok and (not fused_ok):
+            flips_neg += 1
+
+    acc_fused = 100.0 * fused_correct / len(candidate_ids)
+
+    # Report
+    table = Table(title="Confidence-based fusion (intersection)", box=box.SIMPLE_HEAVY)
+    table.add_column("Metric", style="bold")
+    table.add_column("Value", justify="right")
+    table.add_row("Run A", run_a_id)
+    table.add_row("Run B", run_b_id)
+    table.add_row("Confidence", metric)
+    table.add_row("Delta", f"{delta:.4f}")
+    if min_b_conf is not None:
+        table.add_row("min B conf", f"{float(min_b_conf):.4f}")
+    if max_a_conf is not None:
+        table.add_row("max A conf", f"{float(max_a_conf):.4f}")
+    table.add_row("Samples", str(len(candidate_ids)))
+    table.add_row("Chosen from B", str(chosen_b))
+    table.add_row("Accuracy A", f"{acc_a:.1f}%")
+    table.add_row("Accuracy B", f"{acc_b:.1f}%")
+    table.add_row("Accuracy fused", f"{acc_fused:.1f}%")
+    table.add_row("F->T vs A", str(flips_pos))
+    table.add_row("T->F vs A", str(flips_neg))
+    table.add_row("Net gain (F->T - T->F)", str(flips_pos - flips_neg))
+    console.print(table)
+
+
 @cli.command(name="uncertainty", help="Evaluate uncertainty heuristics over a run")
 @click.option(
     "--run-id", required=True, type=str, help="W&B run id (directory under ./output)"
