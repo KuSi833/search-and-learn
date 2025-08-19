@@ -61,10 +61,10 @@ if __name__ == "__main__":
 
     # DATASET_CONFIG = DatasetConfig(num_samples=100)
     # DATASET_CONFIG = DatasetConfig(dataset_indicies=get_math500_indices(subset="hard"))
-    DATASET_CONFIG = DatasetConfig(
-        dataset_indicies=get_math500_indices(subset="bon_hard_2")
-    )
-    # DATASET_CONFIG = DatasetConfig(num_samples=500)  # FULL DATASET
+    # DATASET_CONFIG = DatasetConfig(
+    #     dataset_indicies=get_math500_indices(subset="bon_hard_2")
+    # )
+    DATASET_CONFIG = DatasetConfig(num_samples=500)  # FULL DATASET
     # DATASET_CONFIG = DatasetConfig(
     #     dataset_name="HuggingFaceH4/aime_2024"
     # )  # FULL DATASET
@@ -149,7 +149,8 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    for n in [8, 16, 32, 64]:
+    for n in [8]:
+        # for n in [8, 16, 32, 64]:
         config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
         config_variant.search_config.n = n
         experiment_configs.append(config_variant)

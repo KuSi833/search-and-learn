@@ -2,9 +2,9 @@
 import json
 import sys
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import click
 from rich import box
@@ -106,11 +106,15 @@ def print_report(
     unique_id: str = sample["unique_id"]
     subject: str = sample["subject"]
     level: int = sample["level"]
-    pred_text: str = sample["pred"]  # prediction text
+    # The raw chosen completion text from the search method (e.g. best-of-n/beam)
+    pred_text: str = sample["pred"]
     pred = sample[ASSUMED_PRED_KEY]  # just the prediction
-    # completions: List[str] = sample["completions"]
-    # scores: List[List[float]] = sample.get("scores", [])
-    # completion_tokens: Any = sample["completion_tokens"]
+    # Optional fields produced by the search + scoring pipeline
+    completions: List[str] = sample["completions"]
+    # PRM score trajectories per completion (list of floats per completion)
+    scores: List[List[float]] = sample["scores"]
+    # Final per-completion PRM scores computed during scoring (aggregate "last")
+    agg_scores: Optional[List[float]] = sample["agg_scores"]
 
     SHOW_PRED_TEXT = False
     SHOW_SOLUTION_TEXT = False
@@ -126,8 +130,6 @@ def print_report(
     answer_extracted = extract_answer(_wrap_in_boxed(answer), BENCHMARK)
     pred_raw = find_box(pred_text)
     pred_extracted = extract_answer(pred, BENCHMARK)
-
-    print(sample[ASSUMED_PRED_KEY])
 
     assumed_correct = math_equal(answer_extracted, pred_extracted)
 
@@ -159,6 +161,57 @@ def print_report(
         Text(str(assumed_correct), style=("green" if assumed_correct else "red")),
     )
     console.print(Panel(extracted_table, box=box.ROUNDED))
+
+    # Per-completion summary: extracted final answer, final PRM score, and correctness
+    # - Final PRM score: prefer pre-computed `agg_scores` (added during scoring),
+    #   otherwise fall back to the last value of each score path.
+    if completions:
+        completions_table = Table(title="Per-completion summary", box=box.SIMPLE_HEAVY)
+        completions_table.add_column("#", style="bold cyan", justify="right")
+        completions_table.add_column("Chosen", justify="center")
+        completions_table.add_column("Final answer (extracted)")
+        completions_table.add_column("PRM final", justify="right")
+        completions_table.add_column("Correct", justify="center")
+
+        # Compute per-completion extracted answers and correctness
+        extracted_answers: List[str] = [
+            extract_answer(c or "", BENCHMARK) for c in completions
+        ]
+
+        # Resolve final PRM scores per completion
+        final_scores: List[float] = []
+        if isinstance(agg_scores, list) and len(agg_scores) == len(completions):
+            try:
+                final_scores = [float(s) for s in agg_scores]
+            except Exception:
+                final_scores = []
+        if not final_scores:
+            # Fallback to last score from each score trajectory
+            try:
+                final_scores = [
+                    (float(s[-1]) if isinstance(s, list) and len(s) > 0 else 0.0)
+                    for s in scores
+                ]
+            except Exception:
+                final_scores = [0.0 for _ in completions]
+
+        # Mark the search-selected completion if we can find it
+        chosen_idx = _index_of_first(completions, pred_text)
+
+        for i, (ans, fscore) in enumerate(zip(extracted_answers, final_scores)):
+            is_correct = math_equal(answer_extracted, ans)
+            is_chosen = i == chosen_idx
+            completions_table.add_row(
+                str(i + 1),
+                Text("✓" if is_chosen else "", style=("yellow" if is_chosen else "")),
+                ans,
+                Text(f"{fscore:+.4f}", style=_score_style(fscore)),
+                Text(
+                    "✓" if is_correct else "✗", style=("green" if is_correct else "red")
+                ),
+            )
+
+        console.print(completions_table)
 
     if SHOW_PRED_TEXT:
         console.print(Panel(pred_text, title="Chosen prediction (raw)", style="yellow"))
@@ -232,9 +285,10 @@ def print_report(
             else:
                 steps_table.add_row(str(i + 1), s_text, "-", "-", "-", "-", "-")
 
-        note: Optional[str] = None
-        if step_scores and len(steps) != len(step_scores):
-            note = f"Note: steps ($${len(steps)}$$) and scores ($${len(step_scores)}$$) lengths differ; showing first $${n_rows}$$."
+        # If needed, we can display a subtitle explaining length mismatch between steps and scores
+        # note: Optional[str] = None
+        # if step_scores and len(steps) != len(step_scores):
+        #     note = f"Note: steps ($${len(steps)}$$) and scores ($${len(step_scores)}$$) lengths differ; showing first $${n_rows}$$."
         # Uncomment to print solution steps
         # console.print(
         #     Panel(steps_table, title="Solution steps", subtitle=note, box=box.ROUNDED)
