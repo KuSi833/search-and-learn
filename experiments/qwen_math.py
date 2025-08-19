@@ -143,8 +143,9 @@ if __name__ == "__main__":
 
     for n in [8]:
         # for n in [8, 16, 32, 64]:
+        config_variant = copy.deepcopy(BEAM_SEARCH_CONFIG)
         # config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
-        config_variant = copy.deepcopy(DVTS_CONFIG)
+        # config_variant = copy.deepcopy(DVTS_CONFIG)
         config_variant.search_config.n = n
         experiment_configs.append(config_variant)
 
