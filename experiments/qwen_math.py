@@ -63,8 +63,11 @@ if __name__ == "__main__":
     # WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
     WANDB_CONFIG = WandbConfig(tags=set(["fusion"]))
 
+    # SUBSET_FILE = Path(
+    #     "/data/km1124/search-and-learn/data/benchmark_subsets/HuggingFaceH4/MATH-500/5lvoti3i/coverage/20.json"
+    # )
     SUBSET_FILE = Path(
-        "/data/km1124/search-and-learn/data/benchmark_subsets/HuggingFaceH4/MATH-500/5lvoti3i/coverage/20.json"
+        "/data/km1124/search-and-learn/data/benchmark_subsets/HuggingFaceH4/MATH-500/5lvoti3i/coverage/10.json"
     )
     DATASET_CONFIG = DatasetConfig(
         dataset_name="HuggingFaceH4/MATH-500",
@@ -141,12 +144,17 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    for n in [8]:
-        # for n in [8, 16, 32, 64]:
-        config_variant = copy.deepcopy(BEAM_SEARCH_CONFIG)
-        # config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
-        # config_variant = copy.deepcopy(DVTS_CONFIG)
-        config_variant.search_config.n = n
+    # for n in [8]:
+    #     # for n in [8, 16, 32, 64]:
+    #     config_variant = copy.deepcopy(BEAM_SEARCH_CONFIG)
+    #     # config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
+    #     # config_variant = copy.deepcopy(DVTS_CONFIG)
+    #     config_variant.search_config.n = n
+    #     experiment_configs.append(config_variant)
+
+    for config in [BEST_OF_N_CONFIG, DVTS_CONFIG, BEAM_SEARCH_CONFIG]:
+        config_variant = copy.deepcopy(config)
+        config_variant.search_config.n = 8
         experiment_configs.append(config_variant)
 
     # for beam_width in [16, 8, 4]:
