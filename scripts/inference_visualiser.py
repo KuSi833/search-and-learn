@@ -932,7 +932,8 @@ def _summarise_uncertainty(metrics: List[Dict[str, Any]], labels: List[bool]) ->
     # Coverage vs recall-of-incorrect for each metric
     cov_table = Table(title="Coverage vs recall of incorrect", box=box.SIMPLE_HEAVY)
     cov_table.add_column("Metric", style="bold")
-    for p in [10, 20, 30, 40, 50]:
+    coverage_pcts = [10, 20, 30, 40, 50]
+    for p in coverage_pcts:
         cov_table.add_column(f"{p}% cov", justify="right")
 
     total_incorrect = sum(1 for y in labels if not y)
@@ -954,7 +955,7 @@ def _summarise_uncertainty(metrics: List[Dict[str, Any]], labels: List[bool]) ->
         rows: List[str] = []
         idxs = list(range(total))
         idxs.sort(key=lambda i: vals[i], reverse=not low_is_uncertain)
-        for p in [10, 20, 30, 40, 50]:
+        for p in coverage_pcts:
             k = max(1, int(round(total * (p / 100.0))))
             flagged = set(idxs[:k])
             incorrect_flagged = sum(1 for i in flagged if not labels[i])
@@ -966,6 +967,39 @@ def _summarise_uncertainty(metrics: List[Dict[str, Any]], labels: List[bool]) ->
             rows.append(f"{recall_incorrect:.1f}")
         cov_table.add_row(f, *rows)
     console.print(cov_table)
+
+    # F:T ratio table with coverage percentages as columns
+    ft_table = Table(title="F:T ratio within coverage", box=box.SIMPLE_HEAVY)
+    ft_table.add_column("Metric", style="bold")
+    for p in coverage_pcts:
+        ft_table.add_column(f"{p}% cov", justify="center")
+
+    for f in fields:
+        vals = [m.get(f, 0.0) for m in metrics]
+        corr_vals = [v for v, y in zip(vals, labels) if y]
+        inc_vals = [v for v, y in zip(vals, labels) if not y]
+        mean_corr = sum(corr_vals) / len(corr_vals) if corr_vals else 0.0
+        mean_inc = sum(inc_vals) / len(inc_vals) if inc_vals else 0.0
+        low_is_uncertain = mean_corr > mean_inc
+
+        idxs = list(range(total))
+        idxs.sort(key=lambda i: vals[i], reverse=not low_is_uncertain)
+
+        row_data = []
+        for p in coverage_pcts:
+            k = max(1, int(round(total * (p / 100.0))))
+            flagged = idxs[:k]
+
+            f_cnt = sum(1 for i in flagged if not labels[i])
+            t_cnt = sum(1 for i in flagged if labels[i])
+            denom = f_cnt + t_cnt
+            pct_f = 100.0 * f_cnt / denom if denom > 0 else 0.0
+
+            row_data.append(f"{f_cnt}:{t_cnt} ({pct_f:.1f}%)")
+
+        ft_table.add_row(f, *row_data)
+
+    console.print(ft_table)
 
 
 @cli.command(name="uncertainty", help="Evaluate uncertainty heuristics over a run")

@@ -152,9 +152,10 @@ if __name__ == "__main__":
     #     config_variant.search_config.n = n
     #     experiment_configs.append(config_variant)
 
-    for config in [BEST_OF_N_CONFIG, DVTS_CONFIG, BEAM_SEARCH_CONFIG]:
+    # for config in [BEST_OF_N_CONFIG, DVTS_CONFIG, BEAM_SEARCH_CONFIG]:
+    for config in [BEST_OF_N_CONFIG]:
         config_variant = copy.deepcopy(config)
-        config_variant.search_config.n = 8
+        config_variant.search_config.n = 16
         experiment_configs.append(config_variant)
 
     # for beam_width in [16, 8, 4]:
