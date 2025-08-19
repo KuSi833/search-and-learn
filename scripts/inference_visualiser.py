@@ -766,6 +766,32 @@ def compare_rerun(orig_run_id: str, new_run_id: str, subset: Optional[str]) -> N
         )
     )
 
+    # Accuracies: original full, rerun subset, and fused final
+    def _acc(records_map: Dict[str, Dict[str, Any]], ids: List[str]) -> float:
+        return (
+            100.0 * sum(1 for uid in ids if is_correct(records_map[uid])) / len(ids)
+            if ids
+            else 0.0
+        )
+
+    orig_all_ids = list(orig_records.keys())
+    acc_orig_full = _acc(orig_records, orig_all_ids)
+    acc_new_subset = _acc(new_records, candidate_ids)
+
+    fused_correct = 0
+    for uid in orig_all_ids:
+        rec = new_records.get(uid) or orig_records[uid]
+        fused_correct += 1 if is_correct(rec) else 0
+    acc_fused = 100.0 * fused_correct / len(orig_all_ids) if orig_all_ids else 0.0
+
+    acc_table = Table(title="Accuracies", box=box.SIMPLE_HEAVY)
+    acc_table.add_column("Metric", style="bold")
+    acc_table.add_column("Value", justify="right")
+    acc_table.add_row("Original (full dataset)", f"{acc_orig_full:.1f}%")
+    acc_table.add_row("Re-run (subset only)", f"{acc_new_subset:.1f}%")
+    acc_table.add_row("Final fused (new on subset, else original)", f"{acc_fused:.1f}%")
+    console.print(acc_table)
+
 
 def _safe_entropy(probs: List[float]) -> float:
     probs = [p for p in probs if p > 0]
