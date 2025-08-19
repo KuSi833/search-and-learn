@@ -108,17 +108,6 @@ if __name__ == "__main__":
     #     wandb_config=WANDB_CONFIG,
     # )
 
-    # DVTS_CONFIG = ExperimentConfig(
-    #     approach="dvts",
-    #     custom_chat_template=None,
-    #     search_config=SearchConfig(
-    #         n=4,
-    #         # search_batch_size=10,
-    #         search_batch_size=50,
-    #     ),
-    #     wandb_config=WANDB_CONFIG,
-    # )
-
     DVTS_CONFIG = ExperimentConfig(
         approach="dvts",
         custom_chat_template=None,
@@ -154,7 +143,8 @@ if __name__ == "__main__":
 
     for n in [8]:
         # for n in [8, 16, 32, 64]:
-        config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
+        # config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
+        config_variant = copy.deepcopy(DVTS_CONFIG)
         config_variant.search_config.n = n
         experiment_configs.append(config_variant)
 
