@@ -537,7 +537,9 @@ def extract_incorrect(run_id: str, benchmark: str, name: str) -> None:
     incorrect_unique_ids.sort()
 
     # Save to JSON file
-    output_dir = BENCHMARK_SUBSETS_ROOT / DATASETS[benchmark_enum.value]["hf_name"]
+    output_dir = (
+        BENCHMARK_SUBSETS_ROOT / DATASETS[benchmark_enum.value]["hf_name"] / run_id
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     output_file = output_dir / f"{name}.json"
 
@@ -548,6 +550,198 @@ def extract_incorrect(run_id: str, benchmark: str, name: str) -> None:
         Text.assemble(
             f"Saved {len(incorrect_unique_ids)} incorrect unique_ids to ",
             (str(output_file), "yellow"),
+        )
+    )
+
+
+def _metric_direction_low_is_uncertain(values: List[float], labels: List[bool]) -> bool:
+    """Infer whether low values mean uncertainty by comparing means by class."""
+    corr_vals = [v for v, y in zip(values, labels) if y]
+    inc_vals = [v for v, y in zip(values, labels) if not y]
+    mean_corr = sum(corr_vals) / len(corr_vals) if corr_vals else 0.0
+    mean_inc = sum(inc_vals) / len(inc_vals) if inc_vals else 0.0
+    return mean_corr > mean_inc
+
+
+def _select_uncertain_indices(
+    records: List[Dict[str, Any]], coverage_pct: float, metric_name: str
+) -> List[int]:
+    metrics_list: List[Dict[str, Any]] = []
+    labels: List[bool] = []
+    for rec in records:
+        qa = _get_question_answer_from_record(rec)
+        labels.append(bool(qa.is_correct))
+        metrics_list.append(_compute_uncertainty_metrics(rec))
+
+    vals = [m.get(metric_name, 0.0) for m in metrics_list]
+    low_is_uncertain = _metric_direction_low_is_uncertain(vals, labels)
+
+    idxs = list(range(len(records)))
+    # sort by increasing (low uncertain) or decreasing (high uncertain)
+    idxs.sort(key=lambda i: vals[i], reverse=not low_is_uncertain)
+    k = max(1, int(round(len(records) * (coverage_pct / 100.0))))
+    return idxs[:k]
+
+
+@cli.command(
+    name="export-uncertain",
+    help="Export unique_ids for the top coverage%% most uncertain questions",
+)
+@click.option(
+    "--run-id", required=True, type=str, help="W&B run id (directory under ./output)"
+)
+@click.option(
+    "--coverage",
+    required=True,
+    type=float,
+    help="Percentage coverage to export (e.g. 20 for top 20%%)",
+)
+@click.option(
+    "--metric",
+    default="agreement_ratio",
+    type=click.Choice(
+        [
+            "agreement_ratio",
+            "entropy_freq",
+            "entropy_weighted",
+            "prm_margin",
+            "prm_top_frac",
+            "group_top_frac",
+            "prm_std",
+            "prm_mean",
+        ]
+    ),
+    help="Uncertainty metric to rank by",
+)
+@click.option(
+    "--benchmark",
+    default=Benchmark.MATH500.value,
+    type=click.Choice([b.value for b in Benchmark]),
+    help="Benchmark to use for saving subset",
+)
+@click.option(
+    "--name",
+    required=False,
+    default=None,
+    type=str,
+    help="Optional custom name; default path is <hf_name>/<run_id>/<coverage>.json",
+)
+def export_uncertain(
+    run_id: str, coverage: float, metric: str, benchmark: str, name: Optional[str]
+) -> None:
+    out_file = Path("./output") / run_id / "inference_output.jsonl"
+    records = load_jsonl(out_file)
+    if not records:
+        console.print(Text(f"No records found in {out_file}", style="red"))
+        sys.exit(1)
+
+    selected = _select_uncertain_indices(records, coverage, metric)
+    unique_ids = [records[i]["unique_id"] for i in selected]
+
+    benchmark_enum = Benchmark(benchmark)
+    hf_name = DATASETS[benchmark_enum.value]["hf_name"]
+    output_root = BENCHMARK_SUBSETS_ROOT / hf_name / run_id / "coverage"
+    if name is None:
+        coverage_str = (
+            str(int(coverage))
+            if abs(coverage - round(coverage)) < 1e-9
+            else str(coverage)
+        )
+        output_file = output_root / f"{coverage_str}.json"
+    else:
+        output_file = output_root / f"{name}.json"
+    output_root.mkdir(parents=True, exist_ok=True)
+
+    with open(output_file, "w") as f:
+        json.dump(sorted(unique_ids), f, indent=2)
+
+    header = Table.grid(padding=(0, 1))
+    header.add_column(style="bold cyan")
+    header.add_column()
+    header.add_row("Run", run_id)
+    header.add_row("Metric", metric)
+    header.add_row("Coverage", f"{coverage:.1f}%")
+    header.add_row("Exported", str(len(unique_ids)))
+    header.add_row("Saved to", str(output_file))
+    console.print(Panel(header, title="Export uncertain subset", box=box.ROUNDED))
+
+
+@cli.command(
+    name="compare-rerun",
+    help="Compare correctness transitions (T->T, T->F, F->T, F->F) between two runs",
+)
+@click.option("--orig-run-id", required=True, type=str, help="Original run id")
+@click.option("--new-run-id", required=True, type=str, help="Re-run id")
+@click.option(
+    "--subset",
+    type=str,
+    default=None,
+    help="Optional path to subset JSON with unique_ids; if omitted, uses intersection",
+)
+def compare_rerun(orig_run_id: str, new_run_id: str, subset: Optional[str]) -> None:
+    orig_file = Path("./output") / orig_run_id / "inference_output.jsonl"
+    new_file = Path("./output") / new_run_id / "inference_output.jsonl"
+    orig_records = {rec["unique_id"]: rec for rec in load_jsonl(orig_file)}
+    new_records = {rec["unique_id"]: rec for rec in load_jsonl(new_file)}
+
+    if subset is not None:
+        with open(subset, "r") as f:
+            ids = set(json.load(f))
+        candidate_ids = [
+            uid for uid in ids if uid in orig_records and uid in new_records
+        ]
+    else:
+        candidate_ids = list(set(orig_records.keys()) & set(new_records.keys()))
+
+    if not candidate_ids:
+        console.print(Text("No overlapping unique_ids to compare", style="red"))
+        sys.exit(1)
+
+    # Compute correctness per unique_id on both runs
+    def is_correct(rec: Dict[str, Any]) -> bool:
+        qa = _get_question_answer_from_record(rec)
+        return bool(qa.is_correct)
+
+    t_t: List[str] = []
+    t_f: List[str] = []
+    f_t: List[str] = []
+    f_f: List[str] = []
+
+    for uid in sorted(candidate_ids):
+        a = is_correct(orig_records[uid])
+        b = is_correct(new_records[uid])
+        if a and b:
+            t_t.append(uid)
+        elif a and not b:
+            t_f.append(uid)
+        elif (not a) and b:
+            f_t.append(uid)
+        else:
+            f_f.append(uid)
+
+    total = len(candidate_ids)
+    table = Table(title="Correctness transitions", box=box.SIMPLE_HEAVY)
+    table.add_column("Transition", style="bold")
+    table.add_column("Count", justify="right")
+    table.add_column("% of subset", justify="right")
+    for name, ids in [
+        ("T -> T", t_t),
+        ("T -> F (bad)", t_f),
+        ("F -> T (awesome)", f_t),
+        ("F -> F", f_f),
+    ]:
+        pct = (100.0 * len(ids) / total) if total > 0 else 0.0
+        table.add_row(name, str(len(ids)), f"{pct:.1f}")
+    console.print(table)
+
+    console.print(
+        Text.assemble(
+            "Subset size ",
+            (str(total), "bold"),
+            "; ",
+            "Net gain ",
+            (str(len(f_t) - len(t_f)), "bold"),
+            " (F->T minus T->F)",
         )
     )
 

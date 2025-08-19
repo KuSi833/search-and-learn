@@ -20,4 +20,4 @@ DATASETS: Dict[str, Dict[str, str]] = {
 }
 
 BENCHMARK_MAPPINGS_ROOT = Path("./data/benchmark_mappings")
-BENCHMARK_SUBSETS_ROOT = Path("./data/benchmark_mappings")
+BENCHMARK_SUBSETS_ROOT = Path("./data/benchmark_subsets")
