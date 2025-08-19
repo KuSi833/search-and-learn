@@ -61,7 +61,7 @@ if __name__ == "__main__":
     # PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
     # WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
-    WANDB_CONFIG = WandbConfig(tags=set(["coverage"]))
+    WANDB_CONFIG = WandbConfig(tags=set(["fusion"]))
 
     SUBSET_FILE = Path(
         "./data/benchmark_subsets/HuggingFaceH4/MATH-500/5v30f9sq/coverage/20.json"
