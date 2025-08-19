@@ -64,7 +64,7 @@ if __name__ == "__main__":
     WANDB_CONFIG = WandbConfig(tags=set(["fusion"]))
 
     SUBSET_FILE = Path(
-        "./data/benchmark_subsets/HuggingFaceH4/MATH-500/5v30f9sq/coverage/20.json"
+        "/data/km1124/search-and-learn/data/benchmark_subsets/HuggingFaceH4/MATH-500/5lvoti3i/coverage/20.json"
     )
     DATASET_CONFIG = DatasetConfig(
         dataset_name="HuggingFaceH4/MATH-500",
