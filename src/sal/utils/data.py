@@ -12,6 +12,8 @@
 
 import json
 import logging
+from pathlib import Path
+from typing import Set
 
 from datasets import Dataset, load_dataset
 
@@ -78,3 +80,17 @@ def save_inference_output(dataset, result_file_path):
 # Note: dataset-specific curated index helpers are defined close to experiment
 # code (see `sal/utils/experiment.py`). This module remains focused on generic
 # dataset loading and I/O utilities only.
+
+
+def indices_from_subset_file(subset_path: Path) -> Set[int]:
+    """Strict loader for structured subset files produced by the visualiser.
+
+    Expects a dict with fields: benchmark_key (str), unique_ids (list[str]).
+    No fallbacks; assumes file exists and schema is correct.
+    """
+    with open(subset_path, "r") as f:
+        data = json.load(f)
+    dataset_key = data["benchmark_key"]
+    unique_ids = data["unique_ids"]
+    mapping = BenchmarkMapping(dataset_key)
+    return {int(mapping.get_index(uid)) for uid in unique_ids}

@@ -536,15 +536,24 @@ def extract_incorrect(run_id: str, benchmark: str, name: str) -> None:
     # Sort the unique_ids for consistency
     incorrect_unique_ids.sort()
 
-    # Save to JSON file
+    # Save to JSON file with metadata to support later mapping and reproducibility
     output_dir = (
         BENCHMARK_SUBSETS_ROOT / DATASETS[benchmark_enum.value]["hf_name"] / run_id
     )
     output_dir.mkdir(parents=True, exist_ok=True)
     output_file = output_dir / f"{name}.json"
 
+    subset_payload = {
+        "version": 1,
+        "type": "incorrect_subset",
+        "benchmark_key": benchmark_enum.value,
+        "hf_name": DATASETS[benchmark_enum.value]["hf_name"],
+        "run_id": run_id,
+        "unique_ids": sorted(incorrect_unique_ids),
+    }
+
     with open(output_file, "w") as f:
-        json.dump(incorrect_unique_ids, f, indent=2)
+        json.dump(subset_payload, f, indent=2)
 
     console.print(
         Text.assemble(
@@ -652,8 +661,20 @@ def export_uncertain(
         output_file = output_root / f"{name}.json"
     output_root.mkdir(parents=True, exist_ok=True)
 
+    # Structured payload with metadata for later mapping and reproducibility
+    subset_payload = {
+        "version": 1,
+        "type": "uncertain_subset",
+        "benchmark_key": benchmark_enum.value,
+        "hf_name": hf_name,
+        "run_id": run_id,
+        "metric": metric,
+        "coverage_pct": coverage,
+        "unique_ids": sorted(unique_ids),
+    }
+
     with open(output_file, "w") as f:
-        json.dump(sorted(unique_ids), f, indent=2)
+        json.dump(subset_payload, f, indent=2)
 
     header = Table.grid(padding=(0, 1))
     header.add_column(style="bold cyan")

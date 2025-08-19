@@ -1,9 +1,11 @@
 import copy
+import json
+from pathlib import Path
 from typing import List
 
 from dotenv import load_dotenv
-from networkx import expected_degree_graph
 
+# from networkx import expected_degree_graph
 from sal.config import (
     BaseConfig,
     BeamSearchConfig,
@@ -15,7 +17,9 @@ from sal.config import (
     WandbConfig,
 )
 from sal.test_time_compute import run
-from sal.utils.experiment import get_math500_indices, get_model_base_path
+from sal.utils.constants import DATASETS, Benchmark
+from sal.utils.data import indices_from_subset_file
+from sal.utils.experiment import get_model_base_path
 
 if __name__ == "__main__":
     load_dotenv()
@@ -57,17 +61,16 @@ if __name__ == "__main__":
     # PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
     # WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
-    WANDB_CONFIG = WandbConfig(tags=set([]))
+    WANDB_CONFIG = WandbConfig(tags=set(["coverage"]))
 
-    # DATASET_CONFIG = DatasetConfig(num_samples=100)
-    # DATASET_CONFIG = DatasetConfig(dataset_indicies=get_math500_indices(subset="hard"))
-    # DATASET_CONFIG = DatasetConfig(
-    #     dataset_indicies=get_math500_indices(subset="bon_hard_2")
-    # )
-    DATASET_CONFIG = DatasetConfig(num_samples=500)  # FULL DATASET
-    # DATASET_CONFIG = DatasetConfig(
-    #     dataset_name="HuggingFaceH4/aime_2024"
-    # )  # FULL DATASET
+    SUBSET_FILE = Path(
+        "./data/benchmark_subsets/HuggingFaceH4/MATH-500/5v30f9sq/coverage/20.json"
+    )
+    DATASET_CONFIG = DatasetConfig(
+        dataset_name="HuggingFaceH4/MATH-500",
+        dataset_indicies=indices_from_subset_file(SUBSET_FILE),
+    )
+    # DATASET_CONFIG = DatasetConfig(num_samples=500)
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
