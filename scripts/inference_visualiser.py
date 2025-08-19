@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import math
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
@@ -549,6 +550,214 @@ def extract_incorrect(run_id: str, benchmark: str, name: str) -> None:
             (str(output_file), "yellow"),
         )
     )
+
+
+def _safe_entropy(probs: List[float]) -> float:
+    probs = [p for p in probs if p > 0]
+    if not probs:
+        return 0.0
+    h = -sum(p * math.log(p) for p in probs)
+    max_h = math.log(len(probs)) if len(probs) > 1 else 1.0
+    return float(h / max_h) if max_h > 0 else 0.0
+
+
+def _compute_uncertainty_metrics(sample: Dict[str, Any]) -> Dict[str, Any]:
+    # Extract answers per completion and align with PRM aggregate scores
+    completions: List[str] = sample.get("completions", [])
+    answers: List[str] = [extract_answer(c or "", BENCHMARK) for c in completions]
+    agg_scores: List[float] = sample.get("agg_scores") or []
+    if not agg_scores and sample.get("scores"):
+        try:
+            agg_scores = [
+                (float(s[-1]) if isinstance(s, list) and len(s) > 0 else 0.0)
+                for s in sample["scores"]
+            ]
+        except Exception:
+            agg_scores = [0.0 for _ in completions]
+
+    n = len(completions)
+    if n == 0:
+        return {
+            "n": 0,
+            "agreement_ratio": 0.0,
+            "unique_answers": 0,
+            "entropy_freq": 0.0,
+            "entropy_weighted": 0.0,
+            "prm_max": 0.0,
+            "prm_mean": 0.0,
+            "prm_std": 0.0,
+            "prm_margin": 0.0,
+            "prm_top_frac": 0.0,
+            "group_top_frac": 0.0,
+        }
+
+    # Group by answer: counts and score sums
+    count_by_ans: Dict[str, int] = defaultdict(int)
+    score_by_ans: Dict[str, float] = defaultdict(float)
+    for ans, s in zip(answers, agg_scores or [0.0] * n):
+        count_by_ans[ans] += 1
+        try:
+            score_by_ans[ans] += float(s)
+        except Exception:
+            score_by_ans[ans] += 0.0
+
+    counts = list(count_by_ans.values())
+    scores_grouped = list(score_by_ans.values())
+    sum_scores = float(sum(agg_scores)) if agg_scores else 0.0
+
+    # Agreement and entropies
+    agreement_ratio = (max(counts) / n) if counts else 0.0
+    unique_answers = len(counts)
+    freq_probs = [c / n for c in counts]
+    entropy_freq = _safe_entropy(freq_probs)
+    if sum_scores > 0 and len(scores_grouped) > 0:
+        weighted_probs = [max(0.0, s) / sum_scores for s in scores_grouped]
+        entropy_weighted = _safe_entropy(weighted_probs)
+        group_top_frac = max(weighted_probs)
+    else:
+        entropy_weighted = 0.0
+        group_top_frac = 0.0
+
+    # PRM statistics at completion level
+    try:
+        prm_max = max(float(x) for x in (agg_scores or [0.0]))
+        prm_mean = (sum(float(x) for x in (agg_scores or [0.0])) / n) if n > 0 else 0.0
+        prm_std = (
+            math.sqrt(
+                sum((float(x) - prm_mean) ** 2 for x in (agg_scores or [0.0])) / n
+            )
+            if n > 0
+            else 0.0
+        )
+        sorted_scores = sorted([float(x) for x in (agg_scores or [0.0])], reverse=True)
+        prm_margin = (
+            (sorted_scores[0] - sorted_scores[1])
+            if len(sorted_scores) >= 2
+            else sorted_scores[0]
+        )
+        prm_top_frac = (sorted_scores[0] / sum_scores) if sum_scores > 0 else 0.0
+    except Exception:
+        prm_max = prm_mean = prm_std = prm_margin = prm_top_frac = 0.0
+
+    return {
+        "n": n,
+        "agreement_ratio": float(agreement_ratio),
+        "unique_answers": int(unique_answers),
+        "entropy_freq": float(entropy_freq),
+        "entropy_weighted": float(entropy_weighted),
+        "prm_max": float(prm_max),
+        "prm_mean": float(prm_mean),
+        "prm_std": float(prm_std),
+        "prm_margin": float(prm_margin),
+        "prm_top_frac": float(prm_top_frac),
+        "group_top_frac": float(group_top_frac),
+    }
+
+
+def _summarise_uncertainty(metrics: List[Dict[str, Any]], labels: List[bool]) -> None:
+    # Build summary table: means by class and coverage/recall tradeoffs
+    fields = [
+        "agreement_ratio",
+        "entropy_freq",
+        "entropy_weighted",
+        "prm_margin",
+        "prm_top_frac",
+        "group_top_frac",
+        "prm_std",
+        "prm_mean",
+    ]
+
+    # Means by class
+    means_table = Table(title="Means by correctness", box=box.SIMPLE_HEAVY)
+    means_table.add_column("Metric", style="bold")
+    means_table.add_column("mean(correct)", justify="right")
+    means_table.add_column("mean(incorrect)", justify="right")
+    means_table.add_column("direction", justify="center")
+    for f in fields:
+        vals = [m.get(f, 0.0) for m in metrics]
+        corr_vals = [v for v, y in zip(vals, labels) if y]
+        inc_vals = [v for v, y in zip(vals, labels) if not y]
+        mean_corr = sum(corr_vals) / len(corr_vals) if corr_vals else 0.0
+        mean_inc = sum(inc_vals) / len(inc_vals) if inc_vals else 0.0
+        direction = "↑" if mean_corr > mean_inc else "↓"
+        means_table.add_row(
+            f,
+            f"{mean_corr:.3f}",
+            f"{mean_inc:.3f}",
+            direction,
+        )
+    console.print(means_table)
+
+    # Coverage vs recall-of-incorrect for each metric
+    cov_table = Table(title="Coverage vs recall of incorrect", box=box.SIMPLE_HEAVY)
+    cov_table.add_column("Metric", style="bold")
+    for p in [10, 20, 30, 40, 50]:
+        cov_table.add_column(f"{p}% cov", justify="right")
+
+    total_incorrect = sum(1 for y in labels if not y)
+    total = len(labels)
+    if total == 0:
+        console.print(Text("No samples to summarise", style="red"))
+        return
+
+    for f in fields:
+        vals = [m.get(f, 0.0) for m in metrics]
+        corr_vals = [v for v, y in zip(vals, labels) if y]
+        inc_vals = [v for v, y in zip(vals, labels) if not y]
+        mean_corr = sum(corr_vals) / len(corr_vals) if corr_vals else 0.0
+        mean_inc = sum(inc_vals) / len(inc_vals) if inc_vals else 0.0
+        low_is_uncertain = (
+            mean_corr > mean_inc
+        )  # if higher on correct, lower suggests uncertainty
+
+        rows: List[str] = []
+        idxs = list(range(total))
+        idxs.sort(key=lambda i: vals[i], reverse=not low_is_uncertain)
+        for p in [10, 20, 30, 40, 50]:
+            k = max(1, int(round(total * (p / 100.0))))
+            flagged = set(idxs[:k])
+            incorrect_flagged = sum(1 for i in flagged if not labels[i])
+            recall_incorrect = (
+                100.0 * incorrect_flagged / total_incorrect
+                if total_incorrect > 0
+                else 0.0
+            )
+            rows.append(f"{recall_incorrect:.1f}")
+        cov_table.add_row(f, *rows)
+    console.print(cov_table)
+
+
+@cli.command(name="uncertainty", help="Evaluate uncertainty heuristics over a run")
+@click.option(
+    "--run-id", required=True, type=str, help="W&B run id (directory under ./output)"
+)
+def cmd_uncertainty(run_id: str) -> None:
+    out_file = Path("./output") / run_id / "inference_output.jsonl"
+    records = load_jsonl(out_file)
+    if not records:
+        console.print(Text(f"No records found in {out_file}", style="red"))
+        sys.exit(1)
+
+    metrics_list: List[Dict[str, Any]] = []
+    labels: List[bool] = []
+
+    for rec in records:
+        qa = _get_question_answer_from_record(rec)
+        labels.append(bool(qa.is_correct))
+        metrics_list.append(_compute_uncertainty_metrics(rec))
+
+    total = len(labels)
+    acc = (100.0 * sum(1 for y in labels if y) / total) if total > 0 else 0.0
+    header = Table.grid(padding=(0, 1))
+    header.add_column(style="bold cyan")
+    header.add_column()
+    header.add_row("Run", run_id)
+    header.add_row("File", f"output/{run_id}/inference_output.jsonl")
+    header.add_row("Samples", str(total))
+    header.add_row("Accuracy (assumed pred)", f"{acc:.1f}%")
+    console.print(Panel(header, title="Uncertainty analysis", box=box.ROUNDED))
+
+    _summarise_uncertainty(metrics_list, labels)
 
 
 if __name__ == "__main__":
