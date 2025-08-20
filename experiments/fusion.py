@@ -411,7 +411,7 @@ if __name__ == "__main__":
         save_dir=save_dir,
     )
 
-    for rerun_id in ["6nmoodjw"]:
+    for rerun_id in ["j8onz01w", "88ekb7m1"]:
         cfg_var = copy.deepcopy(cfg)
         cfg_var.rerun_id = rerun_id
         results = run_sweep(cfg_var)
