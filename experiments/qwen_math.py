@@ -66,8 +66,10 @@ if __name__ == "__main__":
     # SUBSET_FILE = Path(
     #     "/data/km1124/search-and-learn/data/benchmark_subsets/HuggingFaceH4/MATH-500/5lvoti3i/coverage/20.json"
     # )
+    RUN_ID = "51bl0yxj"
+    COVERAGE = 10
     SUBSET_FILE = Path(
-        "/data/km1124/search-and-learn/data/benchmark_subsets/HuggingFaceH4/MATH-500/5lvoti3i/coverage/10.json"
+        f"/data/km1124/search-and-learn/data/benchmark_subsets/HuggingFaceH4/MATH-500/{RUN_ID}/coverage/{COVERAGE}.json"
     )
     DATASET_CONFIG = DatasetConfig(
         dataset_name="HuggingFaceH4/MATH-500",
@@ -155,7 +157,7 @@ if __name__ == "__main__":
     # for config in [BEST_OF_N_CONFIG, DVTS_CONFIG, BEAM_SEARCH_CONFIG]:
     for config in [BEST_OF_N_CONFIG]:
         config_variant = copy.deepcopy(config)
-        config_variant.search_config.n = 16
+        # config_variant.search_config.n = 16
         experiment_configs.append(config_variant)
 
     # for beam_width in [16, 8, 4]:
