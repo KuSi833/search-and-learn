@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import itertools
 import json
 from dataclasses import dataclass
@@ -181,14 +182,14 @@ def _load_subset_ids(path: Path) -> List[str]:
 class FusionSetting:
     metric: str
     delta: float = 0.0
-    min_b_conf: Optional[float] = None
-    max_a_conf: Optional[float] = None
+    min_rerun_conf: Optional[float] = None
+    max_base_conf: Optional[float] = None
 
 
 @dataclass
 class FusionRunConfig:
-    run_a_id: str
-    run_b_id: str
+    base_run_id: str
+    rerun_id: str
     subset: Optional[Path] = None
     settings: Sequence[FusionSetting] = ()
     save_dir: Optional[Path] = None
@@ -198,26 +199,34 @@ class FusionRunConfig:
 class FusionResult:
     metric: str
     delta: float
-    min_b_conf: Optional[float]
-    max_a_conf: Optional[float]
-    samples: int
-    chosen_from_b: int
-    acc_a: float
-    acc_b: float
+    min_rerun_conf: Optional[float]
+    max_base_conf: Optional[float]
+    total_samples: int
+    rerun_samples: int
+    overrides_used: int
+    acc_base: float
+    acc_rerun: float
     acc_fused: float
     flips_pos: int
     flips_neg: int
 
 
-def _intersection_candidates(
-    recs_a: Dict[str, Dict[str, Any]],
-    recs_b: Dict[str, Dict[str, Any]],
+def _get_base_samples(
+    base_recs: Dict[str, Dict[str, Any]],
+    rerun_recs: Dict[str, Dict[str, Any]],
     subset: Optional[Path],
-) -> List[str]:
+) -> Tuple[List[str], List[str]]:
+    """Returns (all_base_ids, rerun_ids) where rerun_ids is subset of all_base_ids"""
     if subset is None:
-        return list(set(recs_a.keys()) & set(recs_b.keys()))
-    ids = set(_load_subset_ids(subset))
-    return [uid for uid in ids if uid in recs_a and uid in recs_b]
+        all_base_ids = list(base_recs.keys())
+    else:
+        ids = set(_load_subset_ids(subset))
+        all_base_ids = [uid for uid in ids if uid in base_recs]
+
+    # Rerun IDs are those that exist in both base and rerun
+    rerun_ids = [uid for uid in all_base_ids if uid in rerun_recs]
+
+    return all_base_ids, rerun_ids
 
 
 def _acc(records_map: Dict[str, Dict[str, Any]], ids: List[str]) -> float:
@@ -231,63 +240,77 @@ def _acc(records_map: Dict[str, Dict[str, Any]], ids: List[str]) -> float:
 
 
 def run_fusion_once(
-    recs_a: Dict[str, Dict[str, Any]],
-    recs_b: Dict[str, Dict[str, Any]],
-    uids: List[str],
+    base_recs: Dict[str, Dict[str, Any]],
+    rerun_recs: Dict[str, Dict[str, Any]],
+    all_base_ids: List[str],
+    rerun_ids: List[str],
     setting: FusionSetting,
 ) -> FusionResult:
-    acc_a = _acc(recs_a, uids)
-    acc_b = _acc(recs_b, uids)
+    # Calculate baseline accuracies
+    acc_base = _acc(base_recs, all_base_ids)
+    acc_rerun = _acc(rerun_recs, rerun_ids) if rerun_ids else 0.0
 
     fused_correct = 0
-    chosen_b = 0
+    overrides_used = 0
     flips_pos = 0
     flips_neg = 0
 
-    for uid in uids:
-        ra = recs_a[uid]
-        rb = recs_b[uid]
-        ca = _get_confidence(ra, setting.metric)
-        cb = _get_confidence(rb, setting.metric)
+    for uid in all_base_ids:
+        base_rec = base_recs[uid]
+        base_ok = _is_correct_record_math(base_rec)
 
-        choose_b = cb > (ca + setting.delta)
-        if (
-            choose_b
-            and (setting.min_b_conf is not None)
-            and not (cb >= float(setting.min_b_conf))
-        ):
-            choose_b = False
-        if (
-            choose_b
-            and (setting.max_a_conf is not None)
-            and not (ca <= float(setting.max_a_conf))
-        ):
-            choose_b = False
+        # Start with base result
+        final_rec = base_rec
+        final_ok = base_ok
 
-        rec = rb if choose_b else ra
-        if choose_b:
-            chosen_b += 1
+        # Check if we should override with rerun
+        if uid in rerun_recs:
+            rerun_rec = rerun_recs[uid]
+            base_conf = _get_confidence(base_rec, setting.metric)
+            rerun_conf = _get_confidence(rerun_rec, setting.metric)
 
-        a_ok = _is_correct_record_math(ra)
-        fused_ok = _is_correct_record_math(rec)
-        fused_correct += 1 if fused_ok else 0
+            # Decide whether to use rerun override
+            use_rerun = rerun_conf > (base_conf + setting.delta)
 
-        if (not a_ok) and fused_ok:
-            flips_pos += 1
-        elif a_ok and (not fused_ok):
-            flips_neg += 1
+            # Apply confidence filters
+            if (
+                use_rerun
+                and (setting.min_rerun_conf is not None)
+                and not (rerun_conf >= float(setting.min_rerun_conf))
+            ):
+                use_rerun = False
+            if (
+                use_rerun
+                and (setting.max_base_conf is not None)
+                and not (base_conf <= float(setting.max_base_conf))
+            ):
+                use_rerun = False
 
-    acc_fused = 100.0 * fused_correct / len(uids) if uids else 0.0
+            if use_rerun:
+                final_rec = rerun_rec
+                final_ok = _is_correct_record_math(rerun_rec)
+                overrides_used += 1
+
+                # Track flips only when we actually override
+                if (not base_ok) and final_ok:
+                    flips_pos += 1
+                elif base_ok and (not final_ok):
+                    flips_neg += 1
+
+        fused_correct += 1 if final_ok else 0
+
+    acc_fused = 100.0 * fused_correct / len(all_base_ids) if all_base_ids else 0.0
 
     return FusionResult(
         metric=setting.metric,
         delta=setting.delta,
-        min_b_conf=setting.min_b_conf,
-        max_a_conf=setting.max_a_conf,
-        samples=len(uids),
-        chosen_from_b=chosen_b,
-        acc_a=acc_a,
-        acc_b=acc_b,
+        min_rerun_conf=setting.min_rerun_conf,
+        max_base_conf=setting.max_base_conf,
+        total_samples=len(all_base_ids),
+        rerun_samples=len(rerun_ids),
+        overrides_used=overrides_used,
+        acc_base=acc_base,
+        acc_rerun=acc_rerun,
         acc_fused=acc_fused,
         flips_pos=flips_pos,
         flips_neg=flips_neg,
@@ -295,23 +318,23 @@ def run_fusion_once(
 
 
 def run_sweep(cfg: FusionRunConfig) -> List[FusionResult]:
-    file_a = Path("./output") / cfg.run_a_id / "inference_output.jsonl"
-    file_b = Path("./output") / cfg.run_b_id / "inference_output.jsonl"
-    recs_a = {rec["unique_id"]: rec for rec in load_jsonl(file_a)}
-    recs_b = {rec["unique_id"]: rec for rec in load_jsonl(file_b)}
+    base_file = Path("./output") / cfg.base_run_id / "inference_output.jsonl"
+    rerun_file = Path("./output") / cfg.rerun_id / "inference_output.jsonl"
+    base_recs = {rec["unique_id"]: rec for rec in load_jsonl(base_file)}
+    rerun_recs = {rec["unique_id"]: rec for rec in load_jsonl(rerun_file)}
 
-    uids = _intersection_candidates(recs_a, recs_b, cfg.subset)
-    if not uids:
-        raise SystemExit("No overlapping unique_ids to fuse")
+    all_base_ids, rerun_ids = _get_base_samples(base_recs, rerun_recs, cfg.subset)
+    if not all_base_ids:
+        raise SystemExit("No base samples found")
 
     results: List[FusionResult] = []
     for setting in tqdm(cfg.settings, desc="Running Sweep"):
-        res = run_fusion_once(recs_a, recs_b, uids, setting)
+        res = run_fusion_once(base_recs, rerun_recs, all_base_ids, rerun_ids, setting)
         results.append(res)
 
     if cfg.save_dir is not None:
         cfg.save_dir.mkdir(parents=True, exist_ok=True)
-        out_file = cfg.save_dir / f"{cfg.run_a_id}__{cfg.run_b_id}.json"
+        out_file = cfg.save_dir / f"{cfg.base_run_id}__{cfg.rerun_id}.json"
         with out_file.open("w") as f:
             json.dump([res.__dict__ for res in results], f, indent=2)
 
@@ -319,15 +342,16 @@ def run_sweep(cfg: FusionRunConfig) -> List[FusionResult]:
 
 
 def print_results_table(results: List[FusionResult]) -> None:
-    table = Table(title="Confidence fusion sweep", box=box.SIMPLE_HEAVY)
+    table = Table(title="Base/Rerun fusion sweep", box=box.SIMPLE_HEAVY)
     table.add_column("metric", style="bold")
     table.add_column("delta", justify="right")
-    table.add_column("min_b", justify="right")
-    table.add_column("max_a", justify="right")
-    table.add_column("samples", justify="right")
-    table.add_column("chosen_B", justify="right")
-    table.add_column("acc_A", justify="right")
-    table.add_column("acc_B", justify="right")
+    table.add_column("min_rerun", justify="right")
+    table.add_column("max_base", justify="right")
+    table.add_column("total_samples", justify="right")
+    table.add_column("rerun_samples", justify="right")
+    table.add_column("overrides", justify="right")
+    table.add_column("acc_base", justify="right")
+    table.add_column("acc_rerun", justify="right")
     table.add_column("acc_fused", justify="right")
     table.add_column("F->T", justify="right")
     table.add_column("T->F", justify="right")
@@ -338,12 +362,13 @@ def print_results_table(results: List[FusionResult]) -> None:
         table.add_row(
             r.metric,
             f"{r.delta:.3f}",
-            "-" if r.min_b_conf is None else f"{r.min_b_conf:.3f}",
-            "-" if r.max_a_conf is None else f"{r.max_a_conf:.3f}",
-            str(r.samples),
-            str(r.chosen_from_b),
-            f"{r.acc_a:.1f}%",
-            f"{r.acc_b:.1f}%",
+            "-" if r.min_rerun_conf is None else f"{r.min_rerun_conf:.3f}",
+            "-" if r.max_base_conf is None else f"{r.max_base_conf:.3f}",
+            str(r.total_samples),
+            str(r.rerun_samples),
+            str(r.overrides_used),
+            f"{r.acc_base:.1f}%",
+            f"{r.acc_rerun:.1f}%",
             f"{r.acc_fused:.1f}%",
             str(r.flips_pos),
             str(r.flips_neg),
@@ -355,8 +380,10 @@ def print_results_table(results: List[FusionResult]) -> None:
 
 if __name__ == "__main__":
     # Define your sweep here (edit and commit as an experiment definition)
-    RUN_A = "5lvoti3i"
-    RUN_B = "0oe2xr1b"
+    # BASE_RUN = "5lvoti3i"  # The base run with all samples
+    # BASE_RUN = "qi7dtlzw"  # weaker run
+    BASE_RUN = "51bl0yxj"  # weaker bon
+    RERUN_ID = "0oe2xr1b"  # The rerun with subset of samples to potentially override
     SUBSET: Optional[Path] = None
 
     metrics = [
@@ -364,22 +391,32 @@ if __name__ == "__main__":
         "prm_margin",
     ]
     deltas = [0.00, 0.02, 0.05]
-    min_b_list: List[Optional[float]] = [None, 0.50, 0.60]
-    max_a_list: List[Optional[float]] = [None, 0.80]
+    min_rerun_list: List[Optional[float]] = [None, 0.50, 0.60]
+    max_base_list: List[Optional[float]] = [None, 0.80]
 
     settings = [
-        FusionSetting(metric=m, delta=d, min_b_conf=mb, max_a_conf=ma)
-        for (m, d, mb, ma) in itertools.product(metrics, deltas, min_b_list, max_a_list)
+        FusionSetting(metric=m, delta=d, min_rerun_conf=mr, max_base_conf=mb)
+        for (m, d, mr, mb) in itertools.product(
+            metrics, deltas, min_rerun_list, max_base_list
+        )
     ]
 
     save_dir = Path("./output/fusion_sweeps")
     cfg = FusionRunConfig(
-        run_a_id=RUN_A,
-        run_b_id=RUN_B,
+        base_run_id=BASE_RUN,
+        rerun_id=RERUN_ID,
         subset=SUBSET,
         settings=settings,
         save_dir=save_dir,
     )
 
-    results = run_sweep(cfg)
-    print_results_table(results)
+    for rerun_id in [
+        # "eaxuc94a",
+        # "ld62ghu3",
+        "0oe2xr1b",
+        # "h1qixsi8",
+    ]:
+        cfg_var = copy.deepcopy(cfg)
+        cfg_var.rerun_id = rerun_id
+        results = run_sweep(cfg_var)
+        print_results_table(results)
