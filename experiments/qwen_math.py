@@ -66,9 +66,9 @@ if __name__ == "__main__":
     # SUBSET_FILE = Path(
     #     "/data/km1124/search-and-learn/data/benchmark_subsets/HuggingFaceH4/MATH-500/5lvoti3i/coverage/20.json"
     # )
-    RUN_ID = "51bl0yxj"
+    # RUN_ID = "51bl0yxj"
     RUN_ID = "dgef2v6u"
-    COVERAGE = 10
+    COVERAGE = 20
     SUBSET_FILE = Path(
         f"/data/km1124/search-and-learn/data/benchmark_subsets/HuggingFaceH4/MATH-500/{RUN_ID}/coverage/{COVERAGE}.json"
     )
