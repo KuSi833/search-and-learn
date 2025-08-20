@@ -61,12 +61,13 @@ if __name__ == "__main__":
     # PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
     # WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
-    WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
+    WANDB_CONFIG = WandbConfig(tags=set(["fusion"]))
 
     # SUBSET_FILE = Path(
     #     "/data/km1124/search-and-learn/data/benchmark_subsets/HuggingFaceH4/MATH-500/5lvoti3i/coverage/20.json"
     # )
     RUN_ID = "51bl0yxj"
+    RUN_ID = "dgef2v6u"
     COVERAGE = 10
     SUBSET_FILE = Path(
         f"/data/km1124/search-and-learn/data/benchmark_subsets/HuggingFaceH4/MATH-500/{RUN_ID}/coverage/{COVERAGE}.json"
@@ -75,12 +76,12 @@ if __name__ == "__main__":
         dataset_name="HuggingFaceH4/MATH-500",
         dataset_indicies=indices_from_subset_file(SUBSET_FILE),
     )
-    DATASET_CONFIG = DatasetConfig(num_samples=500)
+    # DATASET_CONFIG = DatasetConfig(num_samples=500)
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
-        generator_config=Q8_MODEL,
-        # generator_config=INSTRUCT_MODEL,
+        # generator_config=Q8_MODEL,
+        generator_config=INSTRUCT_MODEL,
         dataset_config=DATASET_CONFIG,
     )
 
@@ -146,19 +147,18 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    # for n in [8]:
-    #     # for n in [8, 16, 32, 64]:
-    #     config_variant = copy.deepcopy(BEAM_SEARCH_CONFIG)
-    #     # config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
-    #     # config_variant = copy.deepcopy(DVTS_CONFIG)
-    #     config_variant.search_config.n = n
-    #     experiment_configs.append(config_variant)
+    for n in [4, 8]:
+        # config_variant = copy.deepcopy(BEAM_SEARCH_CONFIG)
+        config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
+        # config_variant = copy.deepcopy(DVTS_CONFIG)
+        config_variant.search_config.n = n
+        experiment_configs.append(config_variant)
 
     # for config in [BEST_OF_N_CONFIG, DVTS_CONFIG, BEAM_SEARCH_CONFIG]:
-    for config in [BEST_OF_N_CONFIG]:
-        config_variant = copy.deepcopy(config)
-        # config_variant.search_config.n = 16
-        experiment_configs.append(config_variant)
+    # for config in [BEST_OF_N_CONFIG]:
+    #     config_variant = copy.deepcopy(config)
+    #     # config_variant.search_config.n = 16
+    #     experiment_configs.append(config_variant)
 
     # for beam_width in [16, 8, 4]:
     #     config_variant = copy.deepcopy(BEAM_SEARCH_CONFIG)
