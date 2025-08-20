@@ -382,7 +382,8 @@ if __name__ == "__main__":
     # Define your sweep here (edit and commit as an experiment definition)
     # BASE_RUN = "5lvoti3i"  # The base run with all samples
     # BASE_RUN = "qi7dtlzw"  # weaker run
-    BASE_RUN = "51bl0yxj"  # weaker bon
+    # BASE_RUN = "51bl0yxj"  # weaker bon
+    BASE_RUN = "51bl0yxj"
     RERUN_ID = "0oe2xr1b"  # The rerun with subset of samples to potentially override
     SUBSET: Optional[Path] = None
 
@@ -410,12 +411,7 @@ if __name__ == "__main__":
         save_dir=save_dir,
     )
 
-    for rerun_id in [
-        # "eaxuc94a",
-        # "ld62ghu3",
-        "0oe2xr1b",
-        # "h1qixsi8",
-    ]:
+    for rerun_id in ["6nmoodjw"]:
         cfg_var = copy.deepcopy(cfg)
         cfg_var.rerun_id = rerun_id
         results = run_sweep(cfg_var)

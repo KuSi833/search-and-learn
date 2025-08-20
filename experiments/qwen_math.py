@@ -61,7 +61,7 @@ if __name__ == "__main__":
     # PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
     # WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
-    WANDB_CONFIG = WandbConfig(tags=set(["fusion"]))
+    WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
 
     # SUBSET_FILE = Path(
     #     "/data/km1124/search-and-learn/data/benchmark_subsets/HuggingFaceH4/MATH-500/5lvoti3i/coverage/20.json"
@@ -75,12 +75,12 @@ if __name__ == "__main__":
         dataset_name="HuggingFaceH4/MATH-500",
         dataset_indicies=indices_from_subset_file(SUBSET_FILE),
     )
-    # DATASET_CONFIG = DatasetConfig(num_samples=500)
+    DATASET_CONFIG = DatasetConfig(num_samples=500)
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
-        # generator_config=Q8_MODEL,
-        generator_config=INSTRUCT_MODEL,
+        generator_config=Q8_MODEL,
+        # generator_config=INSTRUCT_MODEL,
         dataset_config=DATASET_CONFIG,
     )
 
