@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
 
 import json
 import logging
@@ -51,13 +52,13 @@ class BenchmarkMapping:
         return self._unique_to_id[unique_id]
 
 
-def get_dataset(config: DatasetConfig) -> Dataset:
+def get_dataset(config: "DatasetConfig") -> Dataset:
     """Load a dataset split and apply optional slicing and indexing.
 
     Ensures the returned object is a `datasets.Dataset` (not a `DatasetDict` or
     streaming dataset), so downstream calls to `select` and `len` are valid.
     """
-    ds = load_dataset(config.benchmark_name, split=config.benchmark_split)
+    ds = load_dataset(config.dataset_name, split=config.dataset_split)
 
     if not isinstance(ds, Dataset):
         raise TypeError(
@@ -66,12 +67,41 @@ def get_dataset(config: DatasetConfig) -> Dataset:
         )
 
     # Apply explicit index selection first if provided
-    if len(config.benchmark_indicies) > 0:
-        return ds.select(list(config.benchmark_indicies))
+    if len(config.dataset_indicies) > 0:
+        return ds.select(list(config.dataset_indicies))
 
     # Apply start/end slicing if both are provided
-    if config.benchmark_start is not None and config.benchmark_end is not None:
-        ds = ds.select(range(config.benchmark_start, config.benchmark_end))
+    if config.dataset_start is not None and config.dataset_end is not None:
+        ds = ds.select(range(config.dataset_start, config.dataset_end))
+
+    # Limit total number of samples if requested
+    if config.num_samples is not None:
+        ds = ds.select(range(min(len(ds), config.num_samples)))
+
+    return ds
+
+
+def get_dataset_from_subset_file(config: DatasetConfig) -> Dataset:
+    """Load a dataset split and apply optional slicing and indexing.
+
+    Ensures the returned object is a `datasets.Dataset` (not a `DatasetDict` or
+    streaming dataset), so downstream calls to `select` and `len` are valid.
+    """
+    ds = load_dataset(config.dataset_name, split=config.dataset_split)
+
+    if not isinstance(ds, Dataset):
+        raise TypeError(
+            "Expected `datasets.Dataset` when loading split=...; got a different type. "
+            "Ensure `dataset_split` yields a materialised dataset (non-streaming)."
+        )
+
+    # Apply explicit index selection first if provided
+    if len(config.dataset_indicies) > 0:
+        return ds.select(list(config.dataset_indicies))
+
+    # Apply start/end slicing if both are provided
+    if config.dataset_start is not None and config.dataset_end is not None:
+        ds = ds.select(range(config.dataset_start, config.dataset_end))
 
     # Limit total number of samples if requested
     if config.num_samples is not None:
