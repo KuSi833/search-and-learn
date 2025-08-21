@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Literal, Optional, Set
 
 from sal.utils.constants import (
-    BENCHMARK_MAPPINGS_ROOT,
+    BENCHMARK_SUBSETS_ROOT,
     Benchmark,
 )
 
@@ -93,7 +93,7 @@ class DatasetConfig:
             **kwargs: Additional DatasetConfig parameters
         """
 
-        base_path = project_root / BENCHMARK_MAPPINGS_ROOT
+        base_path = project_root / BENCHMARK_SUBSETS_ROOT
 
         subset_file_path = (
             base_path / benchmark.hf_name / run_id / "coverage" / f"{coverage}.json"
