@@ -16,25 +16,11 @@ from rich.text import Text
 
 from sal.evaluation.grader import math_equal
 from sal.evaluation.parser import extract_answer, find_box
-from sal.utils.constants import BENCHMARK_SUBSETS_ROOT, Benchmark, Benchmarks
+from sal.utils.constants import BENCHMARK_SUBSETS_ROOT, Benchmark
 from sal.utils.data import BenchmarkMapping
 from sal.utils.logging import setup_logging
 
 setup_logging()
-
-
-def get_benchmark_by_key(key: str) -> Benchmark:
-    """Get benchmark instance by key string."""
-    if key == Benchmarks.MATH500.key:
-        return Benchmarks.MATH500
-    elif key == Benchmarks.AIME24.key:
-        return Benchmarks.AIME24
-    else:
-        raise ValueError(f"Unknown benchmark key: {key}")
-
-
-# Create list for click choices
-ALL_BENCHMARK_KEYS = [Benchmarks.MATH500.key, Benchmarks.AIME24.key]
 
 
 @dataclass
@@ -529,13 +515,13 @@ def question_answer(run_id: str, show_correct: bool) -> None:
 )
 @click.option(
     "--benchmark",
-    default=Benchmarks.MATH500.key,
-    type=click.Choice(ALL_BENCHMARK_KEYS),
+    default=Benchmark.MATH500.value,
+    type=click.Choice([b.value for b in Benchmark]),
     help="Benchmark to use for answer extraction",
 )
 @click.option("--name", required=True, type=str, help="Name for the subset file")
 def extract_incorrect(run_id: str, benchmark: str, name: str) -> None:
-    benchmark_instance = get_benchmark_by_key(benchmark)
+    benchmark_enum = Benchmark(benchmark)
     out_file = Path("./output") / run_id / "inference_output.jsonl"
     records = load_jsonl(out_file)
 
@@ -551,15 +537,17 @@ def extract_incorrect(run_id: str, benchmark: str, name: str) -> None:
     incorrect_unique_ids.sort()
 
     # Save to JSON file with metadata to support later mapping and reproducibility
-    output_dir = BENCHMARK_SUBSETS_ROOT / benchmark_instance.hf_name / run_id
+    output_dir = (
+        BENCHMARK_SUBSETS_ROOT / DATASETS[benchmark_enum.value]["hf_name"] / run_id
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     output_file = output_dir / f"{name}.json"
 
     subset_payload = {
         "version": 1,
         "type": "incorrect_subset",
-        "benchmark_key": benchmark_instance.key,
-        "hf_name": benchmark_instance.hf_name,
+        "benchmark_key": benchmark_enum.value,
+        "hf_name": DATASETS[benchmark_enum.value]["hf_name"],
         "run_id": run_id,
         "unique_ids": sorted(incorrect_unique_ids),
     }
@@ -636,8 +624,8 @@ def _select_uncertain_indices(
 )
 @click.option(
     "--benchmark",
-    default=Benchmarks.MATH500.key,
-    type=click.Choice(ALL_BENCHMARK_KEYS),
+    default=Benchmark.MATH500.value,
+    type=click.Choice([b.value for b in Benchmark]),
     help="Benchmark to use for saving subset",
 )
 @click.option(
@@ -659,8 +647,8 @@ def export_uncertain(
     selected = _select_uncertain_indices(records, coverage, metric)
     unique_ids = [records[i]["unique_id"] for i in selected]
 
-    benchmark_instance = get_benchmark_by_key(benchmark)
-    hf_name = benchmark_instance.hf_name
+    benchmark_enum = Benchmark(benchmark)
+    hf_name = DATASETS[benchmark_enum.value]["hf_name"]
     output_root = BENCHMARK_SUBSETS_ROOT / hf_name / run_id / "coverage"
     if name is None:
         coverage_str = (
@@ -677,7 +665,7 @@ def export_uncertain(
     subset_payload = {
         "version": 1,
         "type": "uncertain_subset",
-        "benchmark_key": benchmark_instance.key,
+        "benchmark_key": benchmark_enum.value,
         "hf_name": hf_name,
         "run_id": run_id,
         "metric": metric,
