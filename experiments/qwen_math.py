@@ -1,11 +1,8 @@
 import copy
-import json
-from pathlib import Path
 from typing import List
 
 from dotenv import load_dotenv
 
-# from networkx import expected_degree_graph
 from sal.config import (
     BaseConfig,
     BeamSearchConfig,
@@ -16,14 +13,14 @@ from sal.config import (
     SearchConfig,
     WandbConfig,
 )
-from sal.test_time_compute import run
-from sal.utils.constants import DATASETS, Benchmark
-from sal.utils.data import indices_from_subset_file
+from sal.test_time_compute import get_project_root, run
+from sal.utils.constants import Benchmarks
 from sal.utils.experiment import get_model_base_path
 
 if __name__ == "__main__":
     load_dotenv()
 
+    project_root = get_project_root()
     model_base_path = get_model_base_path()
 
     INSTRUCT_MODEL = GeneratorConfig(
@@ -63,26 +60,19 @@ if __name__ == "__main__":
     # WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
     WANDB_CONFIG = WandbConfig(tags=set(["fusion"]))
 
-    # SUBSET_FILE = Path(
-    #     "/data/km1124/search-and-learn/data/benchmark_subsets/HuggingFaceH4/MATH-500/5lvoti3i/coverage/20.json"
-    # )
-    # RUN_ID = "51bl0yxj"
-    RUN_ID = "dgef2v6u"
-    COVERAGE = 20
-    SUBSET_FILE = Path(
-        f"/data/km1124/search-and-learn/data/benchmark_subsets/HuggingFaceH4/MATH-500/{RUN_ID}/coverage/{COVERAGE}.json"
+    DATASET_CONFIG = DatasetConfig.from_subset_file(
+        run_id="dgef2v6u",
+        coverage=20,
+        benchmark=Benchmarks.MATH500.value,
+        project_root=project_root,
     )
-    DATASET_CONFIG = DatasetConfig(
-        dataset_name="HuggingFaceH4/MATH-500",
-        dataset_indicies=indices_from_subset_file(SUBSET_FILE),
-    )
-    DATASET_CONFIG = DatasetConfig(num_samples=500)
+    # DATASET_CONFIG = DatasetConfig(num_samples=500)
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
-        generator_config=Q4_MODEL,
+        # generator_config=Q4_MODEL,
         # generator_config=Q8_MODEL,
-        # generator_config=INSTRUCT_MODEL,
+        generator_config=INSTRUCT_MODEL,
         dataset_config=DATASET_CONFIG,
     )
 
@@ -103,17 +93,6 @@ if __name__ == "__main__":
         ),
         wandb_config=WANDB_CONFIG,
     )
-
-    # BEST_OF_N_CONFIG = ExperimentConfig(
-    #     filter_duplicates=True,
-    #     sort_completed=True,
-    #     approach="best_of_n",
-    #     search_config=SearchConfig(
-    #         n=4,
-    #         search_batch_size=50,
-    #     ),
-    #     wandb_config=WANDB_CONFIG,
-    # )
 
     DVTS_CONFIG = ExperimentConfig(
         approach="dvts",

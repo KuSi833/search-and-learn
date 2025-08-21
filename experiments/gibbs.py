@@ -35,8 +35,8 @@ if __name__ == "__main__":
     WANDB_CONFIG = WandbConfig(tags=set(["gibbs", "baseline"]))
     DATASET_CONFIG = DatasetConfig(
         num_samples=100,
-        dataset_start=62,
-        dataset_end=64,
+        benchmark_start=62,
+        benchmark_end=64,
     )
 
     BASE_CONFIG = BaseConfig(

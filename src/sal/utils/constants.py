@@ -1,23 +1,30 @@
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Dict
 
 
-class Benchmark(Enum):
-    MATH500 = "math500"
-    AIME24 = "aime24"
+@dataclass(frozen=True)
+class Benchmark:
+    key: str
+    hf_name: str
+    split: str
 
 
-DATASETS: Dict[str, Dict[str, str]] = {
-    Benchmark.MATH500.value: {
-        "hf_name": "HuggingFaceH4/MATH-500",
-        "split": "test",
-    },
-    Benchmark.AIME24.value: {
-        "hf_name": "HuggingFaceH4/aime_2024",  # Replace with actual dataset name
-        "split": "train",
-    },
-}
+class Benchmarks(Enum):
+    """Namespace for benchmark constants."""
 
+    MATH500 = Benchmark("math500", "HuggingFaceH4/MATH-500", "test")
+    AIME24 = Benchmark("aime24", "HuggingFaceH4/aime_2024", "train")
+
+    @classmethod
+    def from_key(cls, key: str) -> Benchmark:
+        """Return the benchmark instance by its key."""
+        for benchmark_enum in cls:
+            if benchmark_enum.value.key == key:
+                return benchmark_enum.value
+        raise ValueError(f"Unknown benchmark key: {key}")
+
+
+# Default relative paths (can be overridden when project root is known)
 BENCHMARK_MAPPINGS_ROOT = Path("./data/benchmark_mappings")
 BENCHMARK_SUBSETS_ROOT = Path("./data/benchmark_subsets")

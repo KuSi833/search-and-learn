@@ -17,6 +17,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal, Optional, Set
 
+from sal.utils.constants import (
+    BENCHMARK_MAPPINGS_ROOT,
+    BENCHMARK_SUBSETS_ROOT,
+    Benchmark,
+)
+from sal.utils.data import indices_from_subset_file
+
 
 @dataclass
 class ModelConfig:
@@ -56,15 +63,55 @@ class ProfilerConfig:
 
 @dataclass
 class DatasetConfig:
-    dataset_name: Literal["HuggingFaceH4/aime_2024", "HuggingFaceH4/MATH-500"] = (
-        "HuggingFaceH4/MATH-500"
-    )
+    dataset_name: str = "HuggingFaceH4/MATH-500"  # HuggingFace dataset name
     dataset_config: Optional[str] = None
     dataset_split: str = "test"
     dataset_start: Optional[int] = None
     dataset_end: Optional[int] = None
     num_samples: Optional[int] = None
     dataset_indicies: Set[int] = field(default_factory=set)
+    # Subset file configuration for experiment tracking
+    subset_run_id: Optional[str] = None
+    subset_coverage: Optional[int] = None
+    subset_file_path: Optional[Path] = None
+    subset_benchmark: Optional[str] = None  # Benchmark key (e.g., 'math500', 'aime24')
+
+    @classmethod
+    def from_subset_file(
+        cls,
+        run_id: str,
+        coverage: int,
+        benchmark: Benchmark,
+        project_root: Path,
+        **kwargs,
+    ) -> "DatasetConfig":
+        """Create DatasetConfig from subset file parameters.
+
+        Args:
+            run_id: The wandb run ID for the subset file
+            coverage: The coverage percentage for the subset
+            benchmark: The benchmark instance (e.g., Benchmarks.MATH500, Benchmarks.AIME24)
+            project_root: The project root path. If not provided, falls back to constants.
+            **kwargs: Additional DatasetConfig parameters
+        """
+
+        base_path = project_root / BENCHMARK_MAPPINGS_ROOT
+
+        subset_file_path = (
+            base_path / benchmark.hf_name / run_id / "coverage" / f"{coverage}.json"
+        )
+        dataset_indices = indices_from_subset_file(subset_file_path)
+
+        return cls(
+            dataset_name=benchmark.hf_name,
+            dataset_split=benchmark.split,
+            dataset_indicies=dataset_indices,
+            subset_run_id=run_id,
+            subset_coverage=coverage,
+            subset_file_path=subset_file_path,
+            subset_benchmark=benchmark.key,
+            **kwargs,
+        )
 
 
 @dataclass

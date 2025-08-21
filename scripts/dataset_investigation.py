@@ -9,8 +9,8 @@ from sal.utils.experiment import get_math500_indices
 #     num_samples=100,
 # )
 dataset_config = DatasetConfig(
-    dataset_name="HuggingFaceH4/MATH-500",
-    dataset_indicies=get_math500_indices(subset="hard"),
+    benchmark_name="HuggingFaceH4/MATH-500",
+    benchmark_indicies=get_math500_indices(subset="hard"),
 )
 
 dataset = get_dataset(dataset_config)

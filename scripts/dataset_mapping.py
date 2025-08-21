@@ -5,27 +5,25 @@ import click
 from datasets import load_dataset
 from rich.console import Console
 
-from sal.utils.constants import BENCHMARK_MAPPINGS_ROOT, DATASETS
+from sal.utils.constants import BENCHMARK_MAPPINGS_ROOT, Benchmark, Benchmarks
 
 console = Console()
 
 
-def generate_mapping(dataset_name: str):
+def generate_mapping(benchmark: Benchmark):
     """Generate and save mapping for a dataset."""
-    config = DATASETS[dataset_name]
+    print(f"Loading {benchmark.key} dataset...")
+    ds = load_dataset(benchmark.hf_name, split=benchmark.split)
 
-    print(f"Loading {dataset_name} dataset...")
-    ds = load_dataset(config["hf_name"], split=config["split"])
-
-    match dataset_name:
-        case "math500":
+    match benchmark:
+        case Benchmarks.MATH500.value:
             unique_id_key = "unique_id"
-        case "aime24":
+        case Benchmarks.AIME24.value:
             unique_id_key = "id"
 
     mapping = {str(idx): row[unique_id_key] for idx, row in enumerate(ds)}
 
-    output_file = BENCHMARK_MAPPINGS_ROOT / config["hf_name"] / "mapping.json"
+    output_file = BENCHMARK_MAPPINGS_ROOT / benchmark.hf_name / "mapping.json"
     output_file.parent.mkdir(exist_ok=True, parents=True)
     with open(output_file, "w") as f:
         json.dump(mapping, f, indent=2)
@@ -34,10 +32,15 @@ def generate_mapping(dataset_name: str):
 
 
 @click.command()
-@click.argument("dataset", type=click.Choice(["math500", "aime24"]))
-def main(dataset: str):
+@click.argument(
+    "benchmark",
+    dest="benchmark_key",
+    type=click.Choice([b.value.key for b in Benchmarks]),
+)
+def main(benchmark_key: str):
     """Generate and save mapping for a dataset."""
-    generate_mapping(dataset)
+    benchmark = Benchmarks.from_key(benchmark_key)
+    generate_mapping(benchmark)
 
 
 if __name__ == "__main__":

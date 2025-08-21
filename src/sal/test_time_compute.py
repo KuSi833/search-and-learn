@@ -57,6 +57,11 @@ root = pyrootutils.find_root(indicator="pyproject.toml")
 logger = logging.getLogger(__name__)
 
 
+def get_project_root() -> Path:
+    """Get the project root path. This should be used by experiment files."""
+    return root
+
+
 APPROACHES = {
     "beam_search": beam_search,
     "dvts": dvts,

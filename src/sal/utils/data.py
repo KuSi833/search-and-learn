@@ -18,7 +18,7 @@ from typing import Set
 from datasets import Dataset, load_dataset
 
 from sal.config import DatasetConfig
-from sal.utils.constants import BENCHMARK_MAPPINGS_ROOT, DATASETS
+from sal.utils.constants import BENCHMARK_MAPPINGS_ROOT, Benchmarks
 
 logger = logging.getLogger()
 
@@ -26,9 +26,17 @@ logger = logging.getLogger()
 class BenchmarkMapping:
     """Simple mapping cache for benchmark datasets."""
 
-    def __init__(self, dataset_name: str):
-        config = DATASETS[dataset_name]
-        self.file = BENCHMARK_MAPPINGS_ROOT / config["hf_name"] / "mapping.json"
+    def __init__(self, benchmark_key: str):
+        # Find benchmark by key
+        benchmark = None
+        if benchmark_key == Benchmarks.MATH500.key:
+            benchmark = Benchmarks.MATH500
+        elif benchmark_key == Benchmarks.AIME24.key:
+            benchmark = Benchmarks.AIME24
+        else:
+            raise ValueError(f"Unknown benchmark key: {benchmark_key}")
+
+        self.file = BENCHMARK_MAPPINGS_ROOT / benchmark.hf_name / "mapping.json"
         with open(self.file, "r") as f:
             data = json.load(f)
         self._id_to_unique = data
@@ -49,7 +57,7 @@ def get_dataset(config: DatasetConfig) -> Dataset:
     Ensures the returned object is a `datasets.Dataset` (not a `DatasetDict` or
     streaming dataset), so downstream calls to `select` and `len` are valid.
     """
-    ds = load_dataset(config.dataset_name, split=config.dataset_split)
+    ds = load_dataset(config.benchmark_name, split=config.benchmark_split)
 
     if not isinstance(ds, Dataset):
         raise TypeError(
@@ -58,12 +66,12 @@ def get_dataset(config: DatasetConfig) -> Dataset:
         )
 
     # Apply explicit index selection first if provided
-    if len(config.dataset_indicies) > 0:
-        return ds.select(list(config.dataset_indicies))
+    if len(config.benchmark_indicies) > 0:
+        return ds.select(list(config.benchmark_indicies))
 
     # Apply start/end slicing if both are provided
-    if config.dataset_start is not None and config.dataset_end is not None:
-        ds = ds.select(range(config.dataset_start, config.dataset_end))
+    if config.benchmark_start is not None and config.benchmark_end is not None:
+        ds = ds.select(range(config.benchmark_start, config.benchmark_end))
 
     # Limit total number of samples if requested
     if config.num_samples is not None:
