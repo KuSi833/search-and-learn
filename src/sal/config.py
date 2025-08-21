@@ -19,7 +19,6 @@ from typing import Literal, Optional, Set
 
 from sal.utils.constants import (
     BENCHMARK_MAPPINGS_ROOT,
-    BENCHMARK_SUBSETS_ROOT,
     Benchmark,
 )
 from sal.utils.data import indices_from_subset_file

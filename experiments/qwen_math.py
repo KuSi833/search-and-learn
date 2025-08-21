@@ -61,8 +61,8 @@ if __name__ == "__main__":
     WANDB_CONFIG = WandbConfig(tags=set(["fusion"]))
 
     DATASET_CONFIG = DatasetConfig.from_subset_file(
-        run_id="dgef2v6u",
-        coverage=20,
+        run_id="53vig20u",
+        coverage=10,
         benchmark=Benchmarks.MATH500.value,
         project_root=project_root,
     )
@@ -127,13 +127,7 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    for n in [4, 8]:
-        # for n in [4, 8]:
-        # config_variant = copy.deepcopy(BEAM_SEARCH_CONFIG)
-        config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
-        # config_variant = copy.deepcopy(DVTS_CONFIG)
-        config_variant.search_config.n = n
-        experiment_configs.append(config_variant)
+    experiment_configs.append(BEST_OF_N_CONFIG)
 
     # for config in [BEST_OF_N_CONFIG, DVTS_CONFIG, BEAM_SEARCH_CONFIG]:
     # for config in [BEST_OF_N_CONFIG]:
