@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     DATASET_CONFIG = DatasetConfig.from_subset_file(
         run_id="53vig20u",
-        coverage=20,
+        coverage=10,
         benchmark=Benchmarks.MATH500.value,
         project_root=project_root,
     )
