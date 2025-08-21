@@ -26,15 +26,6 @@ class BenchmarkMapping:
     """Simple mapping cache for benchmark datasets."""
 
     def __init__(self, benchmark: Benchmark):
-        # Find benchmark by key
-        match benchmark:
-            case Benchmarks.MATH500.value.key:
-                benchmark = Benchmarks.MATH500.value
-            case Benchmarks.AIME24.value.key:
-                benchmark = Benchmarks.AIME24.value
-            case _:
-                raise ValueError(f"Unknown benchmark key: {benchmark}")
-
         self.file = BENCHMARK_MAPPINGS_ROOT / benchmark.hf_name / "mapping.json"
         with open(self.file, "r") as f:
             data = json.load(f)
