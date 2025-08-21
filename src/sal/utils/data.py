@@ -9,8 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import annotations
-
 import json
 import logging
 from pathlib import Path
@@ -19,7 +17,7 @@ from typing import Set
 from datasets import Dataset, load_dataset
 
 from sal.config import DatasetConfig
-from sal.utils.constants import BENCHMARK_MAPPINGS_ROOT, Benchmarks
+from sal.utils.constants import BENCHMARK_MAPPINGS_ROOT, Benchmark, Benchmarks
 
 logger = logging.getLogger()
 
@@ -27,15 +25,15 @@ logger = logging.getLogger()
 class BenchmarkMapping:
     """Simple mapping cache for benchmark datasets."""
 
-    def __init__(self, benchmark_key: str):
+    def __init__(self, benchmark: Benchmark):
         # Find benchmark by key
-        benchmark = None
-        if benchmark_key == Benchmarks.MATH500.key:
-            benchmark = Benchmarks.MATH500
-        elif benchmark_key == Benchmarks.AIME24.key:
-            benchmark = Benchmarks.AIME24
-        else:
-            raise ValueError(f"Unknown benchmark key: {benchmark_key}")
+        match benchmark:
+            case Benchmarks.MATH500.value.key:
+                benchmark = Benchmarks.MATH500.value
+            case Benchmarks.AIME24.value.key:
+                benchmark = Benchmarks.AIME24.value
+            case _:
+                raise ValueError(f"Unknown benchmark key: {benchmark}")
 
         self.file = BENCHMARK_MAPPINGS_ROOT / benchmark.hf_name / "mapping.json"
         with open(self.file, "r") as f:
@@ -52,7 +50,7 @@ class BenchmarkMapping:
         return self._unique_to_id[unique_id]
 
 
-def get_dataset(config: "DatasetConfig") -> Dataset:
+def get_dataset(config: DatasetConfig) -> Dataset:
     """Load a dataset split and apply optional slicing and indexing.
 
     Ensures the returned object is a `datasets.Dataset` (not a `DatasetDict` or
@@ -66,34 +64,8 @@ def get_dataset(config: "DatasetConfig") -> Dataset:
             "Ensure `dataset_split` yields a materialised dataset (non-streaming)."
         )
 
-    # Apply explicit index selection first if provided
-    if len(config.dataset_indicies) > 0:
-        return ds.select(list(config.dataset_indicies))
-
-    # Apply start/end slicing if both are provided
-    if config.dataset_start is not None and config.dataset_end is not None:
-        ds = ds.select(range(config.dataset_start, config.dataset_end))
-
-    # Limit total number of samples if requested
-    if config.num_samples is not None:
-        ds = ds.select(range(min(len(ds), config.num_samples)))
-
-    return ds
-
-
-def get_dataset_from_subset_file(config: DatasetConfig) -> Dataset:
-    """Load a dataset split and apply optional slicing and indexing.
-
-    Ensures the returned object is a `datasets.Dataset` (not a `DatasetDict` or
-    streaming dataset), so downstream calls to `select` and `len` are valid.
-    """
-    ds = load_dataset(config.dataset_name, split=config.dataset_split)
-
-    if not isinstance(ds, Dataset):
-        raise TypeError(
-            "Expected `datasets.Dataset` when loading split=...; got a different type. "
-            "Ensure `dataset_split` yields a materialised dataset (non-streaming)."
-        )
+    if config.subset_file_path:
+        config.dataset_indicies = indices_from_subset_file(config.subset_file_path)
 
     # Apply explicit index selection first if provided
     if len(config.dataset_indicies) > 0:
@@ -128,7 +100,7 @@ def indices_from_subset_file(subset_path: Path) -> Set[int]:
     """
     with open(subset_path, "r") as f:
         data = json.load(f)
-    dataset_key = data["benchmark_key"]
+    benchmark = Benchmarks.from_key(data["benchmark_key"])
     unique_ids = data["unique_ids"]
-    mapping = BenchmarkMapping(dataset_key)
+    mapping = BenchmarkMapping(benchmark)
     return {int(mapping.get_index(uid)) for uid in unique_ids}

@@ -21,7 +21,6 @@ from sal.utils.constants import (
     BENCHMARK_MAPPINGS_ROOT,
     Benchmark,
 )
-from sal.utils.data import indices_from_subset_file
 
 
 @dataclass
@@ -99,12 +98,10 @@ class DatasetConfig:
         subset_file_path = (
             base_path / benchmark.hf_name / run_id / "coverage" / f"{coverage}.json"
         )
-        dataset_indices = indices_from_subset_file(subset_file_path)
 
         return cls(
             dataset_name=benchmark.hf_name,
             dataset_split=benchmark.split,
-            dataset_indicies=dataset_indices,
             subset_run_id=run_id,
             subset_coverage=coverage,
             subset_file_path=subset_file_path,
