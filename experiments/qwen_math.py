@@ -76,12 +76,13 @@ if __name__ == "__main__":
         dataset_name="HuggingFaceH4/MATH-500",
         dataset_indicies=indices_from_subset_file(SUBSET_FILE),
     )
-    # DATASET_CONFIG = DatasetConfig(num_samples=500)
+    DATASET_CONFIG = DatasetConfig(num_samples=500)
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
+        generator_config=Q4_MODEL,
         # generator_config=Q8_MODEL,
-        generator_config=INSTRUCT_MODEL,
+        # generator_config=INSTRUCT_MODEL,
         dataset_config=DATASET_CONFIG,
     )
 
@@ -148,6 +149,7 @@ if __name__ == "__main__":
     experiment_configs: List[ExperimentConfig] = []
 
     for n in [4, 8]:
+        # for n in [4, 8]:
         # config_variant = copy.deepcopy(BEAM_SEARCH_CONFIG)
         config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
         # config_variant = copy.deepcopy(DVTS_CONFIG)
