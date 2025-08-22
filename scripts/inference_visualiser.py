@@ -16,7 +16,7 @@ from rich.text import Text
 
 from sal.evaluation.grader import math_equal
 from sal.evaluation.parser import extract_answer, find_box
-from sal.utils.constants import BENCHMARK_SUBSETS_ROOT, Benchmark
+from sal.utils.constants import BENCHMARK_SUBSETS_ROOT, Benchmark, Benchmarks
 from sal.utils.data import BenchmarkMapping
 from sal.utils.logging import setup_logging
 
@@ -515,13 +515,14 @@ def question_answer(run_id: str, show_correct: bool) -> None:
 )
 @click.option(
     "--benchmark",
-    default=Benchmark.MATH500.value,
-    type=click.Choice([b.value for b in Benchmark]),
+    "benchmark_key",
+    default=Benchmarks.MATH500.value,
+    type=click.Choice([b.value for b in Benchmarks]),
     help="Benchmark to use for answer extraction",
 )
 @click.option("--name", required=True, type=str, help="Name for the subset file")
-def extract_incorrect(run_id: str, benchmark: str, name: str) -> None:
-    benchmark_enum = Benchmark(benchmark)
+def extract_incorrect(run_id: str, benchmark_key: str, name: str) -> None:
+    benchmark_enum = Benchmarks.from_key(benchmark_key)
     out_file = Path("./output") / run_id / "inference_output.jsonl"
     records = load_jsonl(out_file)
 
@@ -624,9 +625,10 @@ def _select_uncertain_indices(
 )
 @click.option(
     "--benchmark",
-    default=Benchmark.MATH500.value,
-    type=click.Choice([b.value for b in Benchmark]),
-    help="Benchmark to use for saving subset",
+    "benchmark_key",
+    default=Benchmarks.MATH500.value,
+    type=click.Choice([b.value for b in Benchmarks]),
+    help="Benchmark to use for answer extraction",
 )
 @click.option(
     "--name",
@@ -636,7 +638,7 @@ def _select_uncertain_indices(
     help="Optional custom name; default path is <hf_name>/<run_id>/<coverage>.json",
 )
 def export_uncertain(
-    run_id: str, coverage: float, metric: str, benchmark: str, name: Optional[str]
+    run_id: str, coverage: float, metric: str, benchmark_key: str, name: Optional[str]
 ) -> None:
     out_file = Path("./output") / run_id / "inference_output.jsonl"
     records = load_jsonl(out_file)
@@ -647,9 +649,8 @@ def export_uncertain(
     selected = _select_uncertain_indices(records, coverage, metric)
     unique_ids = [records[i]["unique_id"] for i in selected]
 
-    benchmark_enum = Benchmark(benchmark)
-    hf_name = DATASETS[benchmark_enum.value]["hf_name"]
-    output_root = BENCHMARK_SUBSETS_ROOT / hf_name / run_id / "coverage"
+    benchmark = Benchmarks.from_key(benchmark_key)
+    output_root = BENCHMARK_SUBSETS_ROOT / benchmark.hf_name / run_id / "coverage"
     if name is None:
         coverage_str = (
             str(int(coverage))
@@ -665,8 +666,8 @@ def export_uncertain(
     subset_payload = {
         "version": 1,
         "type": "uncertain_subset",
-        "benchmark_key": benchmark_enum.value,
-        "hf_name": hf_name,
+        "benchmark_key": benchmark.key,
+        "hf_name": benchmark.hf_name,
         "run_id": run_id,
         "metric": metric,
         "coverage_pct": coverage,

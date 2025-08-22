@@ -378,13 +378,20 @@ def print_results_table(results: List[FusionResult]) -> None:
     console.print(table)
 
 
+def best_accuracy():
+    BASE_RUN = "5lvoti3i"
+    RERUN_ID = "0oe2xr1b"
+    return BASE_RUN, RERUN_ID
+
+
 if __name__ == "__main__":
     # Define your sweep here (edit and commit as an experiment definition)
     # BASE_RUN = "5lvoti3i"  # The base run with all samples
     # BASE_RUN = "qi7dtlzw"  # weaker run
     # BASE_RUN = "51bl0yxj"  # weaker bon
-    BASE_RUN = "dgef2v6u"
-    RERUN_ID = "0oe2xr1b"  # The rerun with subset of samples to potentially override
+    # BASE_RUN = "53vig20u"
+    # RERUN_ID = "0oe2xr1b"  # The rerun with subset of samples to potentially override
+    BASE_RUN, RERUN_ID = best_accuracy()
     SUBSET: Optional[Path] = None
 
     metrics = [
@@ -412,8 +419,9 @@ if __name__ == "__main__":
     )
 
     for rerun_id in [
-        "j8onz01w",
-        "88ekb7m1",
+        # "stlcwjg2",
+        # "9qup1u07",
+        RERUN_ID
     ]:
         cfg_var = copy.deepcopy(cfg)
         cfg_var.rerun_id = rerun_id
