@@ -379,9 +379,15 @@ def print_results_table(results: List[FusionResult]) -> None:
 
 
 def best_accuracy():
-    BASE_RUN = "5lvoti3i"
-    RERUN_ID = "0oe2xr1b"
-    return BASE_RUN, RERUN_ID
+    base_run = "5lvoti3i"
+    rerun_id = "0oe2xr1b"
+    return base_run, rerun_id
+
+
+def convert_45():
+    base_run = "53vig20u"
+    rerun_id = "9qup1u07"
+    return base_run, rerun_id
 
 
 if __name__ == "__main__":
@@ -391,12 +397,13 @@ if __name__ == "__main__":
     # BASE_RUN = "51bl0yxj"  # weaker bon
     # BASE_RUN = "53vig20u"
     # RERUN_ID = "0oe2xr1b"  # The rerun with subset of samples to potentially override
-    BASE_RUN, RERUN_ID = best_accuracy()
+    # BASE_RUN, RERUN_ID = best_accuracy()
+    BASE_RUN, RERUN_ID = convert_45()
     SUBSET: Optional[Path] = None
 
     metrics = [
         "group_top_frac",
-        "prm_margin",
+        # "prm_margin",
     ]
     deltas = [0.00, 0.02, 0.05]
     min_rerun_list: List[Optional[float]] = [None, 0.50, 0.60]
