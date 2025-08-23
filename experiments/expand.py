@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    for n in [2]:
+    for n in [1]:
         experiment_copy = copy.deepcopy(BASE_BEST_OF_N_CONFIG)
         experiment_copy.search_config.n = n
 
