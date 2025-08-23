@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import itertools
 import json
 from dataclasses import dataclass
@@ -260,7 +259,6 @@ def run_fusion_once(
         base_ok = _is_correct_record_math(base_rec)
 
         # Start with base result
-        final_rec = base_rec
         final_ok = base_ok
 
         # Check if we should override with rerun
@@ -287,7 +285,6 @@ def run_fusion_once(
                 use_rerun = False
 
             if use_rerun:
-                final_rec = rerun_rec
                 final_ok = _is_correct_record_math(rerun_rec)
                 overrides_used += 1
 
@@ -378,33 +375,38 @@ def print_results_table(results: List[FusionResult]) -> None:
     console.print(table)
 
 
-def best_accuracy():
+def best_accuracy() -> Tuple[str, str]:
     base_run = "5lvoti3i"
     rerun_id = "0oe2xr1b"
     return base_run, rerun_id
 
 
-def convert_45():
+def convert_45() -> Tuple[str, str]:
     base_run = "53vig20u"
     rerun_id = "9qup1u07"
     return base_run, rerun_id
 
 
-if __name__ == "__main__":
-    # Define your sweep here (edit and commit as an experiment definition)
-    # BASE_RUN = "5lvoti3i"  # The base run with all samples
-    # BASE_RUN = "qi7dtlzw"  # weaker run
-    # BASE_RUN = "51bl0yxj"  # weaker bon
-    # BASE_RUN = "53vig20u"
-    # RERUN_ID = "0oe2xr1b"  # The rerun with subset of samples to potentially override
-    # BASE_RUN, RERUN_ID = best_accuracy()
-    BASE_RUN, RERUN_ID = convert_45()
-    SUBSET: Optional[Path] = None
+# Supported uncertainty metrics (aligned with figures/visualiser)
+ALL_METRICS: Sequence[str] = (
+    "agreement_ratio",
+    "entropy_freq",
+    "entropy_weighted",
+    "prm_margin",
+    "prm_top_frac",
+    "group_top_frac",
+    "prm_std",
+    "prm_mean",
+)
 
-    metrics = [
-        "group_top_frac",
-        # "prm_margin",
-    ]
+
+def run_minimal_experiment(base_run: str, rerun_id: str) -> None:
+    """Run a compact sweep for a single metric (group_top_frac) and save JSON only.
+
+    Output path: ./output/fusion_sweeps/minimal/<base>__<rerun>.json
+    """
+    save_dir = Path("./output/fusion_sweeps/minimal")
+    metrics = ["group_top_frac"]
     deltas = [0.00, 0.02, 0.05]
     min_rerun_list: List[Optional[float]] = [None, 0.50, 0.60]
     max_base_list: List[Optional[float]] = [None, 0.80]
@@ -416,21 +418,57 @@ if __name__ == "__main__":
         )
     ]
 
-    save_dir = Path("./output/fusion_sweeps")
     cfg = FusionRunConfig(
-        base_run_id=BASE_RUN,
-        rerun_id=RERUN_ID,
-        subset=SUBSET,
+        base_run_id=base_run,
+        rerun_id=rerun_id,
+        subset=None,
         settings=settings,
         save_dir=save_dir,
     )
 
-    for rerun_id in [
-        # "stlcwjg2",
-        # "9qup1u07",
-        RERUN_ID
-    ]:
-        cfg_var = copy.deepcopy(cfg)
-        cfg_var.rerun_id = rerun_id
-        results = run_sweep(cfg_var)
-        print_results_table(results)
+    run_sweep(cfg)
+
+
+def run_extensive_experiment(
+    base_run: str,
+    rerun_id: str,
+    subset: Optional[Path] = None,
+    more_deltas: Optional[Sequence[float]] = None,
+) -> None:
+    """Run a broader sweep across all metrics and a richer parameter grid.
+
+    Output path: ./output/fusion_sweeps/extensive/<base>__<rerun>.json
+    """
+    save_dir = Path("./output/fusion_sweeps/extensive")
+    metrics = list(ALL_METRICS)
+    deltas = list(more_deltas) if more_deltas is not None else [0.00, 0.01, 0.02, 0.05]
+    min_rerun_list: List[Optional[float]] = [None, 0.50, 0.60, 0.70]
+    max_base_list: List[Optional[float]] = [None, 0.80, 0.70]
+
+    settings = [
+        FusionSetting(metric=m, delta=d, min_rerun_conf=mr, max_base_conf=mb)
+        for (m, d, mr, mb) in itertools.product(
+            metrics, deltas, min_rerun_list, max_base_list
+        )
+    ]
+
+    cfg = FusionRunConfig(
+        base_run_id=base_run,
+        rerun_id=rerun_id,
+        subset=subset,
+        settings=settings,
+        save_dir=save_dir,
+    )
+
+    run_sweep(cfg)
+
+
+if __name__ == "__main__":
+    # Define your sweep here. Minimal (single-metric) run by default; toggle extensive as needed.
+    BASE_RUN, RERUN_ID = convert_45()
+
+    # Minimal single-metric sweep (group_top_frac), saves JSON only
+    # run_minimal_experiment(BASE_RUN, RERUN_ID)
+
+    # Uncomment to run an extensive multi-metric sweep (saves JSON only)
+    run_extensive_experiment(BASE_RUN, RERUN_ID)
