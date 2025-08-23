@@ -553,9 +553,158 @@ def _parse_metrics_arg(values: Optional[Iterable[str]]) -> List[str]:
     return final or list(DEFAULT_METRICS)
 
 
-@click.command(help="Generate uncertainty analysis figures under ./figures/<run-id>/")
+def _load_fusion_results(json_path: Path) -> List[Dict[str, Any]]:
+    with json_path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, list):
+        raise ValueError("Fusion results JSON must be a list of result objects")
+    return data
+
+
+def _format_none(x: Optional[float]) -> str:
+    return "-" if x is None else f"{x:.2f}"
+
+
+def _ensure_fusion_outdir(json_path: Path, outdir: Optional[Path]) -> Path:
+    if outdir is None:
+        root = Path("./figures/fusion_sweeps/") / json_path.stem
+    else:
+        root = outdir
+    _ensure_outdir(root)
+    return root
+
+
+def _save_fusion_lineplots(
+    metric: str,
+    results: List[Dict[str, Any]],
+    outdir: Path,
+) -> None:
+    # Organise
+    deltas = sorted({float(r["delta"]) for r in results})
+    combos_set = {(r.get("min_rerun_conf"), r.get("max_base_conf")) for r in results}
+
+    def _combo_key(pair: Tuple[Optional[float], Optional[float]]):
+        mr, mb = pair
+        return (
+            (mr is None, -math.inf if mr is None else float(mr)),
+            (mb is None, -math.inf if mb is None else float(mb)),
+        )
+
+    combos = sorted(list(combos_set), key=_combo_key)
+    # Build lookup (delta, min, max) -> acc_fused
+    key_to_acc: Dict[Tuple[float, Optional[float], Optional[float]], float] = {}
+    for r in results:
+        key = (float(r["delta"]), r.get("min_rerun_conf"), r.get("max_base_conf"))
+        key_to_acc[key] = float(r.get("acc_fused", 0.0))
+
+    # Filter combos to only those with meaningful variation or high performance
+    meaningful_combos: List[Tuple[Optional[float], Optional[float]]] = []
+    for mr, mb in combos:
+        vals = [key_to_acc.get((d, mr, mb), float("nan")) for d in deltas]
+        vals = [v for v in vals if not math.isnan(v)]
+        if len(vals) < 2:
+            continue
+
+        # Skip if all values are identical (no variation)
+        if len(set(vals)) <= 1:
+            continue
+
+        # Skip if variation is too small (< 0.1% difference)
+        if max(vals) - min(vals) < 0.1:
+            continue
+
+        # Include if mean accuracy is decent or has significant variation
+        mean_v = sum(vals) / len(vals)
+        variation = max(vals) - min(vals)
+        if (
+            mean_v > 20.0 or variation > 1.0
+        ):  # Either good performance or significant variation
+            meaningful_combos.append((mr, mb))
+
+    # If no meaningful combos, take top performers by mean
+    if not meaningful_combos:
+        means: List[Tuple[float, Tuple[Optional[float], Optional[float]]]] = []
+        for mr, mb in combos:
+            vals = [key_to_acc.get((d, mr, mb), float("nan")) for d in deltas]
+            vals = [v for v in vals if not math.isnan(v)]
+            mean_v = sum(vals) / len(vals) if vals else float("-inf")
+            means.append((mean_v, (mr, mb)))
+        means.sort(reverse=True, key=lambda x: x[0])
+        meaningful_combos = [combo for _, combo in means[:6]]
+
+    plt.style.use("seaborn-v0_8")
+    fig, ax = plt.subplots(figsize=(12, 6))
+    for mr, mb in meaningful_combos:
+        ys = [key_to_acc.get((d, mr, mb), float("nan")) for d in deltas]
+        label = f"min_r={_format_none(mr)}, max_b={_format_none(mb)}"
+        ax.plot(deltas, ys, marker="o", linewidth=2, label=label)
+
+    ax.set_title(f"Fused accuracy vs delta — {metric}")
+    ax.set_xlabel("delta")
+    ax.set_ylabel("accuracy (%)")
+    ax.grid(True, linestyle=":", alpha=0.6)
+    ax.legend(ncol=2, frameon=False, fontsize=9)
+    fig.tight_layout()
+    fig.savefig(outdir / f"acc_fused_vs_delta__{metric}.png", dpi=200)
+    plt.close(fig)
+
+
+def _dump_fusion_summary(
+    by_metric: Dict[str, List[Dict[str, Any]]],
+    outdir: Path,
+) -> None:
+    summary: Dict[str, Any] = {}
+    for metric, results in by_metric.items():
+        # Best fused accuracy entry
+        best = (
+            max(results, key=lambda r: float(r.get("acc_fused", 0.0)))
+            if results
+            else None
+        )
+        if best is None:
+            continue
+        summary[metric] = {
+            "best_acc_fused": float(best.get("acc_fused", 0.0)),
+            "delta": float(best.get("delta", 0.0)),
+            "min_rerun_conf": best.get("min_rerun_conf"),
+            "max_base_conf": best.get("max_base_conf"),
+            "acc_base": float(best.get("acc_base", 0.0)),
+            "overrides_used": int(best.get("overrides_used", 0)),
+            "flips_pos": int(best.get("flips_pos", 0)),
+            "flips_neg": int(best.get("flips_neg", 0)),
+            "net_flips": int(best.get("flips_pos", 0)) - int(best.get("flips_neg", 0)),
+        }
+    with (outdir / "summary.json").open("w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2)
+
+
+def generate_fusion_figures(json_path: Path, outdir: Optional[Path] = None) -> Path:
+    """Generate figures for a fusion sweep JSON produced by experiments/fusion.py.
+
+    Returns the output directory path.
+    """
+    results = _load_fusion_results(json_path)
+    out_root = _ensure_fusion_outdir(json_path, outdir)
+
+    # Group by metric
+    by_metric: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for r in results:
+        m = str(r.get("metric", ""))
+        by_metric[m].append(r)
+
+    # Plots per metric
+    for metric, group in by_metric.items():
+        _save_fusion_lineplots(metric, group, out_root)
+
+    _dump_fusion_summary(by_metric, out_root)
+    return out_root
+
+
+@click.command(
+    help="Generate uncertainty analysis figures under ./figures/<run-id>/ or plot fusion sweeps via --fusion-json"
+)
 @click.option(
-    "--run-id", required=True, type=str, help="W&B run id (directory under ./output)"
+    "--run-id", required=False, type=str, help="W&B run id (directory under ./output)"
 )
 @click.option(
     "--metrics",
@@ -588,14 +737,29 @@ def _parse_metrics_arg(values: Optional[Iterable[str]]) -> List[str]:
     default=50,
     help="Number of bins for cumulative stacked plots",
 )
+@click.option(
+    "--fusion-json",
+    type=str,
+    default=None,
+    help="Path to fusion sweep JSON generated by experiments/fusion.py",
+)
 def main(
-    run_id: str,
+    run_id: Optional[str],
     metrics: Tuple[str, ...],
     coverages: str,
     annotate: str,
     skip_distributions: bool,
     bins: int,
+    fusion_json: Optional[str],
 ) -> None:
+    # Fusion sweep plotting path (takes precedence if provided)
+    if fusion_json:
+        out_dir = generate_fusion_figures(Path(fusion_json))
+        print(f"Saved fusion sweep figures to: {out_dir}")
+        return
+
+    if not run_id:
+        raise click.UsageError("--run-id is required unless --fusion-json is provided")
     out_file = Path("./output") / run_id / "inference_output.jsonl"
     records = load_jsonl(out_file)
 

@@ -208,6 +208,11 @@ class FusionResult:
     acc_fused: float
     flips_pos: int
     flips_neg: int
+    # New T/F conversion tracking
+    conversions_tt: int = 0  # True -> True
+    conversions_ff: int = 0  # False -> False
+    conversions_tf: int = 0  # True -> False
+    conversions_ft: int = 0  # False -> True
 
 
 def _get_base_samples(
@@ -254,6 +259,12 @@ def run_fusion_once(
     flips_pos = 0
     flips_neg = 0
 
+    # T/F conversion tracking
+    conversions_tt = 0  # True -> True
+    conversions_ff = 0  # False -> False
+    conversions_tf = 0  # True -> False
+    conversions_ft = 0  # False -> True
+
     for uid in all_base_ids:
         base_rec = base_recs[uid]
         base_ok = _is_correct_record_math(base_rec)
@@ -285,7 +296,8 @@ def run_fusion_once(
                 use_rerun = False
 
             if use_rerun:
-                final_ok = _is_correct_record_math(rerun_rec)
+                rerun_ok = _is_correct_record_math(rerun_rec)
+                final_ok = rerun_ok
                 overrides_used += 1
 
                 # Track flips only when we actually override
@@ -293,6 +305,16 @@ def run_fusion_once(
                     flips_pos += 1
                 elif base_ok and (not final_ok):
                     flips_neg += 1
+
+                # Track T/F conversions only for overrides
+                if base_ok and rerun_ok:
+                    conversions_tt += 1
+                elif (not base_ok) and (not rerun_ok):
+                    conversions_ff += 1
+                elif base_ok and (not rerun_ok):
+                    conversions_tf += 1
+                elif (not base_ok) and rerun_ok:
+                    conversions_ft += 1
 
         fused_correct += 1 if final_ok else 0
 
@@ -311,6 +333,10 @@ def run_fusion_once(
         acc_fused=acc_fused,
         flips_pos=flips_pos,
         flips_neg=flips_neg,
+        conversions_tt=conversions_tt,
+        conversions_ff=conversions_ff,
+        conversions_tf=conversions_tf,
+        conversions_ft=conversions_ft,
     )
 
 
@@ -400,6 +426,43 @@ ALL_METRICS: Sequence[str] = (
 )
 
 
+def run_ultraminimal_experiment(base_run: str, rerun_id: str) -> None:
+    """Run the ultimate minimal experiment: just test which metric works best.
+
+    All other parameters proven useless by analysis. Only 8 experiments total!
+
+    Output path: ./output/fusion_sweeps/ultraminimal/<base>__<rerun>.json
+    """
+    save_dir = Path("./output/fusion_sweeps/ultraminimal")
+
+    # Test all metrics with the proven optimal strategy
+    metrics = list(ALL_METRICS)
+
+    settings = [
+        FusionSetting(
+            metric=m,
+            delta=0.0,  # Proven optimal
+            min_rerun_conf=None,  # Proven useless
+            max_base_conf=None,  # Proven useless
+        )
+        for m in metrics
+    ]
+
+    cfg = FusionRunConfig(
+        base_run_id=base_run,
+        rerun_id=rerun_id,
+        subset=None,
+        settings=settings,
+        save_dir=save_dir,
+    )
+
+    print(f"Running ultraminimal fusion experiment: {len(settings)} settings")
+    print("Strategy: Always pick the answer with higher confidence (no thresholds)")
+    print(f"Testing metrics: {metrics}")
+
+    run_sweep(cfg)
+
+
 def run_minimal_experiment(base_run: str, rerun_id: str) -> None:
     """Run a compact sweep for a single metric (group_top_frac) and save JSON only.
 
@@ -429,6 +492,49 @@ def run_minimal_experiment(base_run: str, rerun_id: str) -> None:
     run_sweep(cfg)
 
 
+def run_simple_experiment(
+    base_run: str,
+    rerun_id: str,
+    subset: Optional[Path] = None,
+) -> None:
+    """Run a simple sweep with delta=0 and key questions about thresholds.
+
+    Output path: ./output/fusion_sweeps/simple/<base>__<rerun>.json
+    """
+    save_dir = Path("./output/fusion_sweeps/simple")
+
+    # Focus on top metrics from previous analysis
+    key_metrics = ["group_top_frac", "agreement_ratio", "prm_mean", "prm_top_frac"]
+
+    # Delta is always 0 (proven useless)
+    delta = 0.0
+
+    # Test key threshold combinations
+    min_rerun_list: List[Optional[float]] = [None, 0.50, 0.70]  # Reduced
+    max_base_list: List[Optional[float]] = [None, 0.80]  # Reduced
+
+    settings = [
+        FusionSetting(metric=m, delta=delta, min_rerun_conf=mr, max_base_conf=mb)
+        for (m, mr, mb) in itertools.product(key_metrics, min_rerun_list, max_base_list)
+    ]
+
+    cfg = FusionRunConfig(
+        base_run_id=base_run,
+        rerun_id=rerun_id,
+        subset=subset,
+        settings=settings,
+        save_dir=save_dir,
+    )
+
+    print(f"Running simple fusion experiment: {len(settings)} settings")
+    print(f"Metrics: {key_metrics}")
+    print(f"Delta: {delta} (always)")
+    print(f"Min rerun thresholds: {min_rerun_list}")
+    print(f"Max base thresholds: {max_base_list}")
+
+    run_sweep(cfg)
+
+
 def run_extensive_experiment(
     base_run: str,
     rerun_id: str,
@@ -436,6 +542,7 @@ def run_extensive_experiment(
     more_deltas: Optional[Sequence[float]] = None,
 ) -> None:
     """Run a broader sweep across all metrics and a richer parameter grid.
+
 
     Output path: ./output/fusion_sweeps/extensive/<base>__<rerun>.json
     """
@@ -464,11 +571,13 @@ def run_extensive_experiment(
 
 
 if __name__ == "__main__":
-    # Define your sweep here. Minimal (single-metric) run by default; toggle extensive as needed.
+    # Define your sweep here.
     BASE_RUN, RERUN_ID = convert_45()
 
-    # Minimal single-metric sweep (group_top_frac), saves JSON only
-    # run_minimal_experiment(BASE_RUN, RERUN_ID)
+    # Ultra-minimal experiment: 8 metrics × 1 strategy = 8 settings total!
+    run_ultraminimal_experiment(BASE_RUN, RERUN_ID)
 
-    # Uncomment to run an extensive multi-metric sweep (saves JSON only)
-    run_extensive_experiment(BASE_RUN, RERUN_ID)
+    # Uncomment for other experiments:
+    # run_simple_experiment(BASE_RUN, RERUN_ID)  # 24 settings (with thresholds)
+    # run_minimal_experiment(BASE_RUN, RERUN_ID)  # Single metric with parameters
+    # run_extensive_experiment(BASE_RUN, RERUN_ID)  # All 384 combinations
