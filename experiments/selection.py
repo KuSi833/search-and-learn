@@ -15,6 +15,8 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+from sal.utils.runs import fusion_base_runs_best
+
 # Import functions from the inference visualizer
 sys.path.append(str(Path(__file__).parent.parent))
 from sal.utils.constants import BENCHMARK_SUBSETS_ROOT, Benchmark, Benchmarks
@@ -200,24 +202,6 @@ def export_uncertain_multi_runs(
             console.print()
 
         export_uncertain_subset(run_id, coverage, metric, benchmark)
-
-
-def fusion_base_runs():
-    # BoN n=4
-
-    return [
-        "gfw8x07r",  # 78
-        "77pyab58",  # 80
-        "tqfyvf5w",  # 82
-    ]
-
-
-def fusion_base_runs_best():
-    return [
-        "gfw8x07r",  # 78
-        "77pyab58",  # 80
-        "tqfyvf5w",  # 82
-    ]
 
 
 if __name__ == "__main__":
