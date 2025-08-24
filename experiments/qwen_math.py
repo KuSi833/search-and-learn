@@ -3,7 +3,6 @@ from typing import List
 
 from dotenv import load_dotenv
 
-from red.its_hub.algorithms.bon import BestOfN
 from sal.config import (
     BaseConfig,
     BeamSearchConfig,
@@ -119,7 +118,7 @@ if __name__ == "__main__":
             temperature=0.7,  # Their exact setting (you had 0.8)
             top_p=0.8,  # Their exact setting (you had 1.0)
             prm_batch_size=4,
-            search_batch_size=50,
+            search_batch_size=25,
             max_tokens=2048,
             agg_strategy="prod",
         ),
@@ -130,11 +129,9 @@ if __name__ == "__main__":
 
     # for config in [BEST_OF_N_CONFIG, DVTS_CONFIG, BEAM_SEARCH_CONFIG]:
     for n in [8, 16, 32, 64]:
-        for config in [BEST_OF_N_CONFIG]:
-            config_variant = copy.deepcopy(config)
-            config_variant.search_config.n = 16
-            if n >= 32:
-                config.search_config.prm_batch_size = 25
+        for _ in range(2):
+            config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
+            config_variant.search_config.n = n
             experiment_configs.append(config_variant)
 
     run(BASE_CONFIG, experiment_configs)
