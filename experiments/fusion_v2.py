@@ -129,6 +129,12 @@ def analyze_pair(pair: FusionRerun) -> Dict[str, Any]:
             conversions["FT"] += 1
 
     oracle_net_gain = conversions["FT"]
+    # Always override baseline (override wherever rerun exists)
+    always_net = conversions["FT"] - conversions["TF"]
+    acc_fused_always = acc_base + (
+        always_net * 100.0 / len(all_base_ids) if all_base_ids else 0.0
+    )
+    always_gain_pp = acc_fused_always - acc_base
 
     metrics = (
         "agreement_ratio",
@@ -219,6 +225,9 @@ def analyze_pair(pair: FusionRerun) -> Dict[str, Any]:
         "oracle_net_gain": oracle_net_gain,
         "results_rows": results_rows,
         "best_row": best_row,
+        "always_net": int(always_net),
+        "acc_fused_always": float(acc_fused_always),
+        "always_gain_pp": float(always_gain_pp),
     }
 
 
@@ -231,6 +240,9 @@ def render_pair_analysis(result: Dict[str, Any]) -> None:
     conversions: Dict[str, int] = result["conversions"]
     oracle_net_gain: int = result["oracle_net_gain"]
     results_rows: List[Dict[str, Any]] = result["results_rows"]
+    always_net: int = result.get("always_net", 0)
+    acc_fused_always: float = result.get("acc_fused_always", acc_base)
+    always_gain_pp: float = result.get("always_gain_pp", 0.0)
 
     console.print(
         Panel.fit(
@@ -247,6 +259,15 @@ def render_pair_analysis(result: Dict[str, Any]) -> None:
     summary.add_row("base acc", f"{acc_base:.2f}%")
     summary.add_row("rerun acc (overlap)", f"{acc_rerun:.2f}%")
     summary.add_row("oracle max net gain", str(oracle_net_gain))
+    ag = always_gain_pp
+    ag_str = (
+        f"[green]+{ag:.2f} pp[/green]"
+        if ag > 0
+        else (f"[red]{ag:.2f} pp[/red]" if ag < 0 else f"{ag:.2f} pp")
+    )
+    summary.add_row("always override net", str(always_net))
+    summary.add_row("always override fused acc", f"{acc_fused_always:.2f}%")
+    summary.add_row("always override gain", ag_str)
     console.print(summary)
 
     conv_table = Table(
@@ -886,9 +907,394 @@ def run_greedy_cv_all_pairs(
     console.print(summ)
 
 
+# ----------------- Cross-pair evaluation: train once, test across pairs -----------------
+
+
+def _load_pair_overlap(pair: FusionRerun) -> Dict[str, Any]:
+    base_file = OUTPUT_DIR / pair.base_run_id / EXPECTED_FILENAME
+    rerun_file = OUTPUT_DIR / pair.rerun_run_id / EXPECTED_FILENAME
+    base_recs = {rec["unique_id"]: rec for rec in load_jsonl(base_file)}
+    rerun_recs = {rec["unique_id"]: rec for rec in load_jsonl(rerun_file)}
+    all_base_ids: List[str] = list(base_recs.keys())
+    overlap_ids: List[str] = [uid for uid in all_base_ids if uid in rerun_recs]
+    acc_base = _acc(base_recs, all_base_ids)
+    # Build labels and metric deltas per item
+    items: List[Dict[str, Any]] = []
+    for uid in overlap_ids:
+        b = base_recs[uid]
+        r = rerun_recs[uid]
+        b_ok = _is_correct_record_math(b)
+        r_ok = _is_correct_record_math(r)
+        if (not b_ok) and r_ok:
+            label = 1
+        elif b_ok and (not r_ok):
+            label = -1
+        else:
+            label = 0
+        items.append({"uid": uid, "b": b, "r": r, "label": label})
+    return {
+        "pair": pair,
+        "base_recs": base_recs,
+        "rerun_recs": rerun_recs,
+        "all_base_ids": all_base_ids,
+        "overlap_ids": overlap_ids,
+        "acc_base": acc_base,
+        "items": items,
+    }
+
+
+def _metric_scores(items: List[Dict[str, Any]], metric: str) -> List[tuple]:
+    out: List[tuple] = []
+    for it in items:
+        b = it["b"]
+        r = it["r"]
+        score = _get_confidence(r, metric) - _get_confidence(b, metric)
+        out.append((float(score), int(it["label"])))
+    return out
+
+
+def _choose_threshold(scores_labels: List[tuple]) -> float:
+    # Return threshold t such that selecting score >= t maximizes summed label
+    if not scores_labels:
+        return float("inf")
+    sl = sorted(scores_labels, key=lambda x: x[0], reverse=True)
+    cur = 0
+    best = 0
+    best_k = 0
+    for k, (_, lab) in enumerate(sl, start=1):
+        cur += int(lab)
+        if cur > best:
+            best = cur
+            best_k = k
+    if best_k == 0:
+        return float("inf")  # select none
+    # place threshold between kth and (k+1)th score
+    s_k = sl[best_k - 1][0]
+    s_next = sl[best_k][0] if best_k < len(sl) else (s_k - 1.0)
+    return (s_k + s_next) / 2.0
+
+
+def _metric_best_per_pair_worker(args: Dict[str, Any]) -> Dict[str, Any]:
+    """Top-level worker for per-pair best separator to allow pickling under spawn.
+
+    Expected args keys: 'metric' (str), 'ds' (dataset dict), 'pair_index' (int)
+    """
+    metric: str = args["metric"]
+    ds: Dict[str, Any] = args["ds"]
+    idx: int = int(args.get("pair_index", -1))
+
+    items = ds["items"]
+    # Build (score, label, conv)
+    triplets: List[tuple] = []
+    for it in items:
+        b = it["b"]
+        r = it["r"]
+        score = _get_confidence(r, metric) - _get_confidence(b, metric)
+        label = int(it["label"])  # +1 FT, -1 TF, 0 otherwise
+        # conv string for counts
+        b_ok = _is_correct_record_math(b)
+        r_ok = _is_correct_record_math(r)
+        if (not b_ok) and r_ok:
+            conv = "FT"
+        elif b_ok and (not r_ok):
+            conv = "TF"
+        elif b_ok and r_ok:
+            conv = "TT"
+        else:
+            conv = "FF"
+        triplets.append((float(score), label, conv))
+
+    # Best prefix by score
+    triplets.sort(key=lambda x: x[0], reverse=True)
+    cur = 0
+    best = 0
+    best_k = 0
+    ft = tf = tt = ff = 0
+    cur_ft = cur_tf = cur_tt = cur_ff = 0
+    for k, (_, lab, conv) in enumerate(triplets, start=1):
+        cur += int(lab)
+        if conv == "FT":
+            cur_ft += 1
+        elif conv == "TF":
+            cur_tf += 1
+        elif conv == "TT":
+            cur_tt += 1
+        else:
+            cur_ff += 1
+        if cur > best:
+            best = cur
+            best_k = k
+            ft, tf, tt, ff = cur_ft, cur_tf, cur_tt, cur_ff
+
+    acc_base = ds["acc_base"]
+    full_n = len(ds["all_base_ids"]) or 1
+    acc_fused = acc_base + (best * 100.0 / full_n)
+    gain_pp = acc_fused - acc_base
+
+    # Always-override baseline
+    always_net = sum(lab for _, lab, _ in triplets)
+    acc_fused_always = acc_base + (always_net * 100.0 / full_n)
+
+    return {
+        "pair_index": idx,
+        "base": ds["pair"].base_run_id,
+        "rerun": ds["pair"].rerun_run_id,
+        "metric": metric,
+        "net": int(best),
+        "overrides": int(best_k),
+        "FT": int(ft),
+        "TF": int(tf),
+        "TT": int(tt),
+        "FF": int(ff),
+        "acc_base": float(acc_base),
+        "acc_fused": float(acc_fused),
+        "gain_pp": float(gain_pp),
+        "always_net": int(always_net),
+        "acc_fused_always": float(acc_fused_always),
+    }
+
+
+def run_metric_best_per_pair(metric: str, processes: int | None = None) -> None:
+    """For a single metric, compute the best per-pair separator and compare to always-override.
+
+    Prints a per-pair table sorted by gain and basic summary stats.
+    """
+    # Preload datasets once
+    datasets = [_load_pair_overlap(p) for p in fusion_reruns]
+
+    # Parallel over pairs if requested
+    idxs = list(range(len(datasets)))
+    if processes and processes > 1:
+        console.print(
+            Panel.fit(
+                f"Per-pair best-separator for metric '{metric}' using {processes} processes",
+                border_style="cyan",
+            )
+        )
+        with ProcessPoolExecutor(max_workers=processes) as ex:
+            futures = [
+                ex.submit(
+                    _metric_best_per_pair_worker,
+                    {"pair_index": i, "ds": datasets[i], "metric": metric},
+                )
+                for i in idxs
+            ]
+            rows = [
+                f.result()
+                for f in tqdm(
+                    as_completed(futures), total=len(futures), desc="Pairs", leave=False
+                )
+            ]
+    else:
+        rows = [
+            _metric_best_per_pair_worker(
+                {"pair_index": i, "ds": datasets[i], "metric": metric}
+            )
+            for i in idxs
+        ]
+
+    # Print per-pair table
+    per = Table(title=f"Per-pair results for metric '{metric}'", box=box.SIMPLE_HEAVY)
+    per.add_column("#", justify="right")
+    per.add_column("base→rerun")
+    per.add_column("net", justify="right")
+    per.add_column("overrides", justify="right")
+    per.add_column("acc_base", justify="right")
+    per.add_column("acc_fused", justify="right")
+    per.add_column("gain_pp", justify="right")
+    per.add_column("always_net", justify="right")
+    per.add_column("always_acc", justify="right")
+
+    gains: List[float] = []
+    for r in sorted(rows, key=lambda x: x["gain_pp"], reverse=True):
+        gain = r["gain_pp"]
+        gains.append(gain)
+        gain_str = (
+            f"[green]+{gain:.2f}[/green]"
+            if gain > 0
+            else (f"[red]{gain:.2f}[/red]" if gain < 0 else f"{gain:.2f}")
+        )
+        per.add_row(
+            str(r["pair_index"]),
+            f"{r['base']}→{r['rerun']}",
+            str(r["net"]),
+            str(r["overrides"]),
+            f"{r['acc_base']:.2f}%",
+            f"{r['acc_fused']:.2f}%",
+            gain_str,
+            str(r["always_net"]),
+            f"{r['acc_fused_always']:.2f}%",
+        )
+    console.print(per)
+
+    # Summary
+    import math as _m
+
+    if gains:
+        mean_gain = sum(gains) / len(gains)
+        std_gain = _m.sqrt(sum((g - mean_gain) ** 2 for g in gains) / len(gains))
+    else:
+        mean_gain = 0.0
+        std_gain = 0.0
+    summ = Table(title="Summary", box=box.SIMPLE_HEAVY)
+    summ.add_column("field", style="bold")
+    summ.add_column("value", justify="right")
+    summ.add_row("pairs", str(len(rows)))
+    summ.add_row("mean gain (pp)", f"{mean_gain:.2f}")
+    summ.add_row("std gain (pp)", f"{std_gain:.2f}")
+    console.print(summ)
+
+
+def _lopo_eval_for_metric(args: Dict[str, Any]) -> Dict[str, Any]:
+    metric: str = args["metric"]
+    datasets: List[Dict[str, Any]] = args["datasets"]
+    per_pair: List[Dict[str, Any]] = []
+    for holdout_idx in range(len(datasets)):
+        # Build training pool from all except holdout
+        train_scores: List[tuple] = []
+        for i, ds in enumerate(datasets):
+            if i == holdout_idx:
+                continue
+            train_scores.extend(_metric_scores(ds["items"], metric))
+        t = _choose_threshold(train_scores)
+
+        # Evaluate on holdout
+        ds = datasets[holdout_idx]
+        test_scores = _metric_scores(ds["items"], metric)
+        net = sum(lab for sc, lab in test_scores if sc >= t)
+        overrides = sum(1 for sc, _ in test_scores if sc >= t)
+        acc_base = ds["acc_base"]
+        full_n = len(ds["all_base_ids"]) or 1
+        acc_fused = acc_base + (net * 100.0 / full_n)
+        per_pair.append(
+            {
+                "pair_index": holdout_idx,
+                "base": ds["pair"].base_run_id,
+                "rerun": ds["pair"].rerun_run_id,
+                "net": int(net),
+                "overrides": int(overrides),
+                "acc_base": float(acc_base),
+                "acc_fused": float(acc_fused),
+                "gain_pp": float(acc_fused - acc_base),
+                "always_net": int(sum(lab for _, lab in test_scores)),
+                "acc_fused_always": float(
+                    acc_base + (sum(lab for _, lab in test_scores) * 100.0 / full_n)
+                ),
+            }
+        )
+
+    import math as _m
+
+    gains = [x["gain_pp"] for x in per_pair]
+    mean_gain = sum(gains) / len(gains) if gains else 0.0
+    std_gain = (
+        _m.sqrt(sum((g - mean_gain) ** 2 for g in gains) / len(gains)) if gains else 0.0
+    )
+    return {
+        "metric": metric,
+        "mean_gain": float(mean_gain),
+        "std_gain": float(std_gain),
+        "details": per_pair,
+    }
+
+
+def run_lopo_metric_eval(
+    metrics: Iterable[str] = ALL_METRICS, processes: int | None = None
+) -> None:
+    # Preload data for all pairs
+    datasets = [_load_pair_overlap(p) for p in fusion_reruns]
+
+    metric_list = list(metrics)
+    # Parallelize across metrics if requested
+    if processes and processes > 1:
+        console.print(
+            Panel.fit(
+                f"LOPO metric eval using {processes} processes",
+                border_style="cyan",
+            )
+        )
+        with ProcessPoolExecutor(max_workers=processes) as ex:
+            futures = [
+                ex.submit(_lopo_eval_for_metric, {"metric": m, "datasets": datasets})
+                for m in metric_list
+            ]
+            results_agg = [
+                f.result()
+                for f in tqdm(
+                    as_completed(futures),
+                    total=len(futures),
+                    desc="Metrics",
+                    leave=False,
+                )
+            ]
+    else:
+        results_agg = [
+            _lopo_eval_for_metric({"metric": m, "datasets": datasets})
+            for m in metric_list
+        ]
+
+    # Print summary table
+    summ = Table(title="LOPO global metric evaluation", box=box.SIMPLE_HEAVY)
+    summ.add_column("metric")
+    summ.add_column("mean gain (pp)", justify="right")
+    summ.add_column("std gain (pp)", justify="right")
+    for r in sorted(results_agg, key=lambda x: x["mean_gain"], reverse=True):
+        mg = r["mean_gain"]
+        mg_str = (
+            f"[green]+{mg:.2f}[/green]"
+            if mg > 0
+            else (f"[red]{mg:.2f}[/red]" if mg < 0 else f"{mg:.2f}")
+        )
+        summ.add_row(r["metric"], mg_str, f"{r['std_gain']:.2f}")
+    console.print(summ)
+
+    # Optional: show best metric per pair
+    per_pair_table = Table(title="Best metric per pair (LOPO)", box=box.SIMPLE_HEAVY)
+    per_pair_table.add_column("#", justify="right")
+    per_pair_table.add_column("base→rerun")
+    per_pair_table.add_column("metric")
+    per_pair_table.add_column("net", justify="right")
+    per_pair_table.add_column("overrides", justify="right")
+    per_pair_table.add_column("acc_base", justify="right")
+    per_pair_table.add_column("acc_fused", justify="right")
+    per_pair_table.add_column("gain_pp", justify="right")
+    per_pair_table.add_column("always_net", justify="right")
+    per_pair_table.add_column("always_acc", justify="right")
+
+    for i in range(len(datasets)):
+        best = None
+        for r in results_agg:
+            d = next(x for x in r["details"] if x["pair_index"] == i)
+            if (best is None) or (d["gain_pp"] > best["gain_pp"]):
+                best = {"metric": r["metric"], **d}
+        if best is not None:
+            gain = best["gain_pp"]
+            gain_str = (
+                f"[green]+{gain:.2f}[/green]"
+                if gain > 0
+                else (f"[red]{gain:.2f}[/red]" if gain < 0 else f"{gain:.2f}")
+            )
+            per_pair_table.add_row(
+                str(best["pair_index"]),
+                f"{best['base']}→{best['rerun']}",
+                best["metric"],
+                str(best["net"]),
+                str(best["overrides"]),
+                f"{best['acc_base']:.2f}%",
+                f"{best['acc_fused']:.2f}%",
+                gain_str,
+                str(best.get("always_net", 0)),
+                f"{best.get('acc_fused_always', best['acc_base']):.2f}%",
+            )
+    console.print(per_pair_table)
+
+
 if __name__ == "__main__":
     check_all_runs_exist(fusion_reruns)
     # run_single_pair_analysis(0)
     # run_classifier_pair_analysis(0)
     # run_greedy_cv_pair_analysis(2, max_features=2)
     run_greedy_cv_all_pairs(max_features=1, processes=os.cpu_count())
+    # run_lopo_metric_eval(processes=os.cpu_count())
+    # run_metric_best_per_pair("group_top_frac", processes=os.cpu_count())
+    # run_metric_best_per_pair("prm_top_frac", processes=os.cpu_count())
