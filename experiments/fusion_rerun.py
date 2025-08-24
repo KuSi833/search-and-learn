@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    COVERAGE = 10
+    COVERAGE = 20
 
     for subset_run_id in fusion_base_runs_best():
         dataset_config = DatasetConfig.from_subset_file(
