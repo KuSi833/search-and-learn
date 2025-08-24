@@ -57,8 +57,8 @@ if __name__ == "__main__":
     )
     # PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
-    # WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
-    WANDB_CONFIG = WandbConfig(tags=set(["fusion-baseline"]))
+    WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
+    # WANDB_CONFIG = WandbConfig(tags=set(["fusion-baseline"]))
 
     # DATASET_CONFIG = DatasetConfig.from_subset_file(
     #     run_id="53vig20u",
@@ -127,11 +127,9 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    experiment_configs.append(BEST_OF_N_CONFIG)
-
     # for config in [BEST_OF_N_CONFIG, DVTS_CONFIG, BEAM_SEARCH_CONFIG]:
-    for _ in range(2):
-        for config in [BEST_OF_N_CONFIG]:
+    for _ in range(3):
+        for config in [DVTS_CONFIG]:
             config_variant = copy.deepcopy(config)
             # config_variant.search_config.n = 16
             experiment_configs.append(config_variant)

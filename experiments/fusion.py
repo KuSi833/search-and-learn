@@ -468,7 +468,7 @@ def run_minimal_experiment(base_run: str, rerun_id: str) -> None:
 
     Output path: ./output/fusion_sweeps/minimal/<base>__<rerun>.json
     """
-    save_dir = Path("./output/fusion_sweeps/minimal")
+    save_dir = Path("./figures/fusion_sweeps/minimal")
     metrics = ["group_top_frac"]
     deltas = [0.00, 0.02, 0.05]
     min_rerun_list: List[Optional[float]] = [None, 0.50, 0.60]
@@ -572,11 +572,15 @@ def run_extensive_experiment(
 
 if __name__ == "__main__":
     # Define your sweep here.
-    BASE_RUN, RERUN_ID = best_accuracy()
+    # BASE_RUN, RERUN_ID = best_accuracy()
     # BASE_RUN, RERUN_ID = convert_45()
 
+    # BASE_RUN, RERUN_ID = "gfw8x07r", "8yyge5wj"
+    # BASE_RUN, RERUN_ID = "77pyab58", "8ff83v7m"
+    BASE_RUN, RERUN_ID = "77pyab58", "0hermenf"
+
     # Ultra-minimal experiment: 8 metrics × 1 strategy = 8 settings total!
-    run_ultraminimal_experiment(BASE_RUN, RERUN_ID)
+    run_minimal_experiment(BASE_RUN, RERUN_ID)
 
     # Uncomment for other experiments:
     # run_simple_experiment(BASE_RUN, RERUN_ID)  # 24 settings (with thresholds)
