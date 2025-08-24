@@ -58,15 +58,15 @@ if __name__ == "__main__":
     # PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
     # WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
-    WANDB_CONFIG = WandbConfig(tags=set(["fusion"]))
+    WANDB_CONFIG = WandbConfig(tags=set(["fusion-baseline"]))
 
-    DATASET_CONFIG = DatasetConfig.from_subset_file(
-        run_id="53vig20u",
-        coverage=10,
-        benchmark=Benchmarks.MATH500.value,
-        project_root=project_root,
-    )
-    # DATASET_CONFIG = DatasetConfig(num_samples=500)
+    # DATASET_CONFIG = DatasetConfig.from_subset_file(
+    #     run_id="53vig20u",
+    #     coverage=10,
+    #     benchmark=Benchmarks.MATH500.value,
+    #     project_root=project_root,
+    # )
+    DATASET_CONFIG = DatasetConfig(num_samples=500)
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
@@ -130,15 +130,10 @@ if __name__ == "__main__":
     experiment_configs.append(BEST_OF_N_CONFIG)
 
     # for config in [BEST_OF_N_CONFIG, DVTS_CONFIG, BEAM_SEARCH_CONFIG]:
-    for _ in range(3):
+    for _ in range(2):
         for config in [BEST_OF_N_CONFIG]:
             config_variant = copy.deepcopy(config)
             # config_variant.search_config.n = 16
             experiment_configs.append(config_variant)
-
-    # for beam_width in [16, 8, 4]:
-    #     config_variant = copy.deepcopy(BEAM_SEARCH_CONFIG)
-    #     config_variant.beam_search_config.beam_width = beam_width
-    #     experiment_configs.append(config_variant)
 
     run(BASE_CONFIG, experiment_configs)
