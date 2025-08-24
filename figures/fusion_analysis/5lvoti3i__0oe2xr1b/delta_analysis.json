@@ -1,0 +1,302 @@
+[
+  {
+    "metric": "group_top_frac",
+    "delta": 0.1,
+    "accuracy": 87.6,
+    "overrides_used": 21,
+    "net_improvement": 5,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 9,
+      "T_to_F": 1,
+      "F_to_T": 6
+    },
+    "harmful_conversions": 1,
+    "beneficial_conversions": 6
+  },
+  {
+    "metric": "group_top_frac",
+    "delta": 0.11,
+    "accuracy": 87.6,
+    "overrides_used": 21,
+    "net_improvement": 5,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 9,
+      "T_to_F": 1,
+      "F_to_T": 6
+    },
+    "harmful_conversions": 1,
+    "beneficial_conversions": 6
+  },
+  {
+    "metric": "group_top_frac",
+    "delta": 0.12,
+    "accuracy": 87.6,
+    "overrides_used": 21,
+    "net_improvement": 5,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 9,
+      "T_to_F": 1,
+      "F_to_T": 6
+    },
+    "harmful_conversions": 1,
+    "beneficial_conversions": 6
+  },
+  {
+    "metric": "group_top_frac",
+    "delta": 0.13,
+    "accuracy": 87.4,
+    "overrides_used": 18,
+    "net_improvement": 4,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 7,
+      "T_to_F": 1,
+      "F_to_T": 5
+    },
+    "harmful_conversions": 1,
+    "beneficial_conversions": 5
+  },
+  {
+    "metric": "group_top_frac",
+    "delta": 0.14,
+    "accuracy": 87.2,
+    "overrides_used": 17,
+    "net_improvement": 3,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 7,
+      "T_to_F": 1,
+      "F_to_T": 4
+    },
+    "harmful_conversions": 1,
+    "beneficial_conversions": 4
+  },
+  {
+    "metric": "group_top_frac",
+    "delta": 0.15,
+    "accuracy": 87.2,
+    "overrides_used": 16,
+    "net_improvement": 3,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 6,
+      "T_to_F": 1,
+      "F_to_T": 4
+    },
+    "harmful_conversions": 1,
+    "beneficial_conversions": 4
+  },
+  {
+    "metric": "group_top_frac",
+    "delta": 0.16,
+    "accuracy": 87.2,
+    "overrides_used": 13,
+    "net_improvement": 3,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 3,
+      "T_to_F": 1,
+      "F_to_T": 4
+    },
+    "harmful_conversions": 1,
+    "beneficial_conversions": 4
+  },
+  {
+    "metric": "group_top_frac",
+    "delta": 0.17,
+    "accuracy": 87.4,
+    "overrides_used": 12,
+    "net_improvement": 4,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 3,
+      "T_to_F": 0,
+      "F_to_T": 4
+    },
+    "harmful_conversions": 0,
+    "beneficial_conversions": 4
+  },
+  {
+    "metric": "group_top_frac",
+    "delta": 0.18,
+    "accuracy": 87.4,
+    "overrides_used": 12,
+    "net_improvement": 4,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 3,
+      "T_to_F": 0,
+      "F_to_T": 4
+    },
+    "harmful_conversions": 0,
+    "beneficial_conversions": 4
+  },
+  {
+    "metric": "group_top_frac",
+    "delta": 0.19,
+    "accuracy": 87.4,
+    "overrides_used": 12,
+    "net_improvement": 4,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 3,
+      "T_to_F": 0,
+      "F_to_T": 4
+    },
+    "harmful_conversions": 0,
+    "beneficial_conversions": 4
+  },
+  {
+    "metric": "agreement_ratio",
+    "delta": 0.1,
+    "accuracy": 87.2,
+    "overrides_used": 27,
+    "net_improvement": 3,
+    "conversions": {
+      "T_to_T": 8,
+      "F_to_F": 10,
+      "T_to_F": 3,
+      "F_to_T": 6
+    },
+    "harmful_conversions": 3,
+    "beneficial_conversions": 6
+  },
+  {
+    "metric": "agreement_ratio",
+    "delta": 0.11,
+    "accuracy": 87.2,
+    "overrides_used": 27,
+    "net_improvement": 3,
+    "conversions": {
+      "T_to_T": 8,
+      "F_to_F": 10,
+      "T_to_F": 3,
+      "F_to_T": 6
+    },
+    "harmful_conversions": 3,
+    "beneficial_conversions": 6
+  },
+  {
+    "metric": "agreement_ratio",
+    "delta": 0.12,
+    "accuracy": 87.2,
+    "overrides_used": 27,
+    "net_improvement": 3,
+    "conversions": {
+      "T_to_T": 8,
+      "F_to_F": 10,
+      "T_to_F": 3,
+      "F_to_T": 6
+    },
+    "harmful_conversions": 3,
+    "beneficial_conversions": 6
+  },
+  {
+    "metric": "agreement_ratio",
+    "delta": 0.13,
+    "accuracy": 87.4,
+    "overrides_used": 12,
+    "net_improvement": 4,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 3,
+      "T_to_F": 0,
+      "F_to_T": 4
+    },
+    "harmful_conversions": 0,
+    "beneficial_conversions": 4
+  },
+  {
+    "metric": "agreement_ratio",
+    "delta": 0.14,
+    "accuracy": 87.4,
+    "overrides_used": 12,
+    "net_improvement": 4,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 3,
+      "T_to_F": 0,
+      "F_to_T": 4
+    },
+    "harmful_conversions": 0,
+    "beneficial_conversions": 4
+  },
+  {
+    "metric": "agreement_ratio",
+    "delta": 0.15,
+    "accuracy": 87.4,
+    "overrides_used": 12,
+    "net_improvement": 4,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 3,
+      "T_to_F": 0,
+      "F_to_T": 4
+    },
+    "harmful_conversions": 0,
+    "beneficial_conversions": 4
+  },
+  {
+    "metric": "agreement_ratio",
+    "delta": 0.16,
+    "accuracy": 87.4,
+    "overrides_used": 12,
+    "net_improvement": 4,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 3,
+      "T_to_F": 0,
+      "F_to_T": 4
+    },
+    "harmful_conversions": 0,
+    "beneficial_conversions": 4
+  },
+  {
+    "metric": "agreement_ratio",
+    "delta": 0.17,
+    "accuracy": 87.4,
+    "overrides_used": 12,
+    "net_improvement": 4,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 3,
+      "T_to_F": 0,
+      "F_to_T": 4
+    },
+    "harmful_conversions": 0,
+    "beneficial_conversions": 4
+  },
+  {
+    "metric": "agreement_ratio",
+    "delta": 0.18,
+    "accuracy": 87.4,
+    "overrides_used": 12,
+    "net_improvement": 4,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 3,
+      "T_to_F": 0,
+      "F_to_T": 4
+    },
+    "harmful_conversions": 0,
+    "beneficial_conversions": 4
+  },
+  {
+    "metric": "agreement_ratio",
+    "delta": 0.19,
+    "accuracy": 87.4,
+    "overrides_used": 12,
+    "net_improvement": 4,
+    "conversions": {
+      "T_to_T": 5,
+      "F_to_F": 3,
+      "T_to_F": 0,
+      "F_to_T": 4
+    },
+    "harmful_conversions": 0,
+    "beneficial_conversions": 4
+  }
+]

@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""Quick fusion analysis: test the three strategies and output results."""
+"""Generate fusion analysis data: run experiments and create analysis JSON files."""
 
 import json
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
-
-import matplotlib.pyplot as plt
 
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
@@ -17,92 +15,6 @@ def load_results(json_path: Path) -> List[Dict[str, Any]]:
     """Load fusion results from JSON."""
     with json_path.open("r") as f:
         return json.load(f)
-
-
-def create_comparison_chart(results_summary: Dict[str, Any], output_dir: Path) -> None:
-    """Create a comparison chart showing baselines as lines and fusion strategies as bars."""
-
-    # Get all smart fusion results sorted by accuracy
-    all_smart = results_summary["all_smart_results"]
-    best_metric = results_summary["best_smart_fusion"]["metric"]
-
-    # Prepare data for smart fusion bars
-    metrics = [r["metric"] for r in all_smart]
-    accuracies = [r["accuracy"] for r in all_smart]
-
-    # Color bars: green for best, blue for others
-    bar_colors = [
-        "#2ca02c" if metric == best_metric else "#1f77b4" for metric in metrics
-    ]
-
-    # Create the plot
-    plt.style.use("seaborn-v0_8")
-    fig, ax = plt.subplots(figsize=(12, 8))
-
-    # Bar chart for smart fusion strategies
-    bars = ax.bar(range(len(metrics)), accuracies, color=bar_colors, alpha=0.8)
-
-    # Add baseline lines
-    always_base = results_summary["always_base"]
-    always_rerun = results_summary["always_rerun_when_possible"]
-
-    ax.axhline(
-        y=always_base,
-        color="#d62728",
-        linestyle="--",
-        linewidth=2,
-        label=f"Always Base: {always_base:.1f}%",
-        alpha=0.8,
-    )
-    ax.axhline(
-        y=always_rerun,
-        color="#FFA500",
-        linestyle="--",
-        linewidth=2,
-        label=f"Always Override: {always_rerun:.1f}%",
-        alpha=0.8,
-    )
-
-    # Add value labels on bars
-    for i, (bar, acc, metric) in enumerate(zip(bars, accuracies, metrics)):
-        height = bar.get_height()
-        diff = acc - always_base
-        label = f"{acc:.1f}%\n({diff:+.1f}%)"
-
-        fontweight = "bold" if metric == best_metric else "normal"
-        ax.text(
-            bar.get_x() + bar.get_width() / 2.0,
-            height + 0.5,
-            label,
-            ha="center",
-            va="bottom",
-            fontsize=10,
-            fontweight=fontweight,
-        )
-
-    # Formatting
-    ax.set_title(
-        "Fusion Strategy Comparison: Smart Selection vs Naive Baselines",
-        fontsize=16,
-        pad=20,
-    )
-    ax.set_xlabel("Confidence Metric", fontsize=12)
-    ax.set_ylabel("Accuracy (%)", fontsize=12)
-    ax.set_xticks(range(len(metrics)))
-    ax.set_xticklabels(metrics, rotation=45, ha="right")
-    ax.set_ylim(0, max(accuracies) * 1.15)
-    ax.grid(axis="y", linestyle=":", alpha=0.6)
-
-    # Legend
-    ax.legend(frameon=False, fontsize=11, loc="upper right")
-
-    plt.tight_layout()
-    plt.savefig(
-        output_dir / "fusion_strategy_comparison.png", dpi=200, bbox_inches="tight"
-    )
-    plt.close()
-
-    print(f"Saved chart to: {output_dir / 'fusion_strategy_comparison.png'}")
 
 
 def calculate_always_override_conversions(
@@ -486,6 +398,7 @@ def run_delta_analysis(base_run: str, rerun_id: str) -> None:
 
 
 def main():
+    """Run fusion experiment and generate analysis JSON files."""
     # Configuration
     base_run = "53vig20u"
     rerun_id = "9qup1u07"
@@ -519,22 +432,18 @@ def main():
     json_path = output_dir / "strategy_comparison.json"
     with json_path.open("w") as f:
         json.dump(analysis, f, indent=2)
-    print(f"\nSaved results to: {json_path}")
-
-    # Create chart
-    create_comparison_chart(analysis, output_dir)
-
-    print(f"\nAll outputs saved to: {output_dir}")
+    print(f"\nSaved strategy comparison results to: {json_path}")
 
     # Run focused delta analysis
     run_delta_analysis(base_run, rerun_id)
 
+    print(f"\nAll data files saved to: {output_dir}")
+
 
 if __name__ == "__main__":
     # You can choose which analysis to run:
-    # main()  # Run the full analysis including strategy comparison
+    main()  # Run the full analysis including strategy comparison
 
     # Or run just the delta analysis:
-    BASE_RUN, RERUN_ID = best_accuracy()
-    # BASE_RUN, RERUN_ID = convert_45()
-    run_delta_analysis(BASE_RUN, RERUN_ID)
+    # BASE_RUN, RERUN_ID = best_accuracy()
+    # run_delta_analysis(BASE_RUN, RERUN_ID)
