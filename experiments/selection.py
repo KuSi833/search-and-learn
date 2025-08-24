@@ -17,6 +17,7 @@ from rich.text import Text
 
 # Import functions from the inference visualizer
 sys.path.append(str(Path(__file__).parent.parent))
+from sal.utils.constants import BENCHMARK_SUBSETS_ROOT, Benchmark, Benchmarks
 from scripts.inference_visualiser import (
     _compute_uncertainty_metrics,
     _get_question_answer_from_record,
@@ -24,7 +25,6 @@ from scripts.inference_visualiser import (
     _summarise_uncertainty,
     load_jsonl,
 )
-from sal.utils.constants import BENCHMARK_SUBSETS_ROOT, Benchmarks
 
 console = Console()
 
@@ -110,6 +110,98 @@ def analyze_uncertainty_with_check(run_ids: List[str]) -> None:
     analyze_uncertainty_multi_runs(run_ids)
 
 
+def export_uncertain_subset(
+    run_id: str,
+    coverage: float,
+    metric: str,
+    benchmark: Benchmark,
+) -> None:
+    """
+    Export uncertain subset for a single run.
+
+    Args:
+        run_id: W&B run id
+        coverage: Percentage coverage to export (e.g. 20 for top 20%)
+        metric: Uncertainty metric to rank by
+        benchmark_key: Benchmark key (default: "math500")
+        name: Optional custom name for output file
+    """
+    out_file = Path("./output") / run_id / "inference_output.jsonl"
+    records = load_jsonl(out_file)
+    if not records:
+        console.print(Text(f"No records found in {out_file}", style="red"))
+        return
+
+    selected = _select_uncertain_indices(records, coverage, metric)
+    unique_ids = [records[i]["unique_id"] for i in selected]
+
+    output_root = BENCHMARK_SUBSETS_ROOT / benchmark.hf_name / run_id / "coverage"
+
+    coverage_str = (
+        str(int(coverage)) if abs(coverage - round(coverage)) < 1e-9 else str(coverage)
+    )
+    output_file = output_root / f"{coverage_str}.json"
+
+    output_root.mkdir(parents=True, exist_ok=True)
+
+    # Structured payload with metadata for later mapping and reproducibility
+    subset_payload = {
+        "version": 1,
+        "type": "uncertain_subset",
+        "benchmark_key": benchmark.key,
+        "hf_name": benchmark.hf_name,
+        "run_id": run_id,
+        "metric": metric,
+        "coverage_pct": coverage,
+        "unique_ids": sorted(unique_ids),
+    }
+
+    with open(output_file, "w") as f:
+        json.dump(subset_payload, f, indent=2)
+
+    header = Table.grid(padding=(0, 1))
+    header.add_column(style="bold cyan")
+    header.add_column()
+    header.add_row("Run", run_id)
+    header.add_row("Metric", metric)
+    header.add_row("Coverage", f"{coverage:.1f}%")
+    header.add_row("Exported", str(len(unique_ids)))
+    header.add_row("Saved to", str(output_file))
+    console.print(Panel(header, title="Export uncertain subset", box=box.ROUNDED))
+
+
+def export_uncertain_multi_runs(
+    run_ids: List[str],
+    coverage: float,
+    metric: str = "agreement_ratio",
+    benchmark: Benchmark = Benchmarks.MATH500.value,
+) -> None:
+    """
+    Export uncertain subsets for multiple runs.
+
+    Args:
+        run_ids: List of W&B run ids
+        coverage: Percentage coverage to export for each run
+        metric: Uncertainty metric to rank by
+        benchmark_key: Benchmark key (default: "math500")
+        name_prefix: Optional prefix for output file names
+    """
+    check_runs_availability(run_ids)
+
+    console.print(
+        Text(
+            f"Exporting uncertain subsets for {len(run_ids)} runs...", style="bold blue"
+        )
+    )
+    console.print()
+
+    for i, run_id in enumerate(run_ids):
+        if i > 0:
+            console.print()
+
+        export_uncertain_subset(run_id, coverage, metric, benchmark)
+
+
 def fusion_base_runs():
     # BoN n=4
 
@@ -131,8 +223,14 @@ def fusion_base_runs_best():
 if __name__ == "__main__":
     # Example usage - specify your run IDs here
     run_ids = fusion_base_runs_best()
-    # Uncomment and modify the run_ids list above, then run:
-    # analyze_uncertainty_with_check(run_ids)  # Recommended: checks availability first
-    #
-    # Or use the direct version if you're sure all runs are available:
+
+    # Uncertainty analysis
     analyze_uncertainty_with_check(run_ids)
+
+    # Export uncertain subsets (uncomment to use)
+    # for coverage in [10, 20]:
+    #     export_uncertain_multi_runs(
+    #         run_ids=run_ids,
+    #         coverage=coverage,  # Export top 20% most uncertain
+    #         metric="agreement_ratio",  # Uncertainty metric
+    #     )
