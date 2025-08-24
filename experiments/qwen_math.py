@@ -128,10 +128,10 @@ if __name__ == "__main__":
     experiment_configs: List[ExperimentConfig] = []
 
     # for config in [BEST_OF_N_CONFIG, DVTS_CONFIG, BEAM_SEARCH_CONFIG]:
-    for _ in range(3):
+    for n in [8, 16, 32]:
         for config in [DVTS_CONFIG]:
             config_variant = copy.deepcopy(config)
-            # config_variant.search_config.n = 16
+            config_variant.search_config.n = 16
             experiment_configs.append(config_variant)
 
     run(BASE_CONFIG, experiment_configs)
