@@ -590,7 +590,8 @@ def analyze_pair_with_greedy_delta_cv(
         return {}
 
     # Helper: evaluate feature set by K-fold CV on disagreements
-    rng = np.random.default_rng(42)
+    seed = 42
+    rng = np.random.default_rng(seed)
 
     def cv_score(feature_set: List[str]) -> Dict[str, Any]:
         if not feature_set:
@@ -694,6 +695,15 @@ def analyze_pair_with_greedy_delta_cv(
         best * 100.0 / len(all_base_ids) if all_base_ids else 0.0
     )
 
+    # Compute reproducible threshold t such that selecting score >= t yields exactly 'best_k' overrides
+    sorted_scores = scores_full[order_full]
+    if best_k == 0:
+        threshold = float("inf")
+    else:
+        s_k = float(sorted_scores[best_k - 1])
+        s_next = float(sorted_scores[best_k]) if best_k < len(sorted_scores) else (s_k - 1.0)
+        threshold = (s_k + s_next) / 2.0
+
     # Package weights mapped to feature names
     weight_rows: List[Dict[str, Any]] = []
     for name, weight in zip(selected, w.tolist()):
@@ -704,6 +714,10 @@ def analyze_pair_with_greedy_delta_cv(
         "selected": selected,
         "cv_history": history,
         "weights": weight_rows,
+        "threshold": float(threshold),
+        "kfolds": int(kfolds),
+        "reg": float(reg),
+        "seed": int(seed),
         "best_net": int(best),
         "overrides": int(best_k),
         "FT": int(ft),
@@ -751,6 +765,18 @@ def render_greedy_cv_analysis(result: Dict[str, Any]) -> None:
         wv_str = f"[green]{wv:.4f}[/green]" if wv > 0 else f"[red]{wv:.4f}[/red]"
         wtab.add_row(row["feature"], wv_str)
     console.print(wtab)
+
+    # Decision rule and training params
+    threshold = result.get("threshold", 0.0)
+    params = Table(title="Decision rule and params", box=box.SIMPLE_HEAVY)
+    params.add_column("field", style="bold")
+    params.add_column("value")
+    params.add_row("decision rule", "score = sum_i w_i * delta(metric_i); select if score >= t")
+    params.add_row("threshold t", f"{threshold:.6f}")
+    params.add_row("kfolds", str(result.get("kfolds", "-")))
+    params.add_row("reg", f"{float(result.get('reg', 0.0)):.6g}")
+    params.add_row("seed", str(result.get("seed", "-")))
+    console.print(params)
 
     summary = Table(title="Greedy CV summary", box=box.SIMPLE_HEAVY)
     summary.add_column("field", style="bold")
@@ -801,6 +827,8 @@ def _greedy_cv_worker(args: Dict[str, Any]) -> Dict[str, Any]:
             "rerun": pair.rerun_run_id,
             "ok": True,
             "selected": res.get("selected", []),
+            "weights": res.get("weights", []),
+            "threshold": res.get("threshold", 0.0),
             "best_net": res.get("best_net", 0),
             "overrides": res.get("overrides", 0),
             "acc_base": res.get("acc_base", 0.0),
@@ -846,6 +874,7 @@ def run_greedy_cv_all_pairs(
     per.add_column("#", justify="right")
     per.add_column("base→rerun")
     per.add_column("selected")
+    per.add_column("rule")
     per.add_column("best_net", justify="right")
     per.add_column("overrides", justify="right")
     per.add_column("acc_base", justify="right")
@@ -869,10 +898,25 @@ def run_greedy_cv_all_pairs(
             if gain > 0
             else (f"[red]{gain:.2f}[/red]" if gain < 0 else f"{gain:.2f}")
         )
+        # Build compact decision rule text from weights and threshold
+        weights_list: List[Dict[str, Any]] = r.get("weights", [])  # type: ignore
+        thr = float(r.get("threshold", 0.0))
+        if weights_list:
+            terms = []
+            for wrow in weights_list[:3]:
+                name = str(wrow.get("feature", "delta_m")).replace("delta_", "Δ")
+                wv = float(wrow.get("weight", 0.0))
+                terms.append(f"{wv:.3f}*{name}")
+            more = " + …" if len(weights_list) > 3 else ""
+            rule_text = f"{' + '.join(terms)}{more} ≥ {thr:.6f}"
+        else:
+            rule_text = f"linear(Δ{len(sels)}) ≥ {thr:.6f}"
+
         per.add_row(
             str(r.get("pair_index")),
             f"{r.get('base')}→{r.get('rerun')}",
             ", ".join(sels),
+            rule_text,
             str(r.get("best_net")),
             str(r.get("overrides")),
             f"{float(r.get('acc_base', 0.0)):.2f}%",

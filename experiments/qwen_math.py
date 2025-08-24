@@ -3,6 +3,7 @@ from typing import List
 
 from dotenv import load_dotenv
 
+from red.its_hub.algorithms.bon import BestOfN
 from sal.config import (
     BaseConfig,
     BeamSearchConfig,
@@ -128,10 +129,12 @@ if __name__ == "__main__":
     experiment_configs: List[ExperimentConfig] = []
 
     # for config in [BEST_OF_N_CONFIG, DVTS_CONFIG, BEAM_SEARCH_CONFIG]:
-    for n in [8, 16, 32]:
-        for config in [DVTS_CONFIG]:
+    for n in [8, 16, 32, 64]:
+        for config in [BEST_OF_N_CONFIG]:
             config_variant = copy.deepcopy(config)
             config_variant.search_config.n = 16
+            if n >= 32:
+                config.search_config.prm_batch_size = 25
             experiment_configs.append(config_variant)
 
     run(BASE_CONFIG, experiment_configs)
