@@ -242,7 +242,4 @@ class ExperimentConfig:
                 raise ValueError("n should be a multiple of beam_width")
             self.n_beams = self.search_config.n // self.beam_search_config.beam_width
 
-        if self.approach == "beam_search":
-            # TODO: implemented a batched version
-            if self.search_config.search_batch_size != 1:
-                raise ValueError("search_batch_size should be 1 for beam_search")
+        # beam_search now supports batched processing; no guard on search_batch_size
