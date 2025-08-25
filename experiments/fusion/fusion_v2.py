@@ -22,7 +22,7 @@ from rich.panel import Panel
 from rich.table import Table
 from tqdm import tqdm
 
-from experiments.fusion import (
+from experiments.fusion.fusion import (
     ALL_METRICS,
     _acc,
     _get_confidence,
@@ -1635,7 +1635,7 @@ def hyperparameter_scaling():
         ("WBoN", "8", [0.87, 0.828], ""),
         ("WBoN", "16", [0.846], ""),
         ("DVTS", "4", [0.832, 0.834, 0.828], ""),
-        ("DVTS", "8", [0.82, 0.84], ""),
+        ("DVTS", "8", [0.82, 0.84, 0.84], ""),
         ("DVTS", "16", [0.834, 0.834, 0.836], ""),
         ("Beam Search", "4", [0.826, 0.831, 0.833], ""),
         ("CGAI", "4→8", [87.40, 87.20, 87.60], "Different scale"),
