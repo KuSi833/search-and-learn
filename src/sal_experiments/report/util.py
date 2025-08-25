@@ -1,5 +1,6 @@
+from dataclasses import dataclass
 from datetime import timedelta
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -20,3 +21,13 @@ def format_runtime(mean: float, std: float, precision: int = 1) -> str:
         return f"{mean:.{precision}f} ± {std:.{precision}f} s"
     else:
         return f"{mean / 60:.{precision}f} ± {std / 60:.{precision}f} min"
+
+
+def format_mean_std(values: List[float], precision: int = 1) -> str:
+    """Format a list of values as 'mean ± std'."""
+    if len(values) == 1:
+        return f"{values[0]:.{precision}f}"
+
+    mean = np.mean(values)
+    std = np.std(values, ddof=1) if len(values) > 1 else 0
+    return f"{mean:.{precision}f} ± {std:.{precision}f}"

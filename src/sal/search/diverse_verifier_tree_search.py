@@ -19,7 +19,7 @@ from collections import defaultdict
 
 import numpy as np
 from tqdm import tqdm
-from vllm import LLM, SamplingParams
+from vllm import LLM, SamplingParams  # type: ignore
 
 from sal.config import ExperimentConfig
 from sal.models.reward_models import PRM

@@ -94,7 +94,6 @@ def _beam_search(
                     temperature=config.search_config.temperature,
                     max_tokens=config.search_config.max_tokens,
                     top_p=config.search_config.top_p,
-                    seed=config.seed,
                     n=1,
                 )
             else:
@@ -104,7 +103,6 @@ def _beam_search(
                     top_p=config.search_config.top_p,
                     stop=["\n\n"],
                     include_stop_str_in_output=True,
-                    seed=config.seed,
                     n=1,
                 )
 

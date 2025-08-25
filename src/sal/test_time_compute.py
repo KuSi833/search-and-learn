@@ -23,7 +23,7 @@ import pyrootutils
 import torch
 import wandb
 from torch.profiler import record_function
-from vllm import LLM
+from vllm import LLM  # type: ignore
 
 from sal.config import (
     BaseConfig,

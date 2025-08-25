@@ -22,7 +22,7 @@ from rich.panel import Panel
 from rich.table import Table
 from tqdm import tqdm
 
-from experiments.fusion.fusion import (
+from .fusion import (
     ALL_METRICS,
     _acc,
     _get_confidence,
@@ -1625,79 +1625,6 @@ def analyze_top3_metric_performance(
         console.print(details_table)
 
 
-def hyperparameter_scaling():
-    """Display hyperparameter scaling results in a nice Rich table."""
-
-    # Data for the table
-    scaling_data = [
-        # Method, n_value, accuracies, notes
-        ("WBoN", "4", [0.854, 0.856, 0.84], ""),
-        ("WBoN", "8", [0.87, 0.828], ""),
-        ("WBoN", "16", [0.846], ""),
-        ("DVTS", "4", [0.832, 0.834, 0.828], ""),
-        ("DVTS", "8", [0.82, 0.84, 0.84], ""),
-        ("DVTS", "16", [0.834, 0.834, 0.836], ""),
-        ("Beam Search", "4", [0.826, 0.831, 0.833], ""),
-        ("CGAI", "4→8", [87.40, 87.20, 87.60], "Different scale"),
-    ]
-
-    # Create the table
-    table = Table(
-        title="Hyperparameter Scaling Results",
-        box=box.SIMPLE_HEAVY,
-        title_style="bold blue",
-    )
-
-    table.add_column("Method", style="bold")
-    table.add_column("n", justify="center")
-    table.add_column("Accuracy", justify="right")
-    table.add_column("# Runs", justify="center")
-    table.add_column("Notes", style="dim")
-
-    for method, n_val, accuracies, notes in scaling_data:
-        # Convert to percentage if needed (CGAI is already in %)
-        if method == "CGAI":
-            display_accs = accuracies
-            unit = "%"
-        else:
-            display_accs = [acc * 100 for acc in accuracies]  # Convert to percentage
-            unit = "%"
-
-        formatted_acc = format_mean_std(display_accs) + unit
-        num_runs = len(accuracies)
-
-        # Style based on performance
-        if len(accuracies) > 1:
-            mean_val = sum(display_accs) / len(display_accs)
-            if mean_val > 85:
-                acc_style = f"[green]{formatted_acc}[/green]"
-            elif mean_val > 83:
-                acc_style = f"[yellow]{formatted_acc}[/yellow]"
-            else:
-                acc_style = f"[red]{formatted_acc}[/red]"
-        else:
-            acc_style = formatted_acc
-
-        table.add_row(method, n_val, acc_style, str(num_runs), notes)
-
-    console.print()
-    console.print(table)
-    console.print()
-
-    # Summary insights
-    console.print(
-        Panel.fit(
-            "Key Insights:\n"
-            "• WBoN shows variable performance across n values\n"
-            "• DVTS maintains consistent ~83% accuracy\n"
-            "• Beam Search provides stable ~83% performance\n"
-            "• CGAI achieves highest accuracy at 87%",
-            title="Summary",
-            border_style="blue",
-        )
-    )
-
-
 def experiment():
     check_all_runs_exist(fusion_reruns)
     # run_single_pair_analysis(0)
@@ -1711,5 +1638,4 @@ def experiment():
 
 
 if __name__ == "__main__":
-    # experiment()
-    hyperparameter_scaling()
+    experiment()
