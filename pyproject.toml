@@ -34,7 +34,7 @@ build-backend = "hatchling.build"
 requires = ["hatchling"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/sal"]
+packages = ["src/sal", "src/sal_experiments"]
 
 [tool.uv.sources]
 search-and-learn = {workspace = true}
