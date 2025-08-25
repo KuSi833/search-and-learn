@@ -701,7 +701,9 @@ def analyze_pair_with_greedy_delta_cv(
         threshold = float("inf")
     else:
         s_k = float(sorted_scores[best_k - 1])
-        s_next = float(sorted_scores[best_k]) if best_k < len(sorted_scores) else (s_k - 1.0)
+        s_next = (
+            float(sorted_scores[best_k]) if best_k < len(sorted_scores) else (s_k - 1.0)
+        )
         threshold = (s_k + s_next) / 2.0
 
     # Package weights mapped to feature names
@@ -771,7 +773,9 @@ def render_greedy_cv_analysis(result: Dict[str, Any]) -> None:
     params = Table(title="Decision rule and params", box=box.SIMPLE_HEAVY)
     params.add_column("field", style="bold")
     params.add_column("value")
-    params.add_row("decision rule", "score = sum_i w_i * delta(metric_i); select if score >= t")
+    params.add_row(
+        "decision rule", "score = sum_i w_i * delta(metric_i); select if score >= t"
+    )
     params.add_row("threshold t", f"{threshold:.6f}")
     params.add_row("kfolds", str(result.get("kfolds", "-")))
     params.add_row("reg", f"{float(result.get('reg', 0.0)):.6g}")
@@ -1297,7 +1301,7 @@ def run_lopo_metric_eval(
     per_pair_table.add_column("#", justify="right")
     per_pair_table.add_column("base→rerun")
     per_pair_table.add_column("metric")
-    per_pair_table.add_column("net", justify="right")
+    # per_pair_table.add_column("net", justify="right")
     per_pair_table.add_column("overrides", justify="right")
     per_pair_table.add_column("acc_base", justify="right")
     per_pair_table.add_column("acc_fused", justify="right")
@@ -1333,12 +1337,235 @@ def run_lopo_metric_eval(
     console.print(per_pair_table)
 
 
+# ----------------- Top-3 metric analysis -----------------
+
+
+def analyze_top3_metric_performance(
+    metrics: Iterable[str] = ALL_METRICS,
+    processes: int | None = None,
+    num_delta_steps: int = 100,
+) -> None:
+    """Analyze each metric to find which gives the highest mean accuracy for top 3 performing runs.
+
+    For each metric, we:
+    1. Test different delta thresholds
+    2. Calculate accuracy gains for each pair
+    3. Find the top 3 performing runs
+    4. Return mean ± std for the top 3
+    """
+    try:
+        import numpy as np
+    except ImportError:
+        console.print(Panel.fit("NumPy required for this analysis", border_style="red"))
+        return
+
+    # Preload all pair data
+    datasets = [_load_pair_overlap(p) for p in fusion_reruns]
+    metric_list = list(metrics)
+
+    console.print(
+        Panel.fit(
+            f"Analyzing top-3 performance for {len(metric_list)} metrics",
+            border_style="cyan",
+        )
+    )
+
+    metric_results = []
+
+    for metric in tqdm(metric_list, desc="Processing metrics"):
+        # For this metric, collect all delta values and gains across all pairs
+        all_results = []
+
+        for ds in datasets:
+            items = ds["items"]
+            acc_base = ds["acc_base"]
+            full_n = len(ds["all_base_ids"]) or 1
+
+            # Get all delta values for this metric
+            deltas = []
+            labels = []
+            for it in items:
+                b = it["b"]
+                r = it["r"]
+                delta = _get_confidence(r, metric) - _get_confidence(b, metric)
+                deltas.append(delta)
+                labels.append(it["label"])
+
+            if not deltas:
+                continue
+
+            deltas = np.array(deltas)
+            labels = np.array(labels)
+
+            # Test different delta thresholds
+            min_delta, max_delta = np.min(deltas), np.max(deltas)
+            if min_delta == max_delta:
+                thresholds = [min_delta]
+            else:
+                thresholds = np.linspace(min_delta, max_delta, num_delta_steps)
+
+            best_gain = -float("inf")
+            best_acc = acc_base
+
+            for threshold in thresholds:
+                # Select items where delta >= threshold
+                selected_mask = deltas >= threshold
+                net_gain = np.sum(labels[selected_mask])
+                acc_fused = acc_base + (net_gain * 100.0 / full_n)
+                gain = acc_fused - acc_base
+
+                if gain > best_gain:
+                    best_gain = gain
+                    best_acc = acc_fused
+
+            all_results.append(
+                {
+                    "pair": ds["pair"],
+                    "best_gain": best_gain,
+                    "best_acc": best_acc,
+                    "base_acc": acc_base,
+                }
+            )
+
+        # Sort by accuracy gain and get top 3
+        all_results.sort(key=lambda x: x["best_gain"], reverse=True)
+        top3_results = all_results[:3]
+
+        if len(top3_results) >= 3:
+            top3_gains = [r["best_gain"] for r in top3_results]
+            top3_accs = [r["best_acc"] for r in top3_results]
+
+            mean_gain = np.mean(top3_gains)
+            std_gain = np.std(top3_gains, ddof=1)  # Sample std
+            mean_acc = np.mean(top3_accs)
+            std_acc = np.std(top3_accs, ddof=1)
+
+            # 95% confidence interval for mean (assuming normal distribution)
+            from scipy import stats
+
+            try:
+                ci_gain = stats.t.interval(
+                    0.95,
+                    len(top3_gains) - 1,
+                    loc=mean_gain,
+                    scale=std_gain / np.sqrt(len(top3_gains)),
+                )
+                ci_acc = stats.t.interval(
+                    0.95,
+                    len(top3_accs) - 1,
+                    loc=mean_acc,
+                    scale=std_acc / np.sqrt(len(top3_accs)),
+                )
+            except ImportError:
+                # Fallback if scipy not available
+                margin_gain = (
+                    1.96 * std_gain / np.sqrt(len(top3_gains))
+                )  # Approximate 95% CI
+                margin_acc = 1.96 * std_acc / np.sqrt(len(top3_accs))
+                ci_gain = (mean_gain - margin_gain, mean_gain + margin_gain)
+                ci_acc = (mean_acc - margin_acc, mean_acc + margin_acc)
+
+            metric_results.append(
+                {
+                    "metric": metric,
+                    "mean_gain": mean_gain,
+                    "std_gain": std_gain,
+                    "ci_gain": ci_gain,
+                    "mean_acc": mean_acc,
+                    "std_acc": std_acc,
+                    "ci_acc": ci_acc,
+                    "top3_details": top3_results,
+                }
+            )
+
+    # Sort by mean accuracy gain
+    metric_results.sort(key=lambda x: x["mean_gain"], reverse=True)
+
+    # Display results
+    results_table = Table(
+        title="Top-3 Metric Performance Analysis", box=box.SIMPLE_HEAVY
+    )
+    results_table.add_column("Rank", justify="right")
+    results_table.add_column("Metric")
+    results_table.add_column("Mean Gain (pp)", justify="right")
+    results_table.add_column("95% CI Gain", justify="right")
+    results_table.add_column("Mean Top-3 Acc (%)", justify="right")
+    results_table.add_column("95% CI Acc", justify="right")
+
+    for i, result in enumerate(metric_results, 1):
+        mean_gain = result["mean_gain"]
+        ci_gain = result["ci_gain"]
+        mean_acc = result["mean_acc"]
+        ci_acc = result["ci_acc"]
+
+        gain_str = (
+            f"[green]+{mean_gain:.2f}[/green]"
+            if mean_gain > 0
+            else f"[red]{mean_gain:.2f}[/red]"
+        )
+        ci_gain_str = f"[{ci_gain[0]:.2f}, {ci_gain[1]:.2f}]"
+        ci_acc_str = f"[{ci_acc[0]:.2f}, {ci_acc[1]:.2f}]"
+
+        results_table.add_row(
+            str(i),
+            result["metric"],
+            gain_str,
+            ci_gain_str,
+            f"{mean_acc:.2f}",
+            ci_acc_str,
+        )
+
+    console.print(results_table)
+
+    # Show details for the best metric
+    if metric_results:
+        best = metric_results[0]
+        console.print(
+            Panel.fit(
+                f"Best metric: [bold]{best['metric']}[/bold]\n"
+                f"Mean gain: {best['mean_gain']:.2f} ± {best['std_gain']:.2f} pp\n"
+                f"Mean accuracy: {best['mean_acc']:.2f} ± {best['std_acc']:.2f}%\n"
+                f"95% CI gain: [{best['ci_gain'][0]:.2f}, {best['ci_gain'][1]:.2f}] pp\n"
+                f"95% CI accuracy: [{best['ci_acc'][0]:.2f}, {best['ci_acc'][1]:.2f}]%",
+                border_style="green",
+            )
+        )
+
+        # Show top 3 details for best metric
+        details_table = Table(
+            title=f"Top 3 pairs for {best['metric']}", box=box.SIMPLE_HEAVY
+        )
+        details_table.add_column("Rank", justify="right")
+        details_table.add_column("Pair")
+        details_table.add_column("Base Acc (%)", justify="right")
+        details_table.add_column("Best Acc (%)", justify="right")
+        details_table.add_column("Gain (pp)", justify="right")
+
+        for i, detail in enumerate(best["top3_details"], 1):
+            pair = detail["pair"]
+            gain = detail["best_gain"]
+            gain_str = (
+                f"[green]+{gain:.2f}[/green]" if gain > 0 else f"[red]{gain:.2f}[/red]"
+            )
+
+            details_table.add_row(
+                str(i),
+                f"{pair.base_run_id}→{pair.rerun_run_id}",
+                f"{detail['base_acc']:.2f}",
+                f"{detail['best_acc']:.2f}",
+                gain_str,
+            )
+
+        console.print(details_table)
+
+
 if __name__ == "__main__":
     check_all_runs_exist(fusion_reruns)
     # run_single_pair_analysis(0)
     # run_classifier_pair_analysis(0)
     # run_greedy_cv_pair_analysis(2, max_features=2)
-    run_greedy_cv_all_pairs(max_features=1, processes=os.cpu_count())
+    # run_greedy_cv_all_pairs(max_features=1, processes=os.cpu_count())
     # run_lopo_metric_eval(processes=os.cpu_count())
     # run_metric_best_per_pair("group_top_frac", processes=os.cpu_count())
     # run_metric_best_per_pair("prm_top_frac", processes=os.cpu_count())
+    analyze_top3_metric_performance(processes=os.cpu_count())
