@@ -1,9 +1,20 @@
+import math as _m
 import os
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Set
+
+try:
+    import numpy as np
+except ImportError:
+    np = None
+
+try:
+    from scipy import stats
+except ImportError:
+    stats = None
 
 from rich import box
 from rich.console import Console
@@ -360,9 +371,7 @@ def _build_features(
 
 
 def analyze_pair_with_linear_classifier(pair: FusionRerun) -> Dict[str, Any]:
-    try:
-        import numpy as np  # type: ignore
-    except Exception:
+    if np is None:
         console.print(
             Panel.fit(
                 "NumPy not available; skipping classifier analysis",
@@ -539,9 +548,7 @@ def run_classifier_pair_analysis(pair_index: int = 0) -> None:
 def analyze_pair_with_greedy_delta_cv(
     pair: FusionRerun, max_features: int = 3, kfolds: int = 5, reg: float = 1e-3
 ) -> Dict[str, Any]:
-    try:
-        import numpy as np  # type: ignore
-    except Exception:
+    if np is None:
         console.print(
             Panel.fit(
                 "NumPy not available; skipping greedy CV analysis",
@@ -1176,8 +1183,6 @@ def run_metric_best_per_pair(metric: str, processes: int | None = None) -> None:
     console.print(per)
 
     # Summary
-    import math as _m
-
     if gains:
         mean_gain = sum(gains) / len(gains)
         std_gain = _m.sqrt(sum((g - mean_gain) ** 2 for g in gains) / len(gains))
@@ -1230,8 +1235,6 @@ def _lopo_eval_for_metric(args: Dict[str, Any]) -> Dict[str, Any]:
                 ),
             }
         )
-
-    import math as _m
 
     gains = [x["gain_pp"] for x in per_pair]
     mean_gain = sum(gains) / len(gains) if gains else 0.0
@@ -1337,6 +1340,62 @@ def run_lopo_metric_eval(
     console.print(per_pair_table)
 
 
+# ----------------- Utility functions for statistics -----------------
+
+
+def format_mean_std(values, decimal_places=3, use_ci=False, confidence=0.95):
+    """Format a list of values as mean ± std or mean [CI_lower, CI_upper].
+
+    Args:
+        values: List of numerical values
+        decimal_places: Number of decimal places to display
+        use_ci: If True, return confidence interval instead of std
+        confidence: Confidence level for CI (default 0.95 for 95% CI)
+
+    Returns:
+        String in format "mean ± std" or "mean [CI_lower, CI_upper]"
+
+    Examples:
+        >>> format_mean_std([1.2, 1.5, 1.8])
+        "1.50 ± 0.30"
+        >>> format_mean_std([1.2, 1.5, 1.8], use_ci=True)
+        "1.50 [0.90, 2.10]"
+    """
+    if np is None:
+        return "Error: NumPy required"
+
+    if not values:
+        return "No data"
+
+    values = np.array(values)
+    mean_val = np.mean(values)
+
+    if use_ci and len(values) > 1:
+        # Calculate confidence interval
+        std_val = np.std(values, ddof=1)  # Sample standard deviation
+        sem = std_val / np.sqrt(len(values))  # Standard error of mean
+
+        if stats is not None:
+            ci = stats.t.interval(confidence, len(values) - 1, loc=mean_val, scale=sem)
+            return f"{mean_val:.{decimal_places}f} [{ci[0]:.{decimal_places}f}, {ci[1]:.{decimal_places}f}]"
+        else:
+            # Fallback to approximate normal CI if scipy not available
+            z_score = (
+                1.96 if confidence == 0.95 else 2.576 if confidence == 0.99 else 1.645
+            )
+            margin = z_score * sem
+            ci_lower = mean_val - margin
+            ci_upper = mean_val + margin
+            return f"{mean_val:.{decimal_places}f} [{ci_lower:.{decimal_places}f}, {ci_upper:.{decimal_places}f}]"
+    else:
+        # Calculate standard deviation
+        if len(values) == 1:
+            return f"{mean_val:.{decimal_places}f}"
+
+        std_val = np.std(values, ddof=1)  # Sample standard deviation
+        return f"{mean_val:.{decimal_places}f} ± {std_val:.{decimal_places}f}"
+
+
 # ----------------- Top-3 metric analysis -----------------
 
 
@@ -1353,9 +1412,7 @@ def analyze_top3_metric_performance(
     3. Find the top 3 performing runs
     4. Return mean ± std for the top 3
     """
-    try:
-        import numpy as np
-    except ImportError:
+    if np is None:
         console.print(Panel.fit("NumPy required for this analysis", border_style="red"))
         return
 
@@ -1520,13 +1577,22 @@ def analyze_top3_metric_performance(
     # Show details for the best metric
     if metric_results:
         best = metric_results[0]
+        # Extract top 3 values for cleaner formatting
+        top3_gains = [r["best_gain"] for r in best["top3_details"]]
+        top3_accs = [r["best_acc"] for r in best["top3_details"]]
+
+        gain_formatted = format_mean_std(top3_gains)
+        acc_formatted = format_mean_std(top3_accs)
+        gain_ci_formatted = format_mean_std(top3_gains, use_ci=True)
+        acc_ci_formatted = format_mean_std(top3_accs, use_ci=True)
+
         console.print(
             Panel.fit(
                 f"Best metric: [bold]{best['metric']}[/bold]\n"
-                f"Mean gain: {best['mean_gain']:.2f} ± {best['std_gain']:.2f} pp\n"
-                f"Mean accuracy: {best['mean_acc']:.2f} ± {best['std_acc']:.2f}%\n"
-                f"95% CI gain: [{best['ci_gain'][0]:.2f}, {best['ci_gain'][1]:.2f}] pp\n"
-                f"95% CI accuracy: [{best['ci_acc'][0]:.2f}, {best['ci_acc'][1]:.2f}]%",
+                f"Mean gain: {gain_formatted} pp\n"
+                f"Mean accuracy: {acc_formatted}%\n"
+                f"95% CI gain: {gain_ci_formatted} pp\n"
+                f"95% CI accuracy: {acc_ci_formatted}%",
                 border_style="green",
             )
         )
@@ -1559,7 +1625,80 @@ def analyze_top3_metric_performance(
         console.print(details_table)
 
 
-if __name__ == "__main__":
+def hyperparameter_scaling():
+    """Display hyperparameter scaling results in a nice Rich table."""
+
+    # Data for the table
+    scaling_data = [
+        # Method, n_value, accuracies, notes
+        ("WBoN", "4", [0.854, 0.856, 0.84], ""),
+        ("WBoN", "8", [0.87, 0.828], ""),
+        ("WBoN", "16", [0.846], ""),
+        ("DVTS", "4", [0.832, 0.834, 0.828], ""),
+        ("DVTS", "8", [0.82, 0.84], ""),
+        ("DVTS", "16", [0.834, 0.834, 0.836], ""),
+        ("Beam Search", "4", [0.826, 0.831, 0.833], ""),
+        ("CGAI", "4→8", [87.40, 87.20, 87.60], "Different scale"),
+    ]
+
+    # Create the table
+    table = Table(
+        title="Hyperparameter Scaling Results",
+        box=box.SIMPLE_HEAVY,
+        title_style="bold blue",
+    )
+
+    table.add_column("Method", style="bold")
+    table.add_column("n", justify="center")
+    table.add_column("Accuracy", justify="right")
+    table.add_column("# Runs", justify="center")
+    table.add_column("Notes", style="dim")
+
+    for method, n_val, accuracies, notes in scaling_data:
+        # Convert to percentage if needed (CGAI is already in %)
+        if method == "CGAI":
+            display_accs = accuracies
+            unit = "%"
+        else:
+            display_accs = [acc * 100 for acc in accuracies]  # Convert to percentage
+            unit = "%"
+
+        formatted_acc = format_mean_std(display_accs) + unit
+        num_runs = len(accuracies)
+
+        # Style based on performance
+        if len(accuracies) > 1:
+            mean_val = sum(display_accs) / len(display_accs)
+            if mean_val > 85:
+                acc_style = f"[green]{formatted_acc}[/green]"
+            elif mean_val > 83:
+                acc_style = f"[yellow]{formatted_acc}[/yellow]"
+            else:
+                acc_style = f"[red]{formatted_acc}[/red]"
+        else:
+            acc_style = formatted_acc
+
+        table.add_row(method, n_val, acc_style, str(num_runs), notes)
+
+    console.print()
+    console.print(table)
+    console.print()
+
+    # Summary insights
+    console.print(
+        Panel.fit(
+            "Key Insights:\n"
+            "• WBoN shows variable performance across n values\n"
+            "• DVTS maintains consistent ~83% accuracy\n"
+            "• Beam Search provides stable ~83% performance\n"
+            "• CGAI achieves highest accuracy at 87%",
+            title="Summary",
+            border_style="blue",
+        )
+    )
+
+
+def experiment():
     check_all_runs_exist(fusion_reruns)
     # run_single_pair_analysis(0)
     # run_classifier_pair_analysis(0)
@@ -1569,3 +1708,8 @@ if __name__ == "__main__":
     # run_metric_best_per_pair("group_top_frac", processes=os.cpu_count())
     # run_metric_best_per_pair("prm_top_frac", processes=os.cpu_count())
     analyze_top3_metric_performance(processes=os.cpu_count())
+
+
+if __name__ == "__main__":
+    # experiment()
+    hyperparameter_scaling()
