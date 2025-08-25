@@ -85,7 +85,7 @@ if __name__ == "__main__":
             temperature=0.7,  # Their exact setting (you had 0.8)
             top_p=0.8,  # Their exact setting (you had 1.0)
             prm_batch_size=4,
-            search_batch_size=50,
+            search_batch_size=1,
             max_tokens=2048,
             agg_strategy="prod",
         ),
@@ -129,9 +129,9 @@ if __name__ == "__main__":
     experiment_configs: List[ExperimentConfig] = []
 
     # for config in [BEST_OF_N_CONFIG, DVTS_CONFIG, BEAM_SEARCH_CONFIG]:
-    for n in [4]:
-        for _ in range(1):
-            config_variant = copy.deepcopy(DVTS_CONFIG)
+    for n in [4, 8, 16]:
+        for _ in range(3):
+            config_variant = copy.deepcopy(BEAM_SEARCH_CONFIG)
             config_variant.search_config.n = n
             experiment_configs.append(config_variant)
 

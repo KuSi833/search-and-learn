@@ -41,6 +41,13 @@ def _beam_search(
 
     all_outputs: List[Beam] = []
 
+    tokenizer = llm.get_tokenizer()
+    if config.custom_chat_template is not None:
+        tokenizer.chat_template = config.custom_chat_template
+
+    num_iterations = int(config.beam_search_config.num_iterations)
+    beam_width = int(config.beam_search_config.beam_width)
+
     for prompt in batch_of_prompts:
         # Initialise with n empty beams for this prompt
         beams: List[Beam] = [
@@ -62,20 +69,15 @@ def _beam_search(
             for i in range(config.search_config.n)
         ]
 
-        tokenizer = llm.get_tokenizer()
-        if config.custom_chat_template is not None:
-            tokenizer.chat_template = config.custom_chat_template
-
-        num_iterations = int(config.beam_search_config.num_iterations)
-        beam_width = int(config.beam_search_config.beam_width)
-
-        for i in tqdm(range(num_iterations), desc="Beam search iterations"):
-            # Active beams
+        for i in tqdm(
+            range(num_iterations), desc="Beam search iterations", leave=False
+        ):
+            # Active beams for this prompt
             gen_beams = [b for b in beams if not b.pruned and not b.completed]
             if len(gen_beams) == 0:
                 break
 
-            # Enforce per-beam completion token budget similar to best_of_n
+            # Enforce per-beam completion token budget (best_of_n-style)
             max_new_tokens = int(config.search_config.max_tokens)
             for b in gen_beams:
                 if b.completion_tokens >= max_new_tokens:
@@ -113,7 +115,7 @@ def _beam_search(
 
             # Build conversations and template
             convs = [
-                build_conv(b.prompt, b.current_text, config.system_prompt)
+                build_conv(prompt, b.current_text, config.system_prompt)
                 for b in gen_beams
             ]
             add_generation_prompt = i == 0
@@ -140,10 +142,10 @@ def _beam_search(
                 beam_width,
             )
 
-            # Build candidate children across all beams
+            # Build candidate children for this prompt
             candidate_children: List[Beam] = []
-            candidate_prompts: List[str] = []
-            candidate_score_completions: List[List[str]] = []
+            prm_prompts: List[str] = []
+            prm_completions: List[List[str]] = []
             for parent, gen_result in zip(gen_beams, gen_results, strict=True):
                 assert gen_result.next_texts is not None
                 assert gen_result.lookahead_texts is not None
@@ -183,16 +185,14 @@ def _beam_search(
                         completion_tokens=new_completion_tokens,
                     )
                     candidate_children.append(child)
-                    candidate_prompts.append(prompt)
-                    candidate_score_completions.append([score_text])
+                    prm_prompts.append(prompt)
+                    prm_completions.append([score_text])
 
             if len(candidate_children) == 0:
                 break
 
-            # Score candidates using PRM; aggregate and select global top-n
-            all_scores_per_child = prm.score(
-                candidate_prompts, candidate_score_completions
-            )
+            # Score candidates using PRM; aggregate and select global top-n for this prompt
+            all_scores_per_child = prm.score(prm_prompts, prm_completions)
 
             agg_scores: List[float] = []
             for c, s in zip(candidate_children, all_scores_per_child, strict=True):
