@@ -1,13 +1,18 @@
+import os
+import re
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import List, Optional
+from pathlib import Path
+from typing import Dict, List, Optional
 
+import matplotlib.pyplot as plt
 import numpy as np
 from rich import box
+from rich.color import Color
 from rich.console import Console
-from rich.panel import Panel
 from rich.table import Table
 
+from .colors import BLUE, CYAN, GOLD, GREEN, ORANGE, PURPLE, RED
 from .util import (
     format_mean_std,
     format_runtime,
@@ -111,6 +116,123 @@ def get_accuracy_style(result: ExperimentResult, formatted_acc: str) -> str:
         return formatted_acc
 
 
+def _rich_color_to_hex(color: Color) -> str:
+    """Convert a Rich Color into a hex string usable by matplotlib."""
+    triplet = color.get_truecolor()
+    return f"#{triplet.red:02X}{triplet.green:02X}{triplet.blue:02X}"
+
+
+def _parse_n_to_numeric(n_value: str) -> int:
+    """Parse the numeric position for an n label like "4", "8", or "4→8".
+
+    We use the last number present so that "4→8" maps to 8.
+    """
+    numbers = re.findall(r"\d+", n_value)
+    return int(numbers[-1]) if numbers else 0
+
+
+def _numeric_to_n(numeric_generations: int) -> int:
+    """Convert total generations (e.g., 4, 8, 16) to n where generations=2^n."""
+    if numeric_generations <= 0:
+        return 0
+    return int(np.log2(numeric_generations))
+
+
+def plot_hyperparameter_scaling(
+    results: List[ExperimentResult],
+    save_path: Path = Path(
+        "./figures/report/hyperparameter_scaling/hyperparameter_scaling.png"
+    ),
+) -> None:
+    """Create a line plot with uncertainty (mean ± std) for each method.
+
+    - Different colors per method using the palette from colors.py
+    - Shaded region shows uncertainty (±1 std)
+    - Handles methods with a single n by plotting an errorbar point
+    """
+
+    # Assign distinct colors to known methods; fall back to a cycle
+    color_palette: Dict[str, str] = {
+        "WBoN": _rich_color_to_hex(BLUE),
+        "DVTS": _rich_color_to_hex(ORANGE),
+        "Beam Search": _rich_color_to_hex(PURPLE),
+        "CGAI": _rich_color_to_hex(GREEN),
+    }
+    fallback_cycle = [
+        _rich_color_to_hex(GOLD),
+        _rich_color_to_hex(CYAN),
+        _rich_color_to_hex(RED),
+    ]
+
+    # Group results by method
+    grouped: Dict[str, List[ExperimentResult]] = {}
+    for res in results:
+        grouped.setdefault(res.method, []).append(res)
+
+    plt.figure(figsize=(7, 4.2), dpi=150)
+
+    # Collect all unique n positions (n = log2(generations))
+    x_ticks: List[int] = []
+    for res in results:
+        numeric = _parse_n_to_numeric(res.n)
+        n_val = _numeric_to_n(numeric)
+        x_ticks.append(n_val)
+    x_ticks = sorted(set(x_ticks))
+    x_ticklabels: List[str] = [str(x) for x in x_ticks]
+
+    # Plot each method
+    for idx, (method, items) in enumerate(grouped.items()):
+        color = color_palette.get(method, fallback_cycle[idx % len(fallback_cycle)])
+
+        # Prepare data
+        xs: List[int] = []
+        means: List[float] = []
+        stds: List[float] = []
+        for item in items:
+            xs.append(_numeric_to_n(_parse_n_to_numeric(item.n)))
+            if item.method == "CGAI":
+                accs = item.accuracies  # already in %
+            else:
+                accs = [a * 100 for a in item.accuracies]
+            means.append(float(np.mean(accs)))
+            stds.append(float(np.std(accs, ddof=1)) if len(accs) > 1 else 0.0)
+
+        # Sort by x
+        order = np.argsort(xs)
+        xs = list(np.array(xs)[order])
+        means = list(np.array(means)[order])
+        stds = list(np.array(stds)[order])
+
+        if len(xs) >= 2:
+            plt.plot(xs, means, label=method, color=color, marker="o", linewidth=2)
+            lower = np.array(means) - np.array(stds)
+            upper = np.array(means) + np.array(stds)
+            plt.fill_between(xs, lower, upper, color=color, alpha=0.2)
+        else:
+            # Single point: draw as errorbar
+            plt.errorbar(
+                xs,
+                means,
+                yerr=stds,
+                fmt="o",
+                color=color,
+                elinewidth=1.2,
+                capsize=3,
+                label=method,
+            )
+
+    plt.xlabel("n")
+    plt.ylabel("Accuracy (%)")
+    plt.xticks(x_ticks, x_ticklabels)
+    plt.grid(True, axis="y", linestyle=":", linewidth=0.6, alpha=0.6)
+    plt.legend(frameon=True)
+    plt.tight_layout()
+
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    plt.savefig(save_path)
+    plt.close()
+
+
 def hyperparameter_scaling_report():
     """Generate the main hyperparameter scaling report."""
     RESULTS = [
@@ -209,3 +331,4 @@ def hyperparameter_scaling_report():
         ),
     ]
     display_hyperparameter_scaling_table(RESULTS)
+    # plot_hyperparameter_scaling(RESULTS)
