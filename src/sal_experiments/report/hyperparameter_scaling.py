@@ -178,10 +178,22 @@ def hyperparameter_scaling_report():
         ),
         ExperimentResult(
             method="Beam Search",
-            n="16",
-            accuracies=[0.826, 0.831, 0.833],
+            n="8",
+            accuracies=[0.801, 0.81, 0.826],
             runtimes=[
-                timedelta(hours=2, minutes=21),
+                timedelta(hours=10, minutes=47),
+                timedelta(hours=11, minutes=18),
+                timedelta(hours=11, minutes=3),
+            ],
+        ),
+        ExperimentResult(
+            method="Beam Search",
+            n="16",
+            accuracies=[0.826, 0.878, 0.864],
+            runtimes=[
+                timedelta(hours=15, minutes=41),
+                timedelta(hours=16, minutes=7),
+                timedelta(hours=15, minutes=41),
             ],
         ),
         ExperimentResult(

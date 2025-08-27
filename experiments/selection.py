@@ -209,12 +209,12 @@ if __name__ == "__main__":
     run_ids = fusion_base_runs_best()
 
     # Uncertainty analysis
-    # analyze_uncertainty_with_check(run_ids)
+    analyze_uncertainty_with_check(run_ids)
 
     # Export uncertain subsets (uncomment to use)
-    for coverage in [10, 20]:
-        export_uncertain_multi_runs(
-            run_ids=run_ids,
-            coverage=coverage,  # Export top 20% most uncertain
-            metric="agreement_ratio",  # Uncertainty metric
-        )
+    # for coverage in [10, 20]:
+    #     export_uncertain_multi_runs(
+    #         run_ids=run_ids,
+    #         coverage=coverage,  # Export top 20% most uncertain
+    #         metric="agreement_ratio",  # Uncertainty metric
+    #     )

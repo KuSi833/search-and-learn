@@ -433,7 +433,7 @@ def cmd_overview(run_id: str) -> None:
         )
     console.print(summary)
 
-    benchmark_mapping = BenchmarkMapping("math500")
+    benchmark_mapping = BenchmarkMapping(Benchmarks.MATH500.value)
 
     for level in sorted(level_to_total.keys()):
         total = level_to_total[level]
@@ -516,13 +516,13 @@ def question_answer(run_id: str, show_correct: bool) -> None:
 @click.option(
     "--benchmark",
     "benchmark_key",
-    default=Benchmarks.MATH500.value,
-    type=click.Choice([b.value for b in Benchmarks]),
+    default=Benchmarks.MATH500.value.key,
+    type=click.Choice([b.value.key for b in Benchmarks]),
     help="Benchmark to use for answer extraction",
 )
 @click.option("--name", required=True, type=str, help="Name for the subset file")
 def extract_incorrect(run_id: str, benchmark_key: str, name: str) -> None:
-    benchmark_enum = Benchmarks.from_key(benchmark_key)
+    benchmark: Benchmark = Benchmarks.from_key(benchmark_key)
     out_file = Path("./output") / run_id / "inference_output.jsonl"
     records = load_jsonl(out_file)
 
@@ -538,17 +538,15 @@ def extract_incorrect(run_id: str, benchmark_key: str, name: str) -> None:
     incorrect_unique_ids.sort()
 
     # Save to JSON file with metadata to support later mapping and reproducibility
-    output_dir = (
-        BENCHMARK_SUBSETS_ROOT / DATASETS[benchmark_enum.value]["hf_name"] / run_id
-    )
+    output_dir = BENCHMARK_SUBSETS_ROOT / benchmark.hf_name / run_id
     output_dir.mkdir(parents=True, exist_ok=True)
     output_file = output_dir / f"{name}.json"
 
     subset_payload = {
         "version": 1,
         "type": "incorrect_subset",
-        "benchmark_key": benchmark_enum.value,
-        "hf_name": DATASETS[benchmark_enum.value]["hf_name"],
+        "benchmark_key": benchmark.key,
+        "hf_name": benchmark.hf_name,
         "run_id": run_id,
         "unique_ids": sorted(incorrect_unique_ids),
     }
@@ -626,8 +624,8 @@ def _select_uncertain_indices(
 @click.option(
     "--benchmark",
     "benchmark_key",
-    default=Benchmarks.MATH500.value,
-    type=click.Choice([b.value for b in Benchmarks]),
+    default=Benchmarks.MATH500.value.key,
+    type=click.Choice([b.value.key for b in Benchmarks]),
     help="Benchmark to use for answer extraction",
 )
 @click.option(
@@ -1032,6 +1030,124 @@ def _load_subset_ids(path: str) -> List[str]:
         if isinstance(ids, list):
             return [str(x) for x in ids]
     return []
+
+
+def _order_indices_by_metric(
+    metrics: List[Dict[str, Any]], labels: List[bool], field: str
+) -> List[int]:
+    vals = [m.get(field, 0.0) for m in metrics]
+    low_is_uncertain = _metric_direction_low_is_uncertain(vals, labels)
+    idxs = list(range(len(metrics)))
+    idxs.sort(key=lambda i: vals[i], reverse=not low_is_uncertain)
+    return idxs
+
+
+def _order_indices_by_hybrid_rank(
+    metrics: List[Dict[str, Any]], labels: List[bool], fields: List[str]
+) -> List[int]:
+    # Build oriented ranks per field (uncertain-first)
+    per_field_rank: List[Dict[int, int]] = []
+    n = len(metrics)
+    for f in fields:
+        order = _order_indices_by_metric(metrics, labels, f)
+        rank_map = {idx: r for r, idx in enumerate(order)}
+        per_field_rank.append(rank_map)
+
+    # Average rank across fields
+    avg_rank = [0.0] * n
+    for i in range(n):
+        avg_rank[i] = sum(r[i] for r in per_field_rank) / max(1, len(per_field_rank))
+
+    idxs = list(range(n))
+    idxs.sort(key=lambda i: avg_rank[i])
+    return idxs
+
+
+def _recall_of_incorrect(
+    order: List[int], labels: List[bool], coverage_pct: int
+) -> float:
+    total = len(labels)
+    if total == 0:
+        return 0.0
+    total_incorrect = sum(1 for y in labels if not y)
+    if total_incorrect == 0:
+        return 0.0
+    k = max(1, int(round(total * (coverage_pct / 100.0))))
+    flagged = set(order[:k])
+    incorrect_flagged = sum(1 for i in flagged if not labels[i])
+    return 100.0 * incorrect_flagged / total_incorrect
+
+
+@cli.command(
+    name="compare-selection",
+    help=(
+        "Compare agreement_ratio against PRM-based metrics and hybrids across coverage. "
+        "Reports recall of incorrect within top-K most uncertain."
+    ),
+)
+@click.option(
+    "--run-id", required=True, type=str, help="W&B run id (directory under ./output)"
+)
+@click.option(
+    "--metrics",
+    default="agreement_ratio,group_top_frac,prm_top_frac,prm_margin,prm_mean,hybrid(agreement_ratio+group_top_frac),hybrid(agreement_ratio+prm_margin)",
+    type=str,
+    help=(
+        "Comma-separated list of metrics. Use 'hybrid(a+b+...)' to average uncertainty ranks."
+    ),
+)
+@click.option(
+    "--coverages",
+    default="10,20,30,40,50",
+    type=str,
+    help="Comma-separated coverage percentages to evaluate",
+)
+def compare_selection(run_id: str, metrics: str, coverages: str) -> None:
+    out_file = Path("./output") / run_id / "inference_output.jsonl"
+    records = load_jsonl(out_file)
+    if not records:
+        console.print(Text(f"No records found in {out_file}", style="red"))
+        sys.exit(1)
+
+    metrics_list: List[Dict[str, Any]] = []
+    labels: List[bool] = []
+    for rec in records:
+        qa = _get_question_answer_from_record(rec)
+        labels.append(bool(qa.is_correct))
+        metrics_list.append(_compute_uncertainty_metrics(rec))
+
+    metric_specs = [m.strip() for m in metrics.split(",") if m.strip()]
+    coverage_pcts = [int(x) for x in coverages.split(",") if x.strip()]
+
+    header = Table.grid(padding=(0, 1))
+    header.add_column(style="bold cyan")
+    header.add_column()
+    header.add_row("Run", run_id)
+    header.add_row("File", f"output/{run_id}/inference_output.jsonl")
+    header.add_row("Samples", str(len(labels)))
+    console.print(Panel(header, title="Selection metric comparison", box=box.ROUNDED))
+
+    table = Table(title="Recall of incorrect within coverage", box=box.SIMPLE_HEAVY)
+    table.add_column("Metric", style="bold")
+    for p in coverage_pcts:
+        table.add_column(f"{p}%", justify="right")
+
+    for spec in metric_specs:
+        if spec.startswith("hybrid(") and spec.endswith(")"):
+            inner = spec[len("hybrid(") : -1]
+            fields = [s.strip() for s in inner.split("+") if s.strip()]
+            order = _order_indices_by_hybrid_rank(metrics_list, labels, fields)
+            name = f"hybrid({'+'.join(fields)})"
+        else:
+            order = _order_indices_by_metric(metrics_list, labels, spec)
+            name = spec
+
+        row_vals = [
+            f"{_recall_of_incorrect(order, labels, p):.1f}" for p in coverage_pcts
+        ]
+        table.add_row(name, *row_vals)
+
+    console.print(table)
 
 
 @cli.command(
