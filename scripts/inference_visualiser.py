@@ -4,6 +4,7 @@ import math
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -162,6 +163,30 @@ def print_report(
         Text(str(assumed_correct), style=("green" if assumed_correct else "red")),
     )
     console.print(Panel(extracted_table, box=box.ROUNDED))
+
+    # Uncertainty metrics - the 3 core metrics from metric_overlap.py
+    uncertainty_metrics = _compute_uncertainty_metrics(sample)
+    metrics_table = Table(title="Core uncertainty metrics", box=box.SIMPLE_HEAVY)
+    metrics_table.add_column("Metric", style="bold")
+    metrics_table.add_column("Value", justify="right")
+    metrics_table.add_column("Description", style="dim")
+
+    metrics_table.add_row(
+        "agreement_ratio",
+        f"{uncertainty_metrics['agreement_ratio']:.3f}",
+        "Fraction agreeing on most common answer",
+    )
+    metrics_table.add_row(
+        "entropy_freq",
+        f"{uncertainty_metrics['entropy_freq']:.3f}",
+        "Normalized entropy of answer frequencies",
+    )
+    metrics_table.add_row(
+        "group_top_frac",
+        f"{uncertainty_metrics['group_top_frac']:.3f}",
+        "PRM score fraction for top answer group",
+    )
+    console.print(Panel(metrics_table, box=box.ROUNDED))
 
     # Per-completion summary: extracted final answer, final PRM score, and correctness
     # - Final PRM score: prefer pre-computed `agg_scores` (added during scoring),
@@ -1333,6 +1358,182 @@ def cmd_uncertainty(run_id: str) -> None:
     console.print(Panel(header, title="Uncertainty analysis", box=box.ROUNDED))
 
     _summarise_uncertainty(metrics_list, labels)
+
+
+@cli.command(
+    name="export-compact", help="Export all question details in compact JSON format"
+)
+@click.option(
+    "--run-id", required=True, type=str, help="W&B run id (directory under ./output)"
+)
+@click.option(
+    "--output-file",
+    type=str,
+    default=None,
+    help="Output JSON file path (default: output/{run_id}/compact_export.json)",
+)
+def cmd_export_compact(run_id: str, output_file: Optional[str]) -> None:
+    out_file = Path("./output") / run_id / "inference_output.jsonl"
+    records = load_jsonl(out_file)
+    if not records:
+        console.print(Text(f"No records found in {out_file}", style="red"))
+        sys.exit(1)
+
+    # Determine output file path
+    output_path = Path("./data/question_insight") / run_id / "compact_export.json"
+
+    # Ensure output directory exists
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Create compact schema-separated format
+    export_data = {
+        "meta": {
+            "run_id": run_id,
+            "source": str(out_file),
+            "count": len(records),
+            "timestamp": datetime.now().isoformat(),
+        },
+        "schema": {
+            "question_fields": [
+                "idx",
+                "uid",
+                "subject",
+                "level",
+                "problem",
+                "gt_answer",
+                "gt_extracted",
+                "pred_extracted",
+                "is_correct",
+                "num_completions",
+                "chosen_idx",
+            ],
+            "metrics_fields": [
+                "agreement_ratio",
+                "entropy_freq",
+                "group_top_frac",
+                "unique_answers",
+                "prm_mean",
+                "prm_std",
+                "prm_margin",
+            ],
+            "completion_fields": [
+                "question_idx",
+                "completion_idx",
+                "extracted_answer",
+                "prm_score",
+                "is_correct",
+            ],
+        },
+        "questions": [],
+        "completions": [],  # Separate array for all completions across questions
+    }
+
+    completion_global_idx = 0
+
+    for i, sample in enumerate(records):
+        # Basic question info
+        unique_id = sample["unique_id"]
+        problem = sample["problem"]
+        answer = sample["answer"]
+        subject = sample["subject"]
+        level = sample["level"]
+
+        # Predictions and correctness
+        pred_text = sample["pred"]
+        pred = sample.get(ASSUMED_PRED_KEY, "")
+        answer_extracted = extract_answer(_wrap_in_boxed(answer), BENCHMARK)
+
+        pred_extracted = extract_answer(pred, BENCHMARK)
+        is_correct = math_equal(answer_extracted, pred_extracted)
+
+        # Completions info
+        completions = sample.get("completions", [])
+        agg_scores = sample.get("agg_scores", [])
+
+        # If no agg_scores, fall back to last scores from trajectories
+        if not agg_scores and sample.get("scores"):
+            try:
+                agg_scores = [
+                    (float(s[-1]) if isinstance(s, list) and len(s) > 0 else 0.0)
+                    for s in sample["scores"]
+                ]
+            except Exception:
+                agg_scores = [0.0 for _ in completions]
+
+        # Find chosen completion index
+        chosen_idx = _index_of_first(completions, pred_text) if completions else -1
+
+        # Uncertainty metrics
+        uncertainty_metrics = _compute_uncertainty_metrics(sample)
+
+        # Compact question data (array format following schema)
+        question_row = [
+            i,  # idx
+            unique_id,  # uid
+            subject,  # subject
+            level,  # level
+            problem,  # problem
+            answer,  # gt_answer
+            answer_extracted,  # gt_extracted
+            pred_extracted,  # pred_extracted
+            is_correct,  # is_correct
+            len(completions),  # num_completions
+            chosen_idx,  # chosen_idx
+        ]
+
+        # Compact metrics data (array format following schema)
+        metrics_row = [
+            round(uncertainty_metrics["agreement_ratio"], 4),
+            round(uncertainty_metrics["entropy_freq"], 4),
+            round(uncertainty_metrics["group_top_frac"], 4),
+            uncertainty_metrics["unique_answers"],
+            round(uncertainty_metrics["prm_mean"], 4),
+            round(uncertainty_metrics["prm_std"], 4),
+            round(uncertainty_metrics["prm_margin"], 4),
+        ]
+
+        export_data["questions"].append([question_row, metrics_row])
+
+        # Process completions separately
+        if completions:
+            extracted_answers = [
+                extract_answer(c or "", BENCHMARK) for c in completions
+            ]
+
+            for j, (ans, score) in enumerate(zip(extracted_answers, agg_scores or [])):
+                completion_row = [
+                    i,  # question_idx (reference back to question)
+                    j,  # completion_idx within question
+                    ans,  # extracted_answer
+                    round(float(score) if score is not None else 0.0, 4),  # prm_score
+                    math_equal(answer_extracted, ans),  # is_correct
+                ]
+                export_data["completions"].append(completion_row)
+                completion_global_idx += 1
+
+    # Write to JSON file
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(export_data, f, indent=2, ensure_ascii=False)
+
+    # Summary
+    total_correct = sum(
+        1 for q in export_data["questions"] if q["prediction"]["is_correct"]
+    )
+    accuracy = 100.0 * total_correct / len(records) if records else 0.0
+
+    summary_table = Table(title="Export summary", box=box.SIMPLE_HEAVY)
+    summary_table.add_column("Metric", style="bold")
+    summary_table.add_column("Value", justify="right")
+    summary_table.add_row("Run ID", run_id)
+    summary_table.add_row("Total questions", str(len(records)))
+    summary_table.add_row("Correct answers", str(total_correct))
+    summary_table.add_row("Accuracy", f"{accuracy:.1f}%")
+    summary_table.add_row("Output file", str(output_path))
+
+    summary_table.add_row("File size", f"{output_path.stat().st_size / 1024:.1f} KB")
+
+    console.print(Panel(summary_table, box=box.ROUNDED))
+    console.print(Text(f"✓ Exported compact data to {output_path}", style="green"))
 
 
 if __name__ == "__main__":
