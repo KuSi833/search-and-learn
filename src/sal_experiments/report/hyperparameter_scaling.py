@@ -249,18 +249,22 @@ def hyperparameter_scaling_report():
         ExperimentResult(
             method="WBoN",
             n="8",
-            accuracies=[0.87, 0.828],
+            accuracies=[0.874, 0.828, 0.866],
             runtimes=[
                 timedelta(minutes=16, seconds=15),
-                timedelta(minutes=14, seconds=33),
+                timedelta(minutes=18, seconds=33),
+                timedelta(minutes=20, seconds=13),
             ],
         ),
         ExperimentResult(
             method="WBoN",
             n="16",
-            accuracies=[0.846],
+            accuracies=[0.846, 0.85, 0.868, 0.862],
             runtimes=[
-                timedelta(minutes=27, seconds=49),
+                timedelta(minutes=41, seconds=58),
+                timedelta(minutes=42, seconds=40),
+                timedelta(minutes=41, seconds=37),
+                timedelta(minutes=41, seconds=58),
             ],
         ),
         ExperimentResult(
@@ -297,6 +301,9 @@ def hyperparameter_scaling_report():
             method="Beam Search",
             n="4",
             accuracies=[0.826, 0.831, 0.833],
+            runtimes=[
+                timedelta(hours=1, minutes=45),
+            ],
         ),
         ExperimentResult(
             method="Beam Search",

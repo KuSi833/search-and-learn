@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
-from experiments.fusion import best_accuracy, run_ultraminimal_experiment
+from experiments.fusion.fusion import best_accuracy, run_ultraminimal_experiment
 
 
 def load_results(json_path: Path) -> List[Dict[str, Any]]:
@@ -114,7 +114,7 @@ def calculate_always_override_conversions(
 
     # Add parent directories to path for imports
     sys.path.append(str(Path(__file__).parent.parent.parent))
-    from experiments.fusion import (
+    from experiments.fusion.fusion import (
         _get_base_samples,
         _is_correct_record_math,
         load_jsonl,
@@ -370,7 +370,7 @@ def run_delta_analysis(base_run: str, rerun_id: str) -> None:
 
     # Add parent directories to path for imports
     sys.path.append(str(Path(__file__).parent.parent.parent))
-    from experiments.fusion import FusionRunConfig, FusionSetting, run_sweep
+    from experiments.fusion.fusion import FusionRunConfig, FusionSetting, run_sweep
 
     print("\n" + "=" * 60)
     print("DELTA THRESHOLD ANALYSIS")
