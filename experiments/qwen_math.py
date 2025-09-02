@@ -67,11 +67,11 @@ if __name__ == "__main__":
     #     benchmark=Benchmarks.MATH500.value,
     #     project_root=project_root,
     # )
-    # DATASET_CONFIG = DatasetConfig(num_samples=500)
-    DATASET_CONFIG = DatasetConfig(
-        dataset_name=Benchmarks.AIME24.value.hf_name,
-        dataset_split="train",
-    )
+    DATASET_CONFIG = DatasetConfig(num_samples=500)
+    # DATASET_CONFIG = DatasetConfig(
+    #     dataset_name=Benchmarks.AIME24.value.hf_name,
+    #     dataset_split="train",
+    # )
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
@@ -134,7 +134,8 @@ if __name__ == "__main__":
 
     for n in [4, 8, 16]:
         # for _ in range(3):
-        for cfg in [BEAM_SEARCH_CONFIG, BEST_OF_N_CONFIG, DVTS_CONFIG]:
+        # for cfg in [BEAM_SEARCH_CONFIG, BEST_OF_N_CONFIG, DVTS_CONFIG]:
+        for cfg in [DVTS_CONFIG]:
             cfg_var = copy.deepcopy(cfg)
             cfg_var.search_config.n = n
             cfg_var.search_config.search_batch_size = 1
