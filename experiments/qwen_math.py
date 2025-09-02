@@ -67,7 +67,11 @@ if __name__ == "__main__":
     #     benchmark=Benchmarks.MATH500.value,
     #     project_root=project_root,
     # )
-    DATASET_CONFIG = DatasetConfig(num_samples=500)
+    # DATASET_CONFIG = DatasetConfig(num_samples=500)
+    DATASET_CONFIG = DatasetConfig(
+        dataset_name=Benchmarks.AIME24.value.hf_name,
+        dataset_split="train",
+    )
 
     BASE_CONFIG = BaseConfig(
         prm_config=PRM_CONFIG,
@@ -103,7 +107,7 @@ if __name__ == "__main__":
             temperature=0.7,  # Their exact setting (you had 0.8)
             top_p=0.8,  # Their exact setting (you had 1.0)
             prm_batch_size=4,
-            search_batch_size=50,
+            search_batch_size=1,
             max_tokens=2048,
             agg_strategy="prod",
         ),
@@ -128,11 +132,12 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    # for config in [BEST_OF_N_CONFIG, DVTS_CONFIG, BEAM_SEARCH_CONFIG]:
     for n in [4, 8, 16]:
-        for _ in range(3):
-            config_variant = copy.deepcopy(BEST_OF_N_CONFIG)
-            config_variant.search_config.n = n
-            experiment_configs.append(config_variant)
+        # for _ in range(3):
+        for cfg in [DVTS_CONFIG, BEAM_SEARCH_CONFIG, BEST_OF_N_CONFIG]:
+            cfg_var = copy.deepcopy(cfg)
+            cfg_var.search_config.n = n
+            cfg_var.search_config.search_batch_size = 1
+            experiment_configs.append(cfg_var)
 
     run(BASE_CONFIG, experiment_configs)
