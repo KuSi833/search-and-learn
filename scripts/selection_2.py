@@ -322,17 +322,47 @@ def create_split_violin_plots(
             showmedians=False,
         )
 
-        # Style correct violin (left side)
+        # Get threshold for this metric
+        threshold_value = thresholds[metric]
+
+        # Style correct violin (left side) with threshold-based transparency
         for pc in parts_correct["bodies"]:
             pc.set_facecolor("#2ca02c")
-            pc.set_alpha(0.7)
+
             # Keep only left half of the violin
             vertices = pc.get_paths()[0].vertices
-            # Find the center x position and keep only left side
             center_x = 0.5
             vertices[:, 0] = np.where(
                 vertices[:, 0] > center_x, center_x, vertices[:, 0]
             )
+
+            # Create two separate patches for inside and outside threshold
+            from matplotlib.patches import Polygon
+
+            # Split vertices based on threshold
+            if metric in ["agreement_ratio", "group_top_frac"]:
+                # For these metrics, inside threshold means y <= threshold_value
+                inside_vertices = vertices[vertices[:, 1] <= threshold_value]
+                outside_vertices = vertices[vertices[:, 1] > threshold_value]
+            else:  # entropy_freq
+                # For entropy, inside threshold means y >= threshold_value
+                inside_vertices = vertices[vertices[:, 1] >= threshold_value]
+                outside_vertices = vertices[vertices[:, 1] < threshold_value]
+
+            # Remove the original patch
+            pc.set_alpha(0)
+
+            # Add inside threshold patch (darker)
+            if len(inside_vertices) > 2:
+                inside_patch = Polygon(inside_vertices, facecolor="#2ca02c", alpha=0.8)
+                ax.add_patch(inside_patch)
+
+            # Add outside threshold patch (lighter)
+            if len(outside_vertices) > 2:
+                outside_patch = Polygon(
+                    outside_vertices, facecolor="#2ca02c", alpha=0.3
+                )
+                ax.add_patch(outside_patch)
 
         # Remove any mean/median lines for correct
         for key in ["cmeans", "cmedians", "cmins", "cmaxes", "cbars"]:
@@ -348,17 +378,44 @@ def create_split_violin_plots(
             showmedians=False,
         )
 
-        # Style incorrect violin (right side)
+        # Style incorrect violin (right side) with threshold-based transparency
         for pc in parts_incorrect["bodies"]:
             pc.set_facecolor("#d62728")
-            pc.set_alpha(0.7)
+
             # Keep only right half of the violin
             vertices = pc.get_paths()[0].vertices
-            # Find the center x position and keep only right side
             center_x = 0.5
             vertices[:, 0] = np.where(
                 vertices[:, 0] < center_x, center_x, vertices[:, 0]
             )
+
+            # Create two separate patches for inside and outside threshold
+            from matplotlib.patches import Polygon
+
+            # Split vertices based on threshold
+            if metric in ["agreement_ratio", "group_top_frac"]:
+                # For these metrics, inside threshold means y <= threshold_value
+                inside_vertices = vertices[vertices[:, 1] <= threshold_value]
+                outside_vertices = vertices[vertices[:, 1] > threshold_value]
+            else:  # entropy_freq
+                # For entropy, inside threshold means y >= threshold_value
+                inside_vertices = vertices[vertices[:, 1] >= threshold_value]
+                outside_vertices = vertices[vertices[:, 1] < threshold_value]
+
+            # Remove the original patch
+            pc.set_alpha(0)
+
+            # Add inside threshold patch (darker)
+            if len(inside_vertices) > 2:
+                inside_patch = Polygon(inside_vertices, facecolor="#d62728", alpha=0.8)
+                ax.add_patch(inside_patch)
+
+            # Add outside threshold patch (lighter)
+            if len(outside_vertices) > 2:
+                outside_patch = Polygon(
+                    outside_vertices, facecolor="#d62728", alpha=0.3
+                )
+                ax.add_patch(outside_patch)
 
         # Remove any mean/median lines for incorrect
         for key in ["cmeans", "cmedians", "cmins", "cmaxes", "cbars"]:
