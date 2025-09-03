@@ -309,8 +309,9 @@ def create_split_violin_plots(
         total_count = correct_count + incorrect_count
 
         # Scale widths proportionally (max width = 0.8)
-        correct_width = 0.8 * (correct_count / total_count)
-        incorrect_width = 0.8 * (incorrect_count / total_count)
+        max_width = 1.0
+        correct_width = max_width * (correct_count / total_count)
+        incorrect_width = max_width * (incorrect_count / total_count)
 
         # Create violin plot for correct answers (left side)
         parts_correct = ax.violinplot(
@@ -364,8 +365,28 @@ def create_split_violin_plots(
             if key in parts_incorrect:
                 parts_incorrect[key].set_visible(False)
 
-        # Add threshold line
+        # Add threshold line and selection visualization
         threshold_value = thresholds[metric]
+        analysis = correctness_analysis[metric]
+
+        # Determine selection region based on metric type
+        if metric in ["agreement_ratio", "group_top_frac"]:
+            # For these metrics, we select values <= threshold (bottom region)
+            y_min = ax.get_ylim()[0] if hasattr(ax, "get_ylim") else 0
+            y_fill_min = y_min
+            y_fill_max = threshold_value
+            selection_text = f"Selected\n≤ {threshold_value:.3f}"
+        else:  # entropy_freq
+            # For entropy, we select values >= threshold (top region)
+            y_max = ax.get_ylim()[1] if hasattr(ax, "get_ylim") else 1
+            y_fill_min = threshold_value
+            y_fill_max = y_max if y_max > threshold_value else threshold_value + 0.1
+            selection_text = f"Selected\n≥ {threshold_value:.3f}"
+
+        # Add shaded region to show what's being selected
+        ax.axhspan(y_fill_min, y_fill_max, alpha=0.15, color="orange", zorder=0)
+
+        # Add threshold line
         ax.axhline(
             y=threshold_value,
             color="red",
@@ -373,6 +394,39 @@ def create_split_violin_plots(
             linewidth=2,
             alpha=0.8,
             label=f"Threshold: {threshold_value:.3f}",
+        )
+
+        # Add text annotations showing counts in selected region
+        selected_correct = analysis["correct_selected"]
+        selected_incorrect = analysis["incorrect_selected"]
+
+        # Position text in the selected region
+        if metric in ["agreement_ratio", "group_top_frac"]:
+            text_y = y_fill_min + (y_fill_max - y_fill_min) * 0.3
+        else:
+            text_y = y_fill_min + (y_fill_max - y_fill_min) * 0.7
+
+        # Add count annotations
+        ax.text(
+            0.25,
+            text_y,
+            f"{selected_correct}\nCorrect",
+            ha="center",
+            va="center",
+            fontsize=10,
+            fontweight="bold",
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgreen", alpha=0.8),
+        )
+
+        ax.text(
+            0.75,
+            text_y,
+            f"{selected_incorrect}\nIncorrect",
+            ha="center",
+            va="center",
+            fontsize=10,
+            fontweight="bold",
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="lightcoral", alpha=0.8),
         )
 
         # Customize plot
