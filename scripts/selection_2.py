@@ -8,6 +8,8 @@ from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.lines import Line2D
+from matplotlib.patches import Polygon, Rectangle
 
 from sal.utils.runs import fusion_base_runs_best
 from scripts.inference_visualiser import (
@@ -337,7 +339,6 @@ def create_split_violin_plots(
             )
 
             # Create two separate patches for inside and outside threshold
-            from matplotlib.patches import Polygon
 
             # Split vertices based on threshold
             if metric in ["agreement_ratio", "group_top_frac"]:
@@ -390,7 +391,6 @@ def create_split_violin_plots(
             )
 
             # Create two separate patches for inside and outside threshold
-            from matplotlib.patches import Polygon
 
             # Split vertices based on threshold
             if metric in ["agreement_ratio", "group_top_frac"]:
@@ -470,18 +470,55 @@ def create_split_violin_plots(
         )
         ax.set_ylabel(f"{metric.replace('_', ' ').title()}")
 
-        # Enhanced title with threshold info
+        title = f"{metric.replace('_', ' ').title()}"
+        ax.set_title(title, fontsize=10)
+
+        # Create enhanced legend with selection counts
         direction = "<=" if metric in ["agreement_ratio", "group_top_frac"] else ">="
         analysis = correctness_analysis[metric]
         selected_correct = analysis["correct_selected"]
         selected_incorrect = analysis["incorrect_selected"]
-        total_selected = selected_correct + selected_incorrect
 
-        title = f"{metric.replace('_', ' ').title()}\nThreshold {direction} {threshold_value:.3f}: {selected_correct}C + {selected_incorrect}I = {total_selected}"
-        ax.set_title(title, fontsize=10)
+        # Create custom legend entries with separate correct/incorrect counts
+        legend_elements = [
+            Line2D(
+                [0],
+                [0],
+                color="red",
+                linestyle="--",
+                linewidth=2,
+                label=f"Threshold {direction} {threshold_value:.3f}",
+            ),
+            Rectangle(
+                (0, 0),
+                1,
+                1,
+                facecolor="orange",
+                alpha=0.15,
+                label="Selected region:",
+            ),
+            Rectangle(
+                (0, 0),
+                1,
+                1,
+                facecolor="#2ca02c",
+                alpha=0.6,
+                label=f"  Correct: {selected_correct}",
+            ),
+            Rectangle(
+                (0, 0),
+                1,
+                1,
+                facecolor="#d62728",
+                alpha=0.6,
+                label=f"  Incorrect: {selected_incorrect}",
+            ),
+        ]
 
+        ax.legend(
+            handles=legend_elements, loc="upper right", fontsize=10, framealpha=0.9
+        )
         ax.grid(True, alpha=0.3)
-        ax.legend(loc="upper right", fontsize=8)
 
     plt.suptitle(
         f"Split Violin Plots: Correct vs Incorrect Distribution\nRuns: {', '.join(run_ids)}"
