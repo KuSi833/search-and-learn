@@ -628,9 +628,8 @@ def generate_aggregated_figures(run_ids: List[str]) -> None:
     )
 
     try:
-        # Collect data from all runs
-        all_metrics_data = []
-        all_labels_data = []
+        # Collect data per run (keep runs separate)
+        per_run_data = {}
 
         for run_id in run_ids:
             out_file = Path("./output") / run_id / "inference_output.jsonl"
@@ -650,10 +649,9 @@ def generate_aggregated_figures(run_ids: List[str]) -> None:
                 labels.append(bool(qa.is_correct))
                 metrics_list.append(_compute_uncertainty_metrics(rec))
 
-            all_metrics_data.extend(metrics_list)
-            all_labels_data.extend(labels)
+            per_run_data[run_id] = {"metrics": metrics_list, "labels": labels}
 
-        if not all_metrics_data:
+        if not per_run_data:
             console.print(Text("No data found across all runs", style="red"))
             return
 
@@ -661,13 +659,12 @@ def generate_aggregated_figures(run_ids: List[str]) -> None:
         output_dir = Path("./figures/selection/aggregated")
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        # Generate only violin plots for separability analysis
-        _save_separability_analysis(
-            all_metrics_data,
-            all_labels_data,
+        # Generate multi-run violin plots showing individual runs
+        _save_multi_run_violin_plots(
+            per_run_data,
             CORE_UNCERTAINTY_SIGNALS,
             output_dir,
-            f"aggregated_{len(run_ids)}_runs",
+            run_ids,
         )
 
         console.print(
@@ -1085,6 +1082,167 @@ def _save_separability_analysis(
         console.print(Text(f"Error creating violin plots: {str(e)}", style="red"))
 
 
+def _save_multi_run_violin_plots(
+    per_run_data: Dict[str, Dict[str, List]],
+    chosen_metrics: List[str],
+    outdir: Path,
+    run_ids: List[str],
+) -> None:
+    """
+    Create violin plots showing individual runs with different shades.
+
+    Args:
+        per_run_data: Dict[run_id -> {"metrics": List[Dict], "labels": List[bool]}]
+        chosen_metrics: List of metric names to plot
+        outdir: Output directory
+        run_ids: List of run IDs for consistent ordering
+    """
+    try:
+        import matplotlib.colors as mcolors
+        import matplotlib.pyplot as plt
+        import numpy as np
+        from scipy import stats
+
+        if not chosen_metrics or not per_run_data:
+            return
+
+        plt.style.use("seaborn-v0_8")
+        fig, axes = plt.subplots(
+            1, len(chosen_metrics), figsize=(4 * len(chosen_metrics), 6)
+        )
+        if len(chosen_metrics) == 1:
+            axes = [axes]
+
+        # Generate colors for each run
+        n_runs = len(run_ids)
+        green_colors = [
+            mcolors.to_rgba("#2ca02c", alpha=0.4 + 0.4 * i / max(1, n_runs - 1))
+            for i in range(n_runs)
+        ]
+        red_colors = [
+            mcolors.to_rgba("#d62728", alpha=0.4 + 0.4 * i / max(1, n_runs - 1))
+            for i in range(n_runs)
+        ]
+
+        for idx, metric in enumerate(chosen_metrics):
+            ax = axes[idx]
+
+            # Collect data for overall statistics
+            all_corr_vals = []
+            all_inc_vals = []
+
+            # Plot individual runs
+            for run_idx, run_id in enumerate(run_ids):
+                if run_id not in per_run_data:
+                    continue
+
+                run_data = per_run_data[run_id]
+                vals = [float(mm.get(metric, 0.0)) for mm in run_data["metrics"]]
+                corr_vals = [v for v, y in zip(vals, run_data["labels"]) if y]
+                inc_vals = [v for v, y in zip(vals, run_data["labels"]) if not y]
+
+                if not corr_vals or not inc_vals:
+                    continue
+
+                # Add to overall statistics
+                all_corr_vals.extend(corr_vals)
+                all_inc_vals.extend(inc_vals)
+
+                # Create violin plots for this run
+                if corr_vals:
+                    parts_corr = ax.violinplot(
+                        [corr_vals], positions=[0.9 + run_idx * 0.02], widths=0.5
+                    )
+                    parts_corr["bodies"][0].set_facecolor(green_colors[run_idx])
+                    parts_corr["bodies"][0].set_alpha(0.6)
+
+                if inc_vals:
+                    parts_inc = ax.violinplot(
+                        [inc_vals], positions=[1.9 + run_idx * 0.02], widths=0.5
+                    )
+                    parts_inc["bodies"][0].set_facecolor(red_colors[run_idx])
+                    parts_inc["bodies"][0].set_alpha(0.6)
+
+            # Overall statistical test
+            if len(all_corr_vals) > 1 and len(all_inc_vals) > 1:
+                result = stats.ttest_ind(all_corr_vals, all_inc_vals)
+                t_stat, p_value = result.statistic, result.pvalue
+                p_val = float(p_value)  # Ensure p_value is a float
+                significance = (
+                    "***"
+                    if p_val < 0.001
+                    else "**"
+                    if p_val < 0.01
+                    else "*"
+                    if p_val < 0.05
+                    else "ns"
+                )
+
+                # Add significance annotation
+                if all_corr_vals and all_inc_vals:
+                    y_max = max(max(all_corr_vals), max(all_inc_vals))
+                    y_min = min(min(all_corr_vals), min(all_inc_vals))
+                    y_range = y_max - y_min
+                    y_sig = y_max + 0.1 * y_range
+
+                    ax.plot([1, 2], [y_sig, y_sig], "k-", linewidth=1)
+                    ax.text(
+                        1.5,
+                        y_sig + 0.02 * y_range,
+                        significance,
+                        ha="center",
+                        fontsize=12,
+                        fontweight="bold",
+                    )
+
+                ax.set_title(f"{metric}\\np-value: {p_val:.2e} (n={n_runs} runs)")
+            else:
+                ax.set_title(f"{metric} (n={n_runs} runs)")
+
+            ax.set_xticks([1, 2])
+            ax.set_xticklabels(["Correct", "Incorrect"])
+            ax.set_ylabel("Metric Value")
+            ax.grid(True, alpha=0.3)
+            ax.set_xlim(0.5, 2.5)
+
+        # Add legend for runs
+        from matplotlib.patches import Rectangle
+
+        legend_elements = [
+            Rectangle(
+                (0, 0),
+                1,
+                1,
+                facecolor=green_colors[-1],
+                alpha=0.6,
+                label="Correct (individual runs)",
+            ),
+            Rectangle(
+                (0, 0),
+                1,
+                1,
+                facecolor=red_colors[-1],
+                alpha=0.6,
+                label="Incorrect (individual runs)",
+            ),
+        ]
+        axes[0].legend(handles=legend_elements, loc="upper left")
+
+        fig.suptitle(f"Multi-Run Distribution Comparison - {len(run_ids)} runs")
+        fig.tight_layout(rect=(0, 0, 1, 0.96))
+        fig.savefig(outdir / "separability_violins.png", dpi=200)
+        plt.close(fig)
+
+        console.print(
+            Text(f"✓ Multi-run violin plots saved with {n_runs} runs", style="green")
+        )
+
+    except Exception as e:
+        console.print(
+            Text(f"Error creating multi-run violin plots: {str(e)}", style="red")
+        )
+
+
 def _save_normalized_histograms_with_overlap(
     metrics_list: List[Dict[str, Any]],
     labels: List[bool],
@@ -1344,7 +1502,8 @@ def _save_violin_plots_with_stats(
 
             # Statistical test
             if len(corr_vals) > 1 and len(inc_vals) > 1:
-                t_stat, p_value = stats.ttest_ind(corr_vals, inc_vals)
+                result = stats.ttest_ind(corr_vals, inc_vals)
+                t_stat, p_value = result.statistic, result.pvalue
                 p_val = float(p_value)  # Ensure p_value is a float
                 significance = (
                     "***"

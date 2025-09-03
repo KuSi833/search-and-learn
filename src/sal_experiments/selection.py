@@ -13,11 +13,17 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple
 
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.patches import Rectangle
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
+from scipy import stats
+from sklearn.metrics import precision_recall_curve
 
 from sal.utils.constants import BENCHMARK_SUBSETS_ROOT, Benchmark, Benchmarks
 from sal.utils.runs import fusion_base_runs_best
@@ -486,10 +492,10 @@ class SelectionVisualizer:
         self.analyzer = SelectionAnalyzer(run_ids)
 
     def generate_figures(self) -> None:
-        """Generate aggregated uncertainty analysis figures across all runs."""
+        """Generate multi-run uncertainty analysis figures showing individual runs."""
         console.print(
             Text(
-                f"Generating aggregated figures across {len(self.run_ids)} runs...",
+                "Generating violin plots with optimal thresholds and stacked histograms...",
                 style="bold blue",
             )
         )
@@ -498,7 +504,7 @@ class SelectionVisualizer:
             # Load all data
             all_run_data = self.analyzer._load_all_run_data()
 
-            # Flatten data for plotting
+            # Flatten data for plotting (back to aggregated approach)
             all_metrics_data = []
             all_labels_data = []
             for _, metrics_list, labels in all_run_data:
@@ -513,17 +519,21 @@ class SelectionVisualizer:
             output_dir = Path("./figures/selection/aggregated")
             output_dir.mkdir(parents=True, exist_ok=True)
 
-            # Generate plots
-            self._save_selection_precision_plots(
+            # Generate clean violin plots with optimal thresholds
+            self._save_separability_analysis_with_thresholds(
                 all_metrics_data, all_labels_data, output_dir
             )
-            self._save_separability_analysis(
+
+            # Generate stacked histograms of counts across metric values
+            self._save_class_count_histograms(
                 all_metrics_data, all_labels_data, output_dir
             )
-            self._save_summary(all_metrics_data, all_labels_data, output_dir)
 
             console.print(
-                Text(f"✓ Figures generated in {output_dir}/", style="bold green")
+                Text(
+                    f"✓ Multi-run figures generated in {output_dir}/",
+                    style="bold green",
+                )
             )
 
         except Exception as e:
@@ -533,64 +543,50 @@ class SelectionVisualizer:
         self, metrics_list: List[Dict[str, Any]], labels: List[bool], outdir: Path
     ) -> None:
         """Save selection precision plots."""
-        try:
-            import matplotlib.pyplot as plt
+        plt.style.use("seaborn-v0_8")
+        fig, axes = plt.subplots(1, len(CORE_UNCERTAINTY_SIGNALS), figsize=(15, 5))
+        if len(CORE_UNCERTAINTY_SIGNALS) == 1:
+            axes = [axes]
 
-            plt.style.use("seaborn-v0_8")
-            fig, axes = plt.subplots(1, len(CORE_UNCERTAINTY_SIGNALS), figsize=(15, 5))
-            if len(CORE_UNCERTAINTY_SIGNALS) == 1:
-                axes = [axes]
+        coverage_levels = [10, 20, 30, 40, 50]
+        total = len(labels)
 
-            coverage_levels = [10, 20, 30, 40, 50]
-            total = len(labels)
+        for idx, metric in enumerate(CORE_UNCERTAINTY_SIGNALS):
+            ax = axes[idx]
+            vals = [float(mm.get(metric, 0.0)) for mm in metrics_list]
 
-            for idx, metric in enumerate(CORE_UNCERTAINTY_SIGNALS):
-                ax = axes[idx]
-                vals = [float(mm.get(metric, 0.0)) for mm in metrics_list]
+            # Determine uncertainty direction
+            corr_vals = [v for v, y in zip(vals, labels) if y]
+            inc_vals = [v for v, y in zip(vals, labels) if not y]
+            mean_corr = sum(corr_vals) / len(corr_vals) if corr_vals else 0.0
+            mean_inc = sum(inc_vals) / len(inc_vals) if inc_vals else 0.0
+            low_is_uncertain = mean_corr > mean_inc
 
-                # Determine uncertainty direction
-                corr_vals = [v for v, y in zip(vals, labels) if y]
-                inc_vals = [v for v, y in zip(vals, labels) if not y]
-                mean_corr = sum(corr_vals) / len(corr_vals) if corr_vals else 0.0
-                mean_inc = sum(inc_vals) / len(inc_vals) if inc_vals else 0.0
-                low_is_uncertain = mean_corr > mean_inc
+            # Sort by uncertainty
+            idxs = list(range(total))
+            idxs.sort(key=lambda i: vals[i], reverse=not low_is_uncertain)
 
-                # Sort by uncertainty
-                idxs = list(range(total))
-                idxs.sort(key=lambda i: vals[i], reverse=not low_is_uncertain)
+            # Calculate precision for each coverage
+            precisions = []
+            for coverage in coverage_levels:
+                k = max(1, int(round(total * (coverage / 100.0))))
+                flagged = set(idxs[:k])
+                incorrect_flagged = sum(1 for i in flagged if not labels[i])
+                precision = 100.0 * incorrect_flagged / len(flagged) if flagged else 0.0
+                precisions.append(precision)
 
-                # Calculate precision for each coverage
-                precisions = []
-                for coverage in coverage_levels:
-                    k = max(1, int(round(total * (coverage / 100.0))))
-                    flagged = set(idxs[:k])
-                    incorrect_flagged = sum(1 for i in flagged if not labels[i])
-                    precision = (
-                        100.0 * incorrect_flagged / len(flagged) if flagged else 0.0
-                    )
-                    precisions.append(precision)
+            # Plot
+            ax.plot(coverage_levels, precisions, "o-", linewidth=2, markersize=6)
+            ax.set_xlabel("Coverage (%)")
+            ax.set_ylabel("Precision (% incorrect)")
+            ax.set_title(f"{metric}")
+            ax.grid(True, alpha=0.3)
+            ax.set_ylim(0, 100)
 
-                # Plot
-                ax.plot(coverage_levels, precisions, "o-", linewidth=2, markersize=6)
-                ax.set_xlabel("Coverage (%)")
-                ax.set_ylabel("Precision (% incorrect)")
-                ax.set_title(f"{metric}")
-                ax.grid(True, alpha=0.3)
-                ax.set_ylim(0, 100)
-
-            fig.suptitle(f"Selection Precision Analysis - {len(self.run_ids)} runs")
-            fig.tight_layout()
-            fig.savefig(
-                outdir / "selection_precision.png", dpi=200, bbox_inches="tight"
-            )
-            plt.close(fig)
-
-        except ImportError:
-            console.print(Text("matplotlib not available for plotting", style="yellow"))
-        except Exception as e:
-            console.print(
-                Text(f"Error creating precision plots: {str(e)}", style="red")
-            )
+        fig.suptitle(f"Selection Precision Analysis - {len(self.run_ids)} runs")
+        fig.tight_layout()
+        fig.savefig(outdir / "selection_precision.png", dpi=200, bbox_inches="tight")
+        plt.close(fig)
 
     def _save_separability_analysis(
         self, metrics_list: List[Dict[str, Any]], labels: List[bool], outdir: Path
@@ -674,6 +670,473 @@ class SelectionVisualizer:
             console.print(
                 Text(f"Error creating separability plots: {str(e)}", style="red")
             )
+
+    def _save_multi_run_separability_analysis(
+        self,
+        all_run_data: List[Tuple[str, List[Dict[str, Any]], List[bool]]],
+        outdir: Path,
+    ) -> None:
+        """Save multi-run violin plots showing individual runs with different shades."""
+        plt.style.use("seaborn-v0_8")
+        fig, axes = plt.subplots(
+            1,
+            len(CORE_UNCERTAINTY_SIGNALS),
+            figsize=(4 * len(CORE_UNCERTAINTY_SIGNALS), 6),
+        )
+        if len(CORE_UNCERTAINTY_SIGNALS) == 1:
+            axes = [axes]
+
+        # Generate colors for each run
+        n_runs = len(all_run_data)
+        green_colors = [
+            mcolors.to_rgba("#2ca02c", alpha=0.4 + 0.4 * i / max(1, n_runs - 1))
+            for i in range(n_runs)
+        ]
+        red_colors = [
+            mcolors.to_rgba("#d62728", alpha=0.4 + 0.4 * i / max(1, n_runs - 1))
+            for i in range(n_runs)
+        ]
+
+        for idx, metric in enumerate(CORE_UNCERTAINTY_SIGNALS):
+            ax = axes[idx]
+
+            # Collect data for overall statistics
+            all_corr_vals = []
+            all_inc_vals = []
+
+            # Plot individual runs
+            for run_idx, (run_id, metrics_list, labels) in enumerate(all_run_data):
+                vals = [float(mm.get(metric, 0.0)) for mm in metrics_list]
+                corr_vals = [v for v, y in zip(vals, labels) if y]
+                inc_vals = [v for v, y in zip(vals, labels) if not y]
+
+                if not corr_vals or not inc_vals:
+                    continue
+
+                # Add to overall statistics
+                all_corr_vals.extend(corr_vals)
+                all_inc_vals.extend(inc_vals)
+
+                # Create violin plots for this run
+                if corr_vals:
+                    parts_corr = ax.violinplot(
+                        [corr_vals],
+                        positions=[0.9 + run_idx * 0.02],
+                        widths=0.5,
+                        showmeans=False,
+                        showmedians=False,
+                        showextrema=False,
+                    )
+                    parts_corr["bodies"][0].set_facecolor(green_colors[run_idx])
+                    parts_corr["bodies"][0].set_alpha(0.6)
+
+                if inc_vals:
+                    parts_inc = ax.violinplot(
+                        [inc_vals],
+                        positions=[1.9 + run_idx * 0.02],
+                        widths=0.5,
+                        showmeans=False,
+                        showmedians=False,
+                        showextrema=False,
+                    )
+                    parts_inc["bodies"][0].set_facecolor(red_colors[run_idx])
+                    parts_inc["bodies"][0].set_alpha(0.6)
+
+            # Overall statistical test
+            if len(all_corr_vals) > 1 and len(all_inc_vals) > 1:
+                try:
+                    # Simple effect size calculation
+                    mean_diff = abs(np.mean(all_corr_vals) - np.mean(all_inc_vals))
+                    pooled_std = np.sqrt(
+                        (np.var(all_corr_vals) + np.var(all_inc_vals)) / 2
+                    )
+                    effect_size = mean_diff / pooled_std if pooled_std > 0 else 0
+
+                    # Effect size based significance
+                    significance = (
+                        "***"
+                        if effect_size > 0.8  # Large effect
+                        else "**"
+                        if effect_size > 0.5  # Medium effect
+                        else "*"
+                        if effect_size > 0.2  # Small effect
+                        else "ns"
+                    )
+
+                    # Add significance annotation
+                    if all_corr_vals and all_inc_vals:
+                        y_max = max(max(all_corr_vals), max(all_inc_vals))
+                        y_min = min(min(all_corr_vals), min(all_inc_vals))
+                        y_range = y_max - y_min
+                        y_sig = y_max + 0.1 * y_range
+
+                        ax.plot([1, 2], [y_sig, y_sig], "k-", linewidth=1)
+                        ax.text(
+                            1.5,
+                            y_sig + 0.02 * y_range,
+                            significance,
+                            ha="center",
+                            fontsize=12,
+                            fontweight="bold",
+                        )
+
+                    ax.set_title(f"{metric}")
+                except Exception:
+                    ax.set_title(f"{metric}")
+            else:
+                ax.set_title(f"{metric}")
+
+            ax.set_xticks([1, 2])
+            ax.set_xticklabels(["Correct", "Incorrect"])
+            ax.set_ylabel("Metric Value")
+            ax.grid(True, alpha=0.3)
+            ax.set_xlim(0.5, 2.5)
+
+            # Add legend for runs
+            if n_runs > 0:
+                legend_elements = [
+                    Rectangle(
+                        (0, 0),
+                        1,
+                        1,
+                        facecolor=green_colors[-1],
+                        alpha=0.6,
+                        label="Correct (individual runs)",
+                    ),
+                    Rectangle(
+                        (0, 0),
+                        1,
+                        1,
+                        facecolor=red_colors[-1],
+                        alpha=0.6,
+                        label="Incorrect (individual runs)",
+                    ),
+                ]
+                axes[0].legend(handles=legend_elements, loc="upper left")
+
+            fig.suptitle("Multi-Run Distribution Comparison")
+            fig.tight_layout(rect=(0, 0, 1, 0.96))
+            fig.savefig(
+                outdir / "separability_violins.png", dpi=200, bbox_inches="tight"
+            )
+            plt.close(fig)
+
+            console.print(Text("✓ Multi-run violin plots saved", style="green"))
+
+    def _save_separability_analysis_with_thresholds(
+        self, metrics_list: List[Dict[str, Any]], labels: List[bool], outdir: Path
+    ) -> None:
+        """Save clean violin plots with analytically optimal thresholds."""
+        plt.style.use("seaborn-v0_8")
+        fig, axes = plt.subplots(
+            1,
+            len(CORE_UNCERTAINTY_SIGNALS),
+            figsize=(4 * len(CORE_UNCERTAINTY_SIGNALS), 6),
+        )
+        if len(CORE_UNCERTAINTY_SIGNALS) == 1:
+            axes = [axes]
+
+        threshold_results = {}
+
+        for idx, metric in enumerate(CORE_UNCERTAINTY_SIGNALS):
+            ax = axes[idx]
+            vals = [float(mm.get(metric, 0.0)) for mm in metrics_list]
+            corr_vals = [v for v, y in zip(vals, labels) if y]
+            inc_vals = [v for v, y in zip(vals, labels) if not y]
+
+            if not corr_vals or not inc_vals:
+                ax.axis("off")
+                continue
+
+            # Create clean violin plots (aggregated)
+            parts = ax.violinplot(
+                [corr_vals, inc_vals],
+                positions=[1, 2],
+                widths=0.6,
+                showmeans=False,
+                showmedians=False,
+                showextrema=False,
+            )
+            parts["bodies"][0].set_facecolor("#2ca02c")
+            parts["bodies"][0].set_alpha(0.6)
+            parts["bodies"][1].set_facecolor("#d62728")
+            parts["bodies"][1].set_alpha(0.6)
+
+            # Find optimal threshold analytically and generate detailed table
+            optimal_threshold, precision, recall, f1_score, detailed_table = (
+                self._find_optimal_threshold_with_table(vals, labels, metric)
+            )
+
+            threshold_results[metric] = {
+                "threshold": optimal_threshold,
+                "precision": precision,
+                "recall": recall,
+                "f1_score": f1_score,
+                "detailed_analysis": detailed_table,
+            }
+
+            # Print detailed table for this metric
+            self._print_threshold_table(metric, detailed_table)
+
+            # Just use clean title
+            ax.set_title(f"{metric}")
+
+            # Statistical test
+            if len(corr_vals) > 1 and len(inc_vals) > 1:
+                try:
+                    statistic, p_value = stats.ttest_ind(corr_vals, inc_vals)
+                    p_val = float(p_value)
+
+                    significance = (
+                        "***"
+                        if p_val < 0.001
+                        else "**"
+                        if p_val < 0.01
+                        else "*"
+                        if p_val < 0.05
+                        else "ns"
+                    )
+
+                    # Add significance annotation
+                    y_max = max(max(corr_vals), max(inc_vals))
+                    y_min = min(min(corr_vals), min(inc_vals))
+                    y_range = y_max - y_min
+                    y_sig = y_max + 0.1 * y_range
+
+                    ax.plot([1, 2], [y_sig, y_sig], "k-", linewidth=1)
+                    ax.text(
+                        1.5,
+                        y_sig + 0.02 * y_range,
+                        significance,
+                        ha="center",
+                        fontsize=12,
+                        fontweight="bold",
+                    )
+                except Exception:
+                    pass
+
+            ax.set_xticks([1, 2])
+            ax.set_xticklabels(["Correct", "Incorrect"])
+            ax.set_ylabel("Metric Value")
+            ax.grid(True, alpha=0.3)
+
+        fig.suptitle("Uncertainty Metrics Distribution Analysis")
+        fig.tight_layout(rect=(0, 0, 1, 0.96))
+        fig.savefig(outdir / "separability_violins.png", dpi=200, bbox_inches="tight")
+        plt.close(fig)
+
+        # Save threshold analysis results
+        with open(outdir / "optimal_thresholds.json", "w") as f:
+            json.dump(threshold_results, f, indent=2, default=str)
+
+        console.print(
+            Text("✓ Violin plots with optimal thresholds saved", style="green")
+        )
+
+    def _save_class_count_histograms(
+        self, metrics_list: List[Dict[str, Any]], labels: List[bool], outdir: Path
+    ) -> None:
+        """Save stacked histograms showing counts of Correct vs Incorrect across metric values."""
+        plt.style.use("seaborn-v0_8")
+        fig, axes = plt.subplots(
+            1,
+            len(CORE_UNCERTAINTY_SIGNALS),
+            figsize=(4 * len(CORE_UNCERTAINTY_SIGNALS), 6),
+        )
+        if len(CORE_UNCERTAINTY_SIGNALS) == 1:
+            axes = [axes]
+
+        for idx, metric in enumerate(CORE_UNCERTAINTY_SIGNALS):
+            ax = axes[idx]
+            vals = [float(mm.get(metric, 0.0)) for mm in metrics_list]
+            corr_vals = [v for v, y in zip(vals, labels) if y]
+            inc_vals = [v for v, y in zip(vals, labels) if not y]
+
+            if not vals:
+                ax.axis("off")
+                continue
+
+            # Shared bins for both classes
+            try:
+                bins = np.histogram_bin_edges(vals, bins="auto")
+            except Exception:
+                bins = 30
+
+            ax.hist(
+                [corr_vals, inc_vals],
+                bins=bins,
+                stacked=True,
+                label=["Correct", "Incorrect"],
+                color=["#2ca02c", "#d62728"],
+                alpha=0.8,
+            )
+
+            ax.set_title(f"{metric}")
+            ax.set_xlabel("Metric value")
+            ax.set_ylabel("Count")
+            ax.grid(True, alpha=0.3)
+
+            if idx == 0:
+                ax.legend()
+
+        fig.suptitle("Counts of Correct vs Incorrect across metric values")
+        fig.tight_layout(rect=(0, 0, 1, 0.96))
+        fig.savefig(outdir / "metric_counts_stacked.png", dpi=200, bbox_inches="tight")
+        plt.close(fig)
+
+    def _find_optimal_threshold_with_table(
+        self, vals: List[float], labels: List[bool], metric: str
+    ):
+        """Find optimal threshold and generate detailed performance table."""
+        try:
+            # Convert to numpy arrays
+            y_true = np.array(
+                [0 if label else 1 for label in labels]
+            )  # 1 = incorrect (uncertain)
+            y_scores = np.array(vals)
+
+            # Determine if low or high values indicate uncertainty
+            corr_mean = np.mean([v for v, l in zip(vals, labels) if l])
+            inc_mean = np.mean([v for v, l in zip(vals, labels) if not l])
+            low_is_uncertain = corr_mean > inc_mean
+
+            # Generate threshold range in increments of 0.1
+            val_min, val_max = min(vals), max(vals)
+            threshold_range = np.arange(
+                np.floor(val_min * 10) / 10, np.ceil(val_max * 10) / 10 + 0.1, 0.1
+            )
+
+            detailed_table = []
+            best_f1 = 0
+            optimal_result = None
+
+            for threshold in threshold_range:
+                # Calculate predictions based on threshold and uncertainty direction
+                if low_is_uncertain:
+                    predictions = [
+                        1 if v <= threshold else 0 for v in vals
+                    ]  # 1 = predicted uncertain
+                else:
+                    predictions = [
+                        1 if v >= threshold else 0 for v in vals
+                    ]  # 1 = predicted uncertain
+
+                # Calculate metrics
+                tp = sum(
+                    1
+                    for pred, true in zip(predictions, y_true)
+                    if pred == 1 and true == 1
+                )  # True uncertain
+                fp = sum(
+                    1
+                    for pred, true in zip(predictions, y_true)
+                    if pred == 1 and true == 0
+                )  # False uncertain
+                tn = sum(
+                    1
+                    for pred, true in zip(predictions, y_true)
+                    if pred == 0 and true == 0
+                )  # True certain
+                fn = sum(
+                    1
+                    for pred, true in zip(predictions, y_true)
+                    if pred == 0 and true == 1
+                )  # False certain
+
+                # Calculate performance metrics
+                if tp + fp == 0:
+                    # No predictions made - perfect precision but undefined
+                    precision = 1.0 if tp == 0 and fp == 0 else 0.0
+                else:
+                    precision = tp / (tp + fp)
+
+                recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+                f1 = (
+                    2 * (precision * recall) / (precision + recall)
+                    if (precision + recall) > 0
+                    else 0.0
+                )
+
+                row = {
+                    "threshold": round(threshold, 1),
+                    "tp": tp,
+                    "fp": fp,
+                    "tn": tn,
+                    "fn": fn,
+                    "precision": round(precision, 3),
+                    "recall": round(recall, 3),
+                    "f1_score": round(f1, 3),
+                }
+                detailed_table.append(row)
+
+                # Track best F1 score
+                if f1 > best_f1:
+                    best_f1 = f1
+                    optimal_result = (threshold, precision, recall, f1)
+
+            return (
+                (*optimal_result, detailed_table)
+                if optimal_result
+                else (None, None, None, None, detailed_table)
+            )
+
+        except Exception as e:
+            print(f"Error finding optimal threshold for {metric}: {e}")
+            return None, None, None, None, []
+
+    def _print_threshold_table(self, metric: str, detailed_table: List[Dict]):
+        """Print a formatted table showing performance at different thresholds."""
+        if not detailed_table:
+            return
+
+        console.print(f"\n[bold blue]Threshold Analysis for {metric}[/bold blue]")
+
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Threshold", style="cyan", width=12)
+        table.add_column("TP", style="green", width=8, justify="center")
+        table.add_column("FP", style="red", width=8, justify="center")
+        table.add_column("TN", style="green", width=8, justify="center")
+        table.add_column("FN", style="red", width=8, justify="center")
+        table.add_column("Precision", style="yellow", width=12, justify="center")
+
+        # Find perfect precision rows (FP = 0) and best precision
+        perfect_precision_rows = [row for row in detailed_table if row["fp"] == 0]
+        best_precision = max(row["precision"] for row in detailed_table)
+
+        for row in detailed_table:
+            # Highlight perfect precision (no false positives) in bold green
+            if row["fp"] == 0:
+                style = "bold green"
+                precision_display = "PERFECT" if row["tp"] > 0 else "1.000"
+            # Highlight best precision in yellow
+            elif row["precision"] == best_precision:
+                style = "bold yellow"
+                precision_display = f"{row['precision']:.3f}"
+            else:
+                style = None
+                precision_display = f"{row['precision']:.3f}"
+
+            table.add_row(
+                f"{row['threshold']:.1f}",
+                str(row["tp"]),
+                str(row["fp"]),
+                str(row["tn"]),
+                str(row["fn"]),
+                precision_display,
+                style=style,
+            )
+
+        console.print(table)
+
+        # Show precision-focused summary
+        if perfect_precision_rows:
+            best_perfect = max(perfect_precision_rows, key=lambda x: x["tp"])
+            console.print(
+                f"[bold green]Perfect Precision Achieved! Best: {best_perfect['tp']} correct uncertain predictions with 0 false positives[/bold green]"
+            )
+        console.print(
+            f"[bold yellow]Best Overall Precision: {best_precision:.3f}[/bold yellow]\n"
+        )
 
     def _save_summary(
         self, metrics_list: List[Dict[str, Any]], labels: List[bool], outdir: Path
