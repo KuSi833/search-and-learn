@@ -661,41 +661,13 @@ def generate_aggregated_figures(run_ids: List[str]) -> None:
         output_dir = Path("./figures/selection/aggregated")
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        # Generate aggregated cumulative stacked plot
-        _save_aggregated_cumulative_stacked(
-            all_metrics_data,
-            all_labels_data,
-            EXTENDED_UNCERTAINTY_SIGNALS,
-            output_dir,
-            f"aggregated_{len(run_ids)}_runs",
-            bins=50,
-        )
-
-        # Generate selection-based precision plots (what you're expecting to see)
-        _save_selection_precision_plots(
-            all_metrics_data,
-            all_labels_data,
-            CORE_UNCERTAINTY_SIGNALS,
-            output_dir,
-            f"aggregated_{len(run_ids)}_runs",
-        )
-
-        # Generate separability analysis plots
+        # Generate only violin plots for separability analysis
         _save_separability_analysis(
             all_metrics_data,
             all_labels_data,
             CORE_UNCERTAINTY_SIGNALS,
             output_dir,
             f"aggregated_{len(run_ids)}_runs",
-        )
-
-        # Also generate statistical summary
-        _save_aggregated_summary(
-            all_metrics_data,
-            all_labels_data,
-            EXTENDED_UNCERTAINTY_SIGNALS,
-            output_dir,
-            run_ids,
         )
 
         console.print(
@@ -1092,7 +1064,7 @@ def _save_separability_analysis(
     run_name: str,
 ) -> None:
     """
-    Save multiple visualization strategies to show separability between correct/incorrect samples.
+    Save violin plots with statistical tests to show separability between correct/incorrect samples.
     """
     try:
         import matplotlib.pyplot as plt
@@ -1102,30 +1074,15 @@ def _save_separability_analysis(
         if not chosen_metrics:
             return
 
-        # Strategy 1: Normalized Histograms with Overlap Area
-        _save_normalized_histograms_with_overlap(
-            metrics_list, labels, chosen_metrics, outdir, run_name
-        )
-
-        # Strategy 2: ROC-style Curves (True Positive Rate vs False Positive Rate)
-        _save_roc_style_curves(metrics_list, labels, chosen_metrics, outdir, run_name)
-
-        # Strategy 3: Violin Plots with Statistical Tests
+        # Only keep violin plots with statistical tests
         _save_violin_plots_with_stats(
             metrics_list, labels, chosen_metrics, outdir, run_name
         )
 
-        # Strategy 4: Normalized Distance from Optimal Threshold
-        _save_threshold_distance_plots(
-            metrics_list, labels, chosen_metrics, outdir, run_name
-        )
-
     except ImportError:
-        console.print(
-            Text("scipy not available for advanced separability plots", style="yellow")
-        )
+        console.print(Text("scipy not available for violin plots", style="yellow"))
     except Exception as e:
-        console.print(Text(f"Error creating separability plots: {str(e)}", style="red"))
+        console.print(Text(f"Error creating violin plots: {str(e)}", style="red"))
 
 
 def _save_normalized_histograms_with_overlap(
@@ -1388,13 +1345,14 @@ def _save_violin_plots_with_stats(
             # Statistical test
             if len(corr_vals) > 1 and len(inc_vals) > 1:
                 t_stat, p_value = stats.ttest_ind(corr_vals, inc_vals)
+                p_val = float(p_value)  # Ensure p_value is a float
                 significance = (
                     "***"
-                    if p_value < 0.001
+                    if p_val < 0.001
                     else "**"
-                    if p_value < 0.01
+                    if p_val < 0.01
                     else "*"
-                    if p_value < 0.05
+                    if p_val < 0.05
                     else "ns"
                 )
 
@@ -1418,9 +1376,7 @@ def _save_violin_plots_with_stats(
             ax.set_xticklabels(["Correct", "Incorrect"])
             ax.set_ylabel("Metric Value")
             ax.set_title(
-                f"{metric}\\np-value: {p_value:.2e}"
-                if "p_value" in locals()
-                else metric
+                f"{metric}\\np-value: {p_val:.2e}" if "p_val" in locals() else metric
             )
             ax.grid(True, alpha=0.3)
 
