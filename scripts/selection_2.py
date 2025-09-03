@@ -453,39 +453,6 @@ def create_split_violin_plots(
             label=f"Threshold: {threshold_value:.3f}",
         )
 
-        # Add text annotations showing counts in selected region
-        selected_correct = analysis["correct_selected"]
-        selected_incorrect = analysis["incorrect_selected"]
-
-        # Position text in the selected region
-        if metric in ["agreement_ratio", "group_top_frac"]:
-            text_y = y_fill_min + (y_fill_max - y_fill_min) * 0.3
-        else:
-            text_y = y_fill_min + (y_fill_max - y_fill_min) * 0.7
-
-        # Add count annotations
-        ax.text(
-            0.25,
-            text_y,
-            f"{selected_correct}\nCorrect",
-            ha="center",
-            va="center",
-            fontsize=10,
-            fontweight="bold",
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgreen", alpha=0.8),
-        )
-
-        ax.text(
-            0.75,
-            text_y,
-            f"{selected_incorrect}\nIncorrect",
-            ha="center",
-            va="center",
-            fontsize=10,
-            fontweight="bold",
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="lightcoral", alpha=0.8),
-        )
-
         # Customize plot
         ax.set_xlim(0, 1)
         ax.set_xticks([0.25, 0.75])
