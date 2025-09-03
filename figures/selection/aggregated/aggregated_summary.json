@@ -1,0 +1,244 @@
+{
+  "aggregated_analysis": true,
+  "run_ids": [
+    "gfw8x07r",
+    "77pyab58",
+    "tqfyvf5w"
+  ],
+  "total_samples": 1500,
+  "total_correct": 1289,
+  "total_incorrect": 211,
+  "accuracy": 85.93333333333334,
+  "means_by_correctness": {
+    "agreement_ratio": {
+      "mean_correct": 0.9472459270752521,
+      "mean_incorrect": 0.48696682464454977,
+      "direction": "\u2191",
+      "low_is_uncertain": true
+    },
+    "entropy_freq": {
+      "mean_correct": 0.12455805569598866,
+      "mean_incorrect": 0.834931921841769,
+      "direction": "\u2193",
+      "low_is_uncertain": false
+    },
+    "group_top_frac": {
+      "mean_correct": 0.9623018405751282,
+      "mean_incorrect": 0.6046342680545449,
+      "direction": "\u2191",
+      "low_is_uncertain": true
+    },
+    "prm_margin": {
+      "mean_correct": 0.005407032992474786,
+      "mean_incorrect": 0.09514194868246445,
+      "direction": "\u2193",
+      "low_is_uncertain": false
+    },
+    "prm_std": {
+      "mean_correct": 0.036620089504046195,
+      "mean_incorrect": 0.2229326883027022,
+      "direction": "\u2193",
+      "low_is_uncertain": false
+    },
+    "entropy_weighted": {
+      "mean_correct": 0.09149279467516928,
+      "mean_incorrect": 0.6612866581585891,
+      "direction": "\u2193",
+      "low_is_uncertain": false
+    }
+  },
+  "coverage_analysis": {
+    "agreement_ratio": {
+      "10%": {
+        "recall": 54.976303317535546,
+        "precision": 77.33333333333333,
+        "flagged_count": 150,
+        "incorrect_flagged": 116
+      },
+      "20%": {
+        "recall": 79.14691943127963,
+        "precision": 55.666666666666664,
+        "flagged_count": 300,
+        "incorrect_flagged": 167
+      },
+      "30%": {
+        "recall": 87.67772511848341,
+        "precision": 41.111111111111114,
+        "flagged_count": 450,
+        "incorrect_flagged": 185
+      },
+      "40%": {
+        "recall": 89.0995260663507,
+        "precision": 31.333333333333332,
+        "flagged_count": 600,
+        "incorrect_flagged": 188
+      },
+      "50%": {
+        "recall": 90.99526066350711,
+        "precision": 25.6,
+        "flagged_count": 750,
+        "incorrect_flagged": 192
+      }
+    },
+    "entropy_freq": {
+      "10%": {
+        "recall": 53.08056872037915,
+        "precision": 74.66666666666667,
+        "flagged_count": 150,
+        "incorrect_flagged": 112
+      },
+      "20%": {
+        "recall": 79.14691943127963,
+        "precision": 55.666666666666664,
+        "flagged_count": 300,
+        "incorrect_flagged": 167
+      },
+      "30%": {
+        "recall": 87.67772511848341,
+        "precision": 41.111111111111114,
+        "flagged_count": 450,
+        "incorrect_flagged": 185
+      },
+      "40%": {
+        "recall": 89.0995260663507,
+        "precision": 31.333333333333332,
+        "flagged_count": 600,
+        "incorrect_flagged": 188
+      },
+      "50%": {
+        "recall": 90.99526066350711,
+        "precision": 25.6,
+        "flagged_count": 750,
+        "incorrect_flagged": 192
+      }
+    },
+    "group_top_frac": {
+      "10%": {
+        "recall": 52.132701421800945,
+        "precision": 73.33333333333333,
+        "flagged_count": 150,
+        "incorrect_flagged": 110
+      },
+      "20%": {
+        "recall": 78.19905213270142,
+        "precision": 55.0,
+        "flagged_count": 300,
+        "incorrect_flagged": 165
+      },
+      "30%": {
+        "recall": 87.67772511848341,
+        "precision": 41.111111111111114,
+        "flagged_count": 450,
+        "incorrect_flagged": 185
+      },
+      "40%": {
+        "recall": 89.0995260663507,
+        "precision": 31.333333333333332,
+        "flagged_count": 600,
+        "incorrect_flagged": 188
+      },
+      "50%": {
+        "recall": 90.99526066350711,
+        "precision": 25.6,
+        "flagged_count": 750,
+        "incorrect_flagged": 192
+      }
+    },
+    "prm_margin": {
+      "10%": {
+        "recall": 43.60189573459716,
+        "precision": 61.333333333333336,
+        "flagged_count": 150,
+        "incorrect_flagged": 92
+      },
+      "20%": {
+        "recall": 48.81516587677725,
+        "precision": 34.333333333333336,
+        "flagged_count": 300,
+        "incorrect_flagged": 103
+      },
+      "30%": {
+        "recall": 52.60663507109005,
+        "precision": 24.666666666666668,
+        "flagged_count": 450,
+        "incorrect_flagged": 111
+      },
+      "40%": {
+        "recall": 60.18957345971564,
+        "precision": 21.166666666666668,
+        "flagged_count": 600,
+        "incorrect_flagged": 127
+      },
+      "50%": {
+        "recall": 66.35071090047393,
+        "precision": 18.666666666666668,
+        "flagged_count": 750,
+        "incorrect_flagged": 140
+      }
+    },
+    "prm_std": {
+      "10%": {
+        "recall": 31.753554502369667,
+        "precision": 44.666666666666664,
+        "flagged_count": 150,
+        "incorrect_flagged": 67
+      },
+      "20%": {
+        "recall": 69.66824644549763,
+        "precision": 49.0,
+        "flagged_count": 300,
+        "incorrect_flagged": 147
+      },
+      "30%": {
+        "recall": 78.67298578199052,
+        "precision": 36.888888888888886,
+        "flagged_count": 450,
+        "incorrect_flagged": 166
+      },
+      "40%": {
+        "recall": 80.09478672985782,
+        "precision": 28.166666666666668,
+        "flagged_count": 600,
+        "incorrect_flagged": 169
+      },
+      "50%": {
+        "recall": 84.36018957345972,
+        "precision": 23.733333333333334,
+        "flagged_count": 750,
+        "incorrect_flagged": 178
+      }
+    },
+    "entropy_weighted": {
+      "10%": {
+        "recall": 43.127962085308056,
+        "precision": 60.666666666666664,
+        "flagged_count": 150,
+        "incorrect_flagged": 91
+      },
+      "20%": {
+        "recall": 77.25118483412322,
+        "precision": 54.333333333333336,
+        "flagged_count": 300,
+        "incorrect_flagged": 163
+      },
+      "30%": {
+        "recall": 87.67772511848341,
+        "precision": 41.111111111111114,
+        "flagged_count": 450,
+        "incorrect_flagged": 185
+      },
+      "40%": {
+        "recall": 89.0995260663507,
+        "precision": 31.333333333333332,
+        "flagged_count": 600,
+        "incorrect_flagged": 188
+      },
+      "50%": {
+        "recall": 90.99526066350711,
+        "precision": 25.6,
+        "flagged_count": 750,
+        "incorrect_flagged": 192
+      }
+    }
+  }
+}

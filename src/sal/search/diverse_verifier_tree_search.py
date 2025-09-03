@@ -33,17 +33,6 @@ logger = logging.getLogger()
 def _dvts(
     batch_of_prompts: list[str], experiment_config: ExperimentConfig, llm: LLM, prm: PRM
 ):
-    sampling_params = SamplingParams(
-        temperature=experiment_config.search_config.temperature,
-        max_tokens=2048,
-        top_p=experiment_config.search_config.top_p,
-        stop=[
-            "\n\n"
-        ],  # we consider that a step in the problem is indicated by a double newline
-        include_stop_str_in_output=True,
-        n=1,
-    )
-
     beams: list[Beam] = []
     for prompt in batch_of_prompts:
         for i in range(experiment_config.n_beams):
@@ -60,6 +49,8 @@ def _dvts(
                     pruned=False,
                     stop_reasons=None,
                     history=[],
+                    completed=False,
+                    completion_tokens=0,
                 )
             )
 
@@ -68,18 +59,43 @@ def _dvts(
         desc="Beam search iterations",
     ):
         # generation
-        gen_beams = [b for b in beams if not b.pruned]
+        gen_beams = [b for b in beams if not b.pruned and not b.completed]
         if len(gen_beams) == 0:
             break
+
+        # Enforce per-beam completion token budget (similar to beam_search)
+        max_new_tokens = int(experiment_config.search_config.max_tokens)
+        for b in gen_beams:
+            if b.completion_tokens >= max_new_tokens:
+                b.completed = True
+        gen_beams = [b for b in gen_beams if not b.completed]
+        if len(gen_beams) == 0:
+            break
+        remainings = [max_new_tokens - b.completion_tokens for b in gen_beams]
+        step_cap = int(max(1, min(remainings)))
 
         if i == experiment_config.beam_search_config.num_iterations - 1:
             # last iteration, generate to EOS
             sampling_params = SamplingParams(
                 temperature=experiment_config.search_config.temperature,
-                max_tokens=2048,
+                max_tokens=experiment_config.search_config.max_tokens,
                 top_p=experiment_config.search_config.top_p,
                 n=1,
             )
+        else:
+            sampling_params = SamplingParams(
+                temperature=experiment_config.search_config.temperature,
+                max_tokens=experiment_config.search_config.max_tokens,
+                top_p=experiment_config.search_config.top_p,
+                stop=[
+                    "\n\n"
+                ],  # we consider that a step in the problem is indicated by a double newline
+                include_stop_str_in_output=True,
+                n=1,
+            )
+
+        # Cap per-step generation to not exceed any beam's remaining budget
+        sampling_params.max_tokens = int(min(int(sampling_params.max_tokens), step_cap))
 
         convs = [
             build_conv(b.prompt, b.current_text, experiment_config.system_prompt)
@@ -116,59 +132,120 @@ def _dvts(
             beam.next_texts = gen_result.next_texts
             beam.stop_reasons = gen_result.stop_reasons
             beam.lookahead_texts = gen_result.lookahead_texts
-            if len(beam.next_texts) != experiment_config.beam_search_config.beam_width:
+            if (
+                beam.next_texts is None
+                or len(beam.next_texts)
+                != experiment_config.beam_search_config.beam_width
+            ):
                 beam.pruned = True
                 # rarely ~1/1000 the model will generate few beams than expected. #TODO: investigate why
                 logger.warning(
-                    f"beam {beam.index} has {len(beam.next_texts)} completions"
+                    f"beam {beam.index} has {len(beam.next_texts) if beam.next_texts else 0} completions"
                 )
             prompts.append(beam.prompt)
-            completions.append([beam.current_text + t for t in beam.lookahead_texts])
+            if beam.lookahead_texts is not None:
+                current_text = beam.current_text or ""
+                completions.append([current_text + t for t in beam.lookahead_texts])
+            else:
+                completions.append([beam.current_text or ""])
 
         # scoring and chose best generation per beam TODO: add option for selection across beams within the same prompt
 
         all_scores = prm.score(prompts, completions)
 
+        # Get tokenizer for counting tokens
+        tokenizer = llm.get_tokenizer()
         for beam, scores in zip(gen_beams, all_scores, strict=True):
+            if not beam.next_texts or not beam.stop_reasons:
+                beam.pruned = True
+                continue
+
             agg_scores = [
-                aggregate_scores(s, experiment_config.search_config.agg_strategy)
+                aggregate_scores(
+                    s if isinstance(s, list) else [s],
+                    experiment_config.search_config.agg_strategy,
+                )
                 for s in scores
             ]
             best_score_ind = np.argmax(agg_scores)
-            beam.all_scores = scores
+            beam.all_scores = [
+                [float(s)] if not isinstance(s, list) else s for s in scores
+            ]
             beam.previous_text = beam.current_text
-            beam.current_text = beam.current_text + beam.next_texts[best_score_ind]
-            beam.history.append(beam.next_texts[best_score_ind])
-            beam.best_scores = scores[best_score_ind]
+
+            # Track token usage for the selected completion
+            next_piece = beam.next_texts[best_score_ind]
+            generated_token_count = len(
+                tokenizer.encode(next_piece, add_special_tokens=False)
+            )
+            beam.completion_tokens += generated_token_count
+
+            current_text = beam.current_text or ""
+            beam.current_text = current_text + next_piece
+            beam.history.append(next_piece)
+            selected_score = scores[best_score_ind]
+            beam.best_scores = (
+                [float(selected_score)]
+                if not isinstance(selected_score, list)
+                else selected_score
+            )
+
+            # Check completion conditions including token limit
             if (
-                beam.next_texts[best_score_ind] == ""
+                next_piece == ""
                 or beam.stop_reasons[best_score_ind] == "EOS"
+                or beam.completion_tokens >= max_new_tokens
             ):
-                # stopped on EOS, prune
+                # stopped on EOS or reached token limit, prune
                 beam.pruned = True
 
         # filter / prune
         for beam in gen_beams:
-            if "boxed{" in beam.current_text:
+            if beam.current_text and "boxed{" in beam.current_text:
                 beam.pruned = True
 
     # we need to copy the results from the last iteration in to beam_width beams as otherwise we would only have n/m results
     output: list[Beam] = []
+    # Get tokenizer for final token calculations
+    tokenizer = llm.get_tokenizer()
     for beam in beams:
         for i in range(experiment_config.beam_search_config.beam_width):
+            # Calculate completion tokens for this specific beam output
+            if beam.next_texts and i < len(beam.next_texts):
+                next_text = beam.next_texts[i]
+                additional_tokens = len(
+                    tokenizer.encode(next_text, add_special_tokens=False)
+                )
+                total_completion_tokens = beam.completion_tokens + additional_tokens
+            else:
+                total_completion_tokens = beam.completion_tokens
+
+            # Safely construct current_text
+            previous_text = beam.previous_text or ""
+            next_text = (
+                beam.next_texts[i]
+                if beam.next_texts and i < len(beam.next_texts)
+                else ""
+            )
+            final_text = previous_text + next_text
+
             output.append(
                 Beam(
                     prompt=beam.prompt,
                     index=beam.index,
-                    current_text=beam.previous_text + beam.next_texts[i],
+                    current_text=final_text,
                     next_texts=None,
                     lookahead_texts=None,
                     stop_reasons=None,
-                    best_scores=beam.all_scores[i],
+                    best_scores=beam.all_scores[i]
+                    if beam.all_scores and i < len(beam.all_scores)
+                    else [0.0],
                     all_scores=beam.all_scores,
                     previous_text=beam.current_text,
                     pruned=beam.pruned,
                     history=beam.history,
+                    completed=beam.completed,
+                    completion_tokens=total_completion_tokens,
                 )
             )
 
@@ -202,7 +279,7 @@ def dvts(examples, experiment_config: ExperimentConfig, llm: LLM, prm: PRM):
             ].current_text
         )
         results["scores"].append([b.best_scores for b in beams])
-        results["completion_tokens"].append(-1)
+        results["completion_tokens"].append([b.completion_tokens for b in beams])
 
     # TODO: construct and store the tree
 
