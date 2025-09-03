@@ -79,6 +79,7 @@ if __name__ == "__main__":
         # generator_config=Q8_MODEL,
         generator_config=INSTRUCT_MODEL,
         dataset_config=DATASET_CONFIG,
+        enforce_eager=False,
     )
 
     BEAM_SEARCH_CONFIG = ExperimentConfig(
@@ -107,7 +108,7 @@ if __name__ == "__main__":
             temperature=0.7,  # Their exact setting (you had 0.8)
             top_p=0.8,  # Their exact setting (you had 1.0)
             prm_batch_size=4,
-            search_batch_size=1,
+            search_batch_size=50,
             max_tokens=2048,
             agg_strategy="prod",
         ),
