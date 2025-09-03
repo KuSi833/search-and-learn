@@ -28,7 +28,7 @@ if __name__ == "__main__":
         base_path=model_base_path,
         name="Qwen/Qwen2.5-Math-7B-Instruct",
         parameter_count="7B",
-        gpu_memory_utilization=0.3,
+        gpu_memory_utilization=0.5,
     )
     BASE_MODEL = GeneratorConfig(
         name="Qwen/Qwen2.5-Math-7B",
@@ -108,7 +108,7 @@ if __name__ == "__main__":
             temperature=0.7,  # Their exact setting (you had 0.8)
             top_p=0.8,  # Their exact setting (you had 1.0)
             prm_batch_size=4,
-            search_batch_size=50,
+            search_batch_size=1,
             max_tokens=2048,
             agg_strategy="prod",
         ),
