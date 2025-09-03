@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon, Rectangle
+from rich.console import Console
+from rich.table import Table
 
 from sal.utils.runs import fusion_base_runs_best
 from scripts.inference_visualiser import (
@@ -118,6 +120,204 @@ def analyze_threshold_correctness(
         }
 
     return analysis
+
+
+def calculate_f1_score_for_coverage(
+    correct_data: Dict[str, List[float]],
+    incorrect_data: Dict[str, List[float]],
+    all_data: Dict[str, List[float]],
+    coverage_percent: float,
+) -> Dict[str, Dict[str, float]]:
+    """Calculate F1 scores for each metric at a given coverage percentage."""
+    results = {}
+
+    for metric in all_data.keys():
+        # Calculate threshold for this coverage
+        if is_low_uncertainty_metric(metric, correct_data, incorrect_data):
+            threshold = np.percentile(all_data[metric], coverage_percent)
+            # Count values <= threshold (uncertain)
+            correct_selected = sum(1 for x in correct_data[metric] if x <= threshold)
+            incorrect_selected = sum(
+                1 for x in incorrect_data[metric] if x <= threshold
+            )
+        else:
+            threshold = np.percentile(all_data[metric], 100 - coverage_percent)
+            # Count values >= threshold (uncertain)
+            correct_selected = sum(1 for x in correct_data[metric] if x >= threshold)
+            incorrect_selected = sum(
+                1 for x in incorrect_data[metric] if x >= threshold
+            )
+
+        # Calculate confusion matrix values
+        # TP = incorrect answers correctly identified as uncertain
+        # FP = correct answers incorrectly identified as uncertain
+        # FN = incorrect answers incorrectly identified as certain
+        # TN = correct answers correctly identified as certain
+        tp = (
+            incorrect_selected  # True positives: incorrect answers flagged as uncertain
+        )
+        fp = correct_selected  # False positives: correct answers flagged as uncertain
+        fn = (
+            len(incorrect_data[metric]) - incorrect_selected
+        )  # False negatives: incorrect answers not flagged
+        tn = (
+            len(correct_data[metric]) - correct_selected
+        )  # True negatives: correct answers not flagged
+
+        # Calculate metrics
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1 = (
+            2 * (precision * recall) / (precision + recall)
+            if (precision + recall) > 0
+            else 0.0
+        )
+
+        # Calculate accuracy of selection (what % of selected items are incorrect)
+        selection_accuracy = (
+            incorrect_selected / (correct_selected + incorrect_selected)
+            if (correct_selected + incorrect_selected) > 0
+            else 0.0
+        )
+
+        results[metric] = {
+            "threshold": threshold,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1,
+            "selection_accuracy": selection_accuracy,
+            "tp": tp,
+            "fp": fp,
+            "fn": fn,
+            "tn": tn,
+            "total_selected": correct_selected + incorrect_selected,
+        }
+
+    return results
+
+
+def print_coverage_analysis_table(
+    correct_data: Dict[str, List[float]],
+    incorrect_data: Dict[str, List[float]],
+    all_data: Dict[str, List[float]],
+):
+    """Print a comprehensive table showing raw counts, precision, recall, and F1 scores for different coverage levels."""
+    console = Console()
+    coverage_levels = [10, 15, 20, 25, 30]
+
+    # Calculate total counts for context
+    total_correct = len(correct_data[list(correct_data.keys())[0]])
+    total_incorrect = len(incorrect_data[list(incorrect_data.keys())[0]])
+    total_all = total_correct + total_incorrect
+
+    console.print("\n[bold cyan]COMPREHENSIVE METRIC ANALYSIS[/bold cyan]")
+    console.print(
+        f"Dataset: [green]{total_correct}[/green] correct, [red]{total_incorrect}[/red] incorrect, [blue]{total_all}[/blue] total answers\n"
+    )
+
+    # Calculate results for all coverage levels
+    all_results = {}
+    for coverage in coverage_levels:
+        all_results[coverage] = calculate_f1_score_for_coverage(
+            correct_data, incorrect_data, all_data, coverage
+        )
+
+    # Create rich table
+    table = Table(
+        title="Raw Counts, Precision, Recall, F1 by Selection Rate",
+        show_header=True,
+        header_style="bold magenta",
+    )
+
+    # Add columns
+    table.add_column("Metric", style="cyan", no_wrap=True)
+    table.add_column("Select%", justify="center", style="yellow")
+    table.add_column("Threshold", justify="right", style="white")
+    table.add_column("Corr.Sel", justify="right", style="red")
+    table.add_column("Incor.Sel", justify="right", style="green")
+    table.add_column("Corr.NotSel", justify="right", style="dim red")
+    table.add_column("Incor.NotSel", justify="right", style="dim green")
+    table.add_column("Precision", justify="right", style="bright_blue")
+    table.add_column("Recall", justify="right", style="bright_green")
+    table.add_column("F1", justify="right", style="bright_magenta")
+
+    # Get all metrics and sort them by best F1 score at 10% coverage
+    metrics = list(all_results[10].keys())
+    metrics_with_f1 = [(metric, all_results[10][metric]["f1"]) for metric in metrics]
+    metrics_sorted = sorted(metrics_with_f1, key=lambda x: x[1], reverse=True)
+
+    # Add rows to table
+    for metric, best_f1 in metrics_sorted:
+        for i, coverage in enumerate(coverage_levels):
+            result = all_results[coverage][metric]
+
+            metric_name = metric.replace("_", " ").title() if i == 0 else ""
+
+            # Raw counts
+            correct_selected = result["fp"]  # FP = correct answers flagged as uncertain
+            incorrect_selected = result[
+                "tp"
+            ]  # TP = incorrect answers flagged as uncertain
+            correct_not_selected = result["tn"]  # TN = correct answers not flagged
+            incorrect_not_selected = result["fn"]  # FN = incorrect answers not flagged
+
+            # Color-code F1 scores
+            f1_value = result["f1"]
+            if f1_value >= 0.5:
+                f1_style = "[bright_green]"
+            elif f1_value >= 0.3:
+                f1_style = "[yellow]"
+            else:
+                f1_style = "[red]"
+
+            table.add_row(
+                metric_name,
+                f"{coverage}%",
+                f"{result['threshold']:.4f}",
+                str(correct_selected),
+                str(incorrect_selected),
+                str(correct_not_selected),
+                str(incorrect_not_selected),
+                f"{result['precision']:.3f}",
+                f"{result['recall']:.3f}",
+                f"{f1_style}{result['f1']:.3f}[/{f1_style.strip('[]')}]",
+            )
+
+        # Add separator between metrics (empty row)
+        if metric != metrics_sorted[-1][0]:  # Don't add after last metric
+            table.add_row("", "", "", "", "", "", "", "", "", "")
+
+    console.print(table)
+
+    # Add legend
+    console.print("\n[bold]Legend:[/bold]")
+    console.print(
+        "• [yellow]Select%[/yellow]: Percentage of data selected as 'uncertain' (based on percentile threshold)"
+    )
+    console.print(
+        "• [red]Corr.Sel[/red]: Correct answers selected as uncertain (False Positives)"
+    )
+    console.print(
+        "• [green]Incor.Sel[/green]: Incorrect answers selected as uncertain (True Positives)"
+    )
+    console.print(
+        "• [dim red]Corr.NotSel[/dim red]: Correct answers not selected (True Negatives)"
+    )
+    console.print(
+        "• [dim green]Incor.NotSel[/dim green]: Incorrect answers not selected (False Negatives)"
+    )
+    console.print(
+        "• [bright_blue]Precision[/bright_blue]: TP/(TP+FP) = Incor.Sel/(Incor.Sel+Corr.Sel)"
+    )
+    console.print(
+        "• [bright_green]Recall[/bright_green]: TP/(TP+FN) = Incor.Sel/(Incor.Sel+Incor.NotSel)"
+    )
+    console.print(
+        "• [bright_magenta]F1[/bright_magenta]: Harmonic mean of precision and recall"
+    )
+    console.print(
+        "• F1 Color coding: [bright_green]≥0.5 (Good)[/bright_green], [yellow]≥0.3 (Fair)[/yellow], [red]<0.3 (Poor)[/red]"
+    )
 
 
 def export_llm_readable_data(
@@ -372,6 +572,9 @@ def analyze_and_plot(run_ids: List[str]) -> None:
     print("\nOverall Summary:")
     print(f"  Correct: {total_correct}, Incorrect: {total_incorrect}")
     print(f"  Accuracy: {accuracy:.1f}%")
+
+    # Print comprehensive coverage analysis table
+    print_coverage_analysis_table(all_correct_data, all_incorrect_data, all_data)
 
 
 def create_cumulative_line_charts(
