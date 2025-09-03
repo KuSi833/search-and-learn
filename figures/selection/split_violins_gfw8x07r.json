@@ -1,0 +1,419 @@
+{
+  "metadata": {
+    "description": "Uncertainty metrics analysis for LLM consumption",
+    "run_ids": [
+      "gfw8x07r"
+    ],
+    "total_metrics": 9,
+    "export_timestamp": "/Users/kmilicic/Coding/imperial/final-project/search-and-learn"
+  },
+  "metrics": {
+    "agreement_ratio": {
+      "threshold": {
+        "value": 0.5,
+        "direction": "<=",
+        "interpretation": "low_values_uncertain",
+        "reasoning": "Incorrect mean (0.458) <= Correct mean (0.948)"
+      },
+      "statistics": {
+        "correct": {
+          "count": 429,
+          "mean": 0.9481351981351981,
+          "std": 0.14308870672369817,
+          "min": 0.25,
+          "max": 1.0
+        },
+        "incorrect": {
+          "count": 71,
+          "mean": 0.45774647887323944,
+          "std": 0.25170515493889456,
+          "min": 0.25,
+          "max": 1.0
+        },
+        "combined": {
+          "count": 500,
+          "mean": 0.8785,
+          "std": 0.2363530198664701,
+          "min": 0.25,
+          "max": 1.0
+        }
+      },
+      "selection_analysis": {
+        "correct_selected": 25,
+        "incorrect_selected": 56,
+        "total_selected": 81,
+        "selection_accuracy": 30.864197530864196,
+        "selection_percentage": 16.2
+      },
+      "uncertainty_effectiveness": {
+        "mean_difference": 0.49038871926195865,
+        "effect_size": 2.3952789112715833,
+        "separability": "high"
+      }
+    },
+    "entropy_freq": {
+      "threshold": {
+        "value": 0.9517551673214686,
+        "direction": ">=",
+        "interpretation": "high_values_uncertain",
+        "reasoning": "Incorrect mean (0.855) > Correct mean (0.121)"
+      },
+      "statistics": {
+        "correct": {
+          "count": 429,
+          "mean": 0.12094775390735182,
+          "std": 0.30438100627293707,
+          "min": -0.0,
+          "max": 1.0
+        },
+        "incorrect": {
+          "count": 71,
+          "mean": 0.8551274678541306,
+          "std": 0.3097223580736562,
+          "min": -0.0,
+          "max": 1.0
+        },
+        "combined": {
+          "count": 500,
+          "mean": 0.22520127328779443,
+          "std": 0.39847910847741436,
+          "min": -0.0,
+          "max": 1.0
+        }
+      },
+      "selection_analysis": {
+        "correct_selected": 12,
+        "incorrect_selected": 38,
+        "total_selected": 50,
+        "selection_accuracy": 24.0,
+        "selection_percentage": 10.0
+      },
+      "uncertainty_effectiveness": {
+        "mean_difference": 0.7341797139467788,
+        "effect_size": 2.3909719018903663,
+        "separability": "high"
+      }
+    },
+    "group_top_frac": {
+      "threshold": {
+        "value": 0.5095646873820903,
+        "direction": "<=",
+        "interpretation": "low_values_uncertain",
+        "reasoning": "Incorrect mean (0.575) <= Correct mean (0.960)"
+      },
+      "statistics": {
+        "correct": {
+          "count": 429,
+          "mean": 0.9597050283633077,
+          "std": 0.121304455957841,
+          "min": 0.25,
+          "max": 1.0
+        },
+        "incorrect": {
+          "count": 71,
+          "mean": 0.5753763675043859,
+          "std": 0.23115336304935408,
+          "min": 0.25,
+          "max": 1.0
+        },
+        "combined": {
+          "count": 500,
+          "mean": 0.9051303585213409,
+          "std": 0.1954707530716768,
+          "min": 0.25,
+          "max": 1.0
+        }
+      },
+      "selection_analysis": {
+        "correct_selected": 13,
+        "incorrect_selected": 37,
+        "total_selected": 50,
+        "selection_accuracy": 26.0,
+        "selection_percentage": 10.0
+      },
+      "uncertainty_effectiveness": {
+        "mean_difference": 0.3843286608589218,
+        "effect_size": 2.0820709287692876,
+        "separability": "high"
+      }
+    },
+    "entropy_weighted": {
+      "threshold": {
+        "value": 0.8135203162874147,
+        "direction": ">=",
+        "interpretation": "high_values_uncertain",
+        "reasoning": "Incorrect mean (0.687) > Correct mean (0.098)"
+      },
+      "statistics": {
+        "correct": {
+          "count": 429,
+          "mean": 0.0979576994154853,
+          "std": 0.26823661427532225,
+          "min": -0.0,
+          "max": 1.0
+        },
+        "incorrect": {
+          "count": 71,
+          "mean": 0.6870884001529465,
+          "std": 0.31611355186992485,
+          "min": -0.0,
+          "max": 1.0
+        },
+        "combined": {
+          "count": 500,
+          "mean": 0.1816142589202048,
+          "std": 0.3438165617101773,
+          "min": -0.0,
+          "max": 1.0
+        }
+      },
+      "selection_analysis": {
+        "correct_selected": 18,
+        "incorrect_selected": 32,
+        "total_selected": 50,
+        "selection_accuracy": 36.0,
+        "selection_percentage": 10.0
+      },
+      "uncertainty_effectiveness": {
+        "mean_difference": 0.5891307007374612,
+        "effect_size": 2.0096280081959814,
+        "separability": "high"
+      }
+    },
+    "prm_max": {
+      "threshold": {
+        "value": 1.0,
+        "direction": "<=",
+        "interpretation": "low_values_uncertain",
+        "reasoning": "Incorrect mean (0.969) <= Correct mean (0.997)"
+      },
+      "statistics": {
+        "correct": {
+          "count": 429,
+          "mean": 0.9972342111013986,
+          "std": 0.04442255238859907,
+          "min": 0.1259765625,
+          "max": 1.0
+        },
+        "incorrect": {
+          "count": 71,
+          "mean": 0.9692589128521126,
+          "std": 0.12833614679110006,
+          "min": 0.1748046875,
+          "max": 1.0
+        },
+        "combined": {
+          "count": 500,
+          "mean": 0.99326171875,
+          "std": 0.06424375618011359,
+          "min": 0.1259765625,
+          "max": 1.0
+        }
+      },
+      "selection_analysis": {
+        "correct_selected": 429,
+        "incorrect_selected": 71,
+        "total_selected": 500,
+        "selection_accuracy": 85.8,
+        "selection_percentage": 100.0
+      },
+      "uncertainty_effectiveness": {
+        "mean_difference": 0.027975298249286018,
+        "effect_size": 0.29131825712984843,
+        "separability": "low"
+      }
+    },
+    "prm_mean": {
+      "threshold": {
+        "value": 0.75506896973,
+        "direction": "<=",
+        "interpretation": "low_values_uncertain",
+        "reasoning": "Incorrect mean (0.725) <= Correct mean (0.975)"
+      },
+      "statistics": {
+        "correct": {
+          "count": 429,
+          "mean": 0.9750359452966783,
+          "std": 0.09919165376362087,
+          "min": 0.0474243164,
+          "max": 1.0
+        },
+        "incorrect": {
+          "count": 71,
+          "mean": 0.7249845048073945,
+          "std": 0.2629088302730124,
+          "min": 0.057922363275,
+          "max": 1.0
+        },
+        "combined": {
+          "count": 500,
+          "mean": 0.9395286407472,
+          "std": 0.16085683674771906,
+          "min": 0.0474243164,
+          "max": 1.0
+        }
+      },
+      "selection_analysis": {
+        "correct_selected": 15,
+        "incorrect_selected": 35,
+        "total_selected": 50,
+        "selection_accuracy": 30.0,
+        "selection_percentage": 10.0
+      },
+      "uncertainty_effectiveness": {
+        "mean_difference": 0.25005144048928374,
+        "effect_size": 1.2584636810306291,
+        "separability": "high"
+      }
+    },
+    "prm_std": {
+      "threshold": {
+        "value": 0.3953429901715176,
+        "direction": ">=",
+        "interpretation": "high_values_uncertain",
+        "reasoning": "Incorrect mean (0.238) > Correct mean (0.029)"
+      },
+      "statistics": {
+        "correct": {
+          "count": 429,
+          "mean": 0.029305139742046123,
+          "std": 0.10414839914146946,
+          "min": 0.0,
+          "max": 0.4871216508530172
+        },
+        "incorrect": {
+          "count": 71,
+          "mean": 0.23780266398590094,
+          "std": 0.19452447321388835,
+          "min": 0.0,
+          "max": 0.49184522542954
+        },
+        "combined": {
+          "count": 500,
+          "mean": 0.0589117881846735,
+          "std": 0.14133731816261305,
+          "min": 0.0,
+          "max": 0.49184522542954
+        }
+      },
+      "selection_analysis": {
+        "correct_selected": 25,
+        "incorrect_selected": 25,
+        "total_selected": 50,
+        "selection_accuracy": 50.0,
+        "selection_percentage": 10.0
+      },
+      "uncertainty_effectiveness": {
+        "mean_difference": 0.20849752424385481,
+        "effect_size": 1.3363213603533775,
+        "separability": "high"
+      }
+    },
+    "prm_margin": {
+      "threshold": {
+        "value": 0.00390625,
+        "direction": ">=",
+        "interpretation": "high_values_uncertain",
+        "reasoning": "Incorrect mean (0.103) > Correct mean (0.004)"
+      },
+      "statistics": {
+        "correct": {
+          "count": 429,
+          "mean": 0.004181690705128205,
+          "std": 0.05507517982742843,
+          "min": 0.0,
+          "max": 0.9681396484
+        },
+        "incorrect": {
+          "count": 71,
+          "mean": 0.10264565911126759,
+          "std": 0.22771480131566474,
+          "min": 0.0,
+          "max": 0.9727783203
+        },
+        "combined": {
+          "count": 500,
+          "mean": 0.0181635742188,
+          "std": 0.10557954989637852,
+          "min": 0.0,
+          "max": 0.9727783203
+        }
+      },
+      "selection_analysis": {
+        "correct_selected": 15,
+        "incorrect_selected": 37,
+        "total_selected": 52,
+        "selection_accuracy": 28.846153846153847,
+        "selection_percentage": 10.4
+      },
+      "uncertainty_effectiveness": {
+        "mean_difference": 0.09846396840613938,
+        "effect_size": 0.594369307397233,
+        "separability": "medium"
+      }
+    },
+    "prm_top_frac": {
+      "threshold": {
+        "value": 0.33109558596662925,
+        "direction": ">=",
+        "interpretation": "high_values_uncertain",
+        "reasoning": "Incorrect mean (0.396) > Correct mean (0.261)"
+      },
+      "statistics": {
+        "correct": {
+          "count": 429,
+          "mean": 0.2606128940912705,
+          "std": 0.05230176971006093,
+          "min": 0.25,
+          "max": 0.9255898365746095
+        },
+        "incorrect": {
+          "count": 71,
+          "mean": 0.39566495983113475,
+          "std": 0.179829029241243,
+          "min": 0.25,
+          "max": 0.9260682794268982
+        },
+        "combined": {
+          "count": 500,
+          "mean": 0.2797902874263313,
+          "std": 0.09571455450658828,
+          "min": 0.25,
+          "max": 0.9260682794268982
+        }
+      },
+      "selection_analysis": {
+        "correct_selected": 15,
+        "incorrect_selected": 35,
+        "total_selected": 50,
+        "selection_accuracy": 30.0,
+        "selection_percentage": 10.0
+      },
+      "uncertainty_effectiveness": {
+        "mean_difference": 0.13505206573986428,
+        "effect_size": 1.0198207868730398,
+        "separability": "high"
+      }
+    }
+  },
+  "summary": {
+    "total_questions": 500,
+    "correct_answers": 429,
+    "incorrect_answers": 71,
+    "overall_accuracy": 85.8,
+    "best_metrics": [
+      [
+        "agreement_ratio",
+        2.3952789112715833
+      ],
+      [
+        "entropy_freq",
+        2.3909719018903663
+      ],
+      [
+        "group_top_frac",
+        2.0820709287692876
+      ]
+    ]
+  }
+}

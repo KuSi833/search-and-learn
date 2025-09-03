@@ -127,10 +127,10 @@ def export_llm_readable_data(
     correctness_analysis: Dict[str, Dict[str, int]],
     all_correct_data: Dict[str, List[float]],
     all_incorrect_data: Dict[str, List[float]],
-    metrics_list: List[str]
+    metrics_list: List[str],
 ) -> None:
     """Export all plot data in LLM-readable JSON format."""
-    
+
     # Calculate summary statistics for each metric
     export_data = {
         "metadata": {
@@ -139,36 +139,38 @@ def export_llm_readable_data(
             "total_metrics": len(metrics_list),
             "export_timestamp": str(Path().resolve()),
         },
-        "metrics": {}
+        "metrics": {},
     }
-    
+
     for metric in metrics_list:
         if metric not in thresholds:
             continue
-            
+
         correct_values = all_correct_data[metric]
         incorrect_values = all_incorrect_data[metric]
         all_values = correct_values + incorrect_values
-        
+
         # Calculate statistics
         correct_mean = np.mean(correct_values) if correct_values else 0.0
         incorrect_mean = np.mean(incorrect_values) if incorrect_values else 0.0
         correct_std = np.std(correct_values) if correct_values else 0.0
         incorrect_std = np.std(incorrect_values) if incorrect_values else 0.0
-        
+
         # Determine direction and reasoning
         direction = get_metric_direction(metric, all_correct_data, all_incorrect_data)
-        uncertainty_interpretation = "low_values_uncertain" if direction == "<=" else "high_values_uncertain"
-        
+        uncertainty_interpretation = (
+            "low_values_uncertain" if direction == "<=" else "high_values_uncertain"
+        )
+
         # Get selection analysis
         analysis = correctness_analysis[metric]
-        
+
         export_data["metrics"][metric] = {
             "threshold": {
                 "value": float(thresholds[metric]),
                 "direction": direction,
                 "interpretation": uncertainty_interpretation,
-                "reasoning": f"Incorrect mean ({incorrect_mean:.3f}) {'>' if incorrect_mean > correct_mean else '<='} Correct mean ({correct_mean:.3f})"
+                "reasoning": f"Incorrect mean ({incorrect_mean:.3f}) {'>' if incorrect_mean > correct_mean else '<='} Correct mean ({correct_mean:.3f})",
             },
             "statistics": {
                 "correct": {
@@ -191,44 +193,73 @@ def export_llm_readable_data(
                     "std": float(np.std(all_values)) if all_values else 0.0,
                     "min": float(min(all_values)) if all_values else 0.0,
                     "max": float(max(all_values)) if all_values else 0.0,
-                }
+                },
             },
             "selection_analysis": {
                 "correct_selected": analysis["correct_selected"],
                 "incorrect_selected": analysis["incorrect_selected"],
                 "total_selected": analysis["total_selected"],
-                "selection_accuracy": float(100 * analysis["correct_selected"] / analysis["total_selected"]) if analysis["total_selected"] > 0 else 0.0,
-                "selection_percentage": float(100 * analysis["total_selected"] / len(all_values)) if all_values else 0.0,
+                "selection_accuracy": float(
+                    100 * analysis["correct_selected"] / analysis["total_selected"]
+                )
+                if analysis["total_selected"] > 0
+                else 0.0,
+                "selection_percentage": float(
+                    100 * analysis["total_selected"] / len(all_values)
+                )
+                if all_values
+                else 0.0,
             },
             "uncertainty_effectiveness": {
                 "mean_difference": float(abs(incorrect_mean - correct_mean)),
-                "effect_size": float(abs(incorrect_mean - correct_mean) / np.sqrt((correct_std**2 + incorrect_std**2) / 2)) if (correct_std > 0 or incorrect_std > 0) else 0.0,
-                "separability": "high" if abs(incorrect_mean - correct_mean) > 0.1 else "medium" if abs(incorrect_mean - correct_mean) > 0.05 else "low"
-            }
+                "effect_size": float(
+                    abs(incorrect_mean - correct_mean)
+                    / np.sqrt((correct_std**2 + incorrect_std**2) / 2)
+                )
+                if (correct_std > 0 or incorrect_std > 0)
+                else 0.0,
+                "separability": "high"
+                if abs(incorrect_mean - correct_mean) > 0.1
+                else "medium"
+                if abs(incorrect_mean - correct_mean) > 0.05
+                else "low",
+            },
         }
-    
+
     # Add overall summary
     total_correct = len(all_correct_data[metrics_list[0]]) if metrics_list else 0
     total_incorrect = len(all_incorrect_data[metrics_list[0]]) if metrics_list else 0
     total_points = total_correct + total_incorrect
-    
+
     export_data["summary"] = {
         "total_questions": total_points,
         "correct_answers": total_correct,
         "incorrect_answers": total_incorrect,
-        "overall_accuracy": float(100 * total_correct / total_points) if total_points > 0 else 0.0,
+        "overall_accuracy": float(100 * total_correct / total_points)
+        if total_points > 0
+        else 0.0,
         "best_metrics": sorted(
-            [(m, export_data["metrics"][m]["uncertainty_effectiveness"]["effect_size"]) 
-             for m in export_data["metrics"].keys()],
-            key=lambda x: x[1], reverse=True
-        )[:3] if export_data["metrics"] else []
+            [
+                (
+                    m,
+                    export_data["metrics"][m]["uncertainty_effectiveness"][
+                        "effect_size"
+                    ],
+                )
+                for m in export_data["metrics"].keys()
+            ],
+            key=lambda x: x[1],
+            reverse=True,
+        )[:3]
+        if export_data["metrics"]
+        else [],
     }
-    
+
     # Write to JSON file
-    json_file = output_file.with_suffix('.json')
-    with open(json_file, 'w') as f:
+    json_file = output_file.with_suffix(".json")
+    with open(json_file, "w") as f:
         json.dump(export_data, f, indent=2)
-    
+
     print(f"LLM-readable data exported to: {json_file}")
 
 
@@ -487,13 +518,18 @@ def create_cumulative_line_charts(
     plt.savefig(output_file, dpi=200, bbox_inches="tight")
 
     print(f"Cumulative line charts saved to: {output_file}")
-    
+
     # Export LLM-readable data
     export_llm_readable_data(
-        output_file, run_ids, thresholds, correctness_analysis,
-        correct_data, incorrect_data, list(thresholds.keys())
+        output_file,
+        run_ids,
+        thresholds,
+        correctness_analysis,
+        correct_data,
+        incorrect_data,
+        list(thresholds.keys()),
     )
-    
+
     plt.close()
 
 
@@ -734,7 +770,11 @@ def create_split_violin_plots(
         ]
 
         ax.legend(
-            handles=legend_elements, loc="upper right", fontsize=10, framealpha=0.9
+            handles=legend_elements,
+            loc="upper left",
+            bbox_to_anchor=(0, 0.75),
+            fontsize=10,
+            framealpha=0.9,
         )
         ax.grid(True, alpha=0.3)
 
@@ -760,13 +800,18 @@ def create_split_violin_plots(
     plt.savefig(output_file, dpi=200, bbox_inches="tight")
 
     print(f"Split violin plots saved to: {output_file}")
-    
+
     # Export LLM-readable data
     export_llm_readable_data(
-        output_file, run_ids, thresholds, correctness_analysis,
-        correct_data, incorrect_data, list(thresholds.keys())
+        output_file,
+        run_ids,
+        thresholds,
+        correctness_analysis,
+        correct_data,
+        incorrect_data,
+        list(thresholds.keys()),
     )
-    
+
     plt.close()
 
 
