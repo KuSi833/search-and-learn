@@ -122,8 +122,13 @@ def analyze_and_plot(run_ids: List[str]) -> None:
         all_correct_data, all_incorrect_data, thresholds
     )
 
-    # Create violin plots with threshold lines
-    create_violin_plots(
+    # Create cumulative line charts with threshold lines
+    create_cumulative_line_charts(
+        all_correct_data, all_incorrect_data, run_ids, thresholds, correctness_analysis
+    )
+
+    # Create split violin plots
+    create_split_violin_plots(
         all_correct_data, all_incorrect_data, run_ids, thresholds, correctness_analysis
     )
 
@@ -165,10 +170,10 @@ def analyze_and_plot(run_ids: List[str]) -> None:
     print(f"  Accuracy: {accuracy:.1f}%")
 
 
-def create_violin_plots(
+def create_cumulative_line_charts(
     correct_data, incorrect_data, run_ids, thresholds, correctness_analysis
 ):
-    """Create violin plots for the 3 uncertainty metrics with threshold lines."""
+    """Create cumulative line charts for the 3 uncertainty metrics."""
     metrics = ["agreement_ratio", "entropy_freq", "group_top_frac"]
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
@@ -176,26 +181,188 @@ def create_violin_plots(
     for i, metric in enumerate(metrics):
         ax = axes[i]
 
-        # Create violin plot with proportional widths
+        # Combine and sort data with labels
+        combined_data = []
+        for val in correct_data[metric]:
+            combined_data.append((val, True))  # True = correct
+        for val in incorrect_data[metric]:
+            combined_data.append((val, False))  # False = incorrect
+
+        # Sort data based on metric direction
+        if metric in ["agreement_ratio", "group_top_frac"]:
+            # For these metrics, we accumulate from low to high (0 → 1)
+            combined_data.sort(key=lambda x: x[0])
+            x_label = f"{metric.replace('_', ' ').title()} (0 → 1)"
+        else:  # entropy_freq
+            # For entropy, we accumulate from high to low (1 → 0)
+            combined_data.sort(key=lambda x: x[0], reverse=True)
+            x_label = f"{metric.replace('_', ' ').title()} (1 → 0)"
+
+        # Calculate cumulative counts
+        total_points = len(combined_data)
+        metric_values = []  # Actual metric values for x-axis
+        correct_counts = []
+        incorrect_counts = []
+
+        correct_cum = 0
+        incorrect_cum = 0
+
+        # Create cumulative data points
+        for idx, (value, is_correct) in enumerate(combined_data):
+            if is_correct:
+                correct_cum += 1
+            else:
+                incorrect_cum += 1
+
+            # Store points at regular intervals
+            if idx % max(1, total_points // 100) == 0 or idx == total_points - 1:
+                metric_values.append(value)  # Use actual metric value
+                correct_counts.append(correct_cum / total_points)
+                incorrect_counts.append(incorrect_cum / total_points)
+
+        # Create separate line plots for correct and incorrect
+        ax.plot(
+            metric_values,
+            correct_counts,
+            color="#2ca02c",
+            linewidth=2.5,
+            label=f"Correct (n={len(correct_data[metric])})",
+            alpha=0.9,
+        )
+        ax.plot(
+            metric_values,
+            incorrect_counts,
+            color="#d62728",
+            linewidth=2.5,
+            label=f"Incorrect (n={len(incorrect_data[metric])})",
+            alpha=0.9,
+        )
+
+        # Add threshold line
+        threshold_value = thresholds[metric]
+        analysis = correctness_analysis[metric]
+
+        ax.axvline(
+            x=threshold_value,
+            color="red",
+            linestyle="--",
+            linewidth=2,
+            alpha=0.8,
+            label="10% Threshold",
+        )
+
+        # Customize plot with proper axis limits
+        if metric_values:
+            if metric in ["agreement_ratio", "group_top_frac"]:
+                # For these metrics: 0 → 1 (left to right)
+                ax.set_xlim(min(metric_values), max(metric_values))
+            else:  # entropy_freq
+                # For entropy: 1 → 0 (left to right, but values go from high to low)
+                ax.set_xlim(max(metric_values), min(metric_values))
+
+        ax.set_ylim(0, 1)
+        ax.set_xlabel(x_label)
+        ax.set_ylabel("Cumulative Fraction of Data")
+
+        # Enhanced title with threshold info
+        direction = "<=" if metric in ["agreement_ratio", "group_top_frac"] else ">="
+        selected_correct = analysis["correct_selected"]
+        selected_incorrect = analysis["incorrect_selected"]
+        total_selected = selected_correct + selected_incorrect
+
+        title = f"{metric.replace('_', ' ').title()}\nThreshold {direction} {threshold_value:.3f}: {selected_correct}C + {selected_incorrect}I = {total_selected}"
+        ax.set_title(title, fontsize=10)
+
+        ax.grid(True, alpha=0.3)
+        ax.legend(loc="upper left", fontsize=8)
+
+    plt.suptitle(
+        f"Cumulative Selection: Correct vs Incorrect Answers\nRuns: {', '.join(run_ids)}"
+    )
+    plt.tight_layout()
+
+    # Save the plot
+    output_dir = Path("figures/selection")
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    output_file = output_dir / f"cumulative_lines_{'_'.join(run_ids)}.png"
+    plt.savefig(output_file, dpi=200, bbox_inches="tight")
+
+    print(f"Cumulative line charts saved to: {output_file}")
+    plt.close()
+
+
+def create_split_violin_plots(
+    correct_data, incorrect_data, run_ids, thresholds, correctness_analysis
+):
+    """Create split violin plots with correct on left side, incorrect on right side."""
+    metrics = ["agreement_ratio", "entropy_freq", "group_top_frac"]
+
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+
+    for i, metric in enumerate(metrics):
+        ax = axes[i]
+
+        # Calculate proportional widths based on counts
         correct_count = len(correct_data[metric])
         incorrect_count = len(incorrect_data[metric])
         total_count = correct_count + incorrect_count
 
-        # Scale widths by proportion of data
+        # Scale widths proportionally (max width = 0.8)
         correct_width = 0.8 * (correct_count / total_count)
         incorrect_width = 0.8 * (incorrect_count / total_count)
 
-        parts = ax.violinplot(
-            [correct_data[metric]], positions=[1], widths=[correct_width]
+        # Create violin plot for correct answers (left side)
+        parts_correct = ax.violinplot(
+            [correct_data[metric]],
+            positions=[0.5],
+            widths=[correct_width],
+            showmeans=False,
+            showmedians=False,
         )
-        parts["bodies"][0].set_facecolor("#2ca02c")
-        parts["bodies"][0].set_alpha(0.7)
 
-        parts2 = ax.violinplot(
-            [incorrect_data[metric]], positions=[2], widths=[incorrect_width]
+        # Style correct violin (left side)
+        for pc in parts_correct["bodies"]:
+            pc.set_facecolor("#2ca02c")
+            pc.set_alpha(0.7)
+            # Keep only left half of the violin
+            vertices = pc.get_paths()[0].vertices
+            # Find the center x position and keep only left side
+            center_x = 0.5
+            vertices[:, 0] = np.where(
+                vertices[:, 0] > center_x, center_x, vertices[:, 0]
+            )
+
+        # Remove any mean/median lines for correct
+        for key in ["cmeans", "cmedians", "cmins", "cmaxes", "cbars"]:
+            if key in parts_correct:
+                parts_correct[key].set_visible(False)
+
+        # Create violin plot for incorrect answers (right side)
+        parts_incorrect = ax.violinplot(
+            [incorrect_data[metric]],
+            positions=[0.5],
+            widths=[incorrect_width],
+            showmeans=False,
+            showmedians=False,
         )
-        parts2["bodies"][0].set_facecolor("#d62728")
-        parts2["bodies"][0].set_alpha(0.7)
+
+        # Style incorrect violin (right side)
+        for pc in parts_incorrect["bodies"]:
+            pc.set_facecolor("#d62728")
+            pc.set_alpha(0.7)
+            # Keep only right half of the violin
+            vertices = pc.get_paths()[0].vertices
+            # Find the center x position and keep only right side
+            center_x = 0.5
+            vertices[:, 0] = np.where(
+                vertices[:, 0] < center_x, center_x, vertices[:, 0]
+            )
+
+        # Remove any mean/median lines for incorrect
+        for key in ["cmeans", "cmedians", "cmins", "cmaxes", "cbars"]:
+            if key in parts_incorrect:
+                parts_incorrect[key].set_visible(False)
 
         # Add threshold line
         threshold_value = thresholds[metric]
@@ -208,29 +375,32 @@ def create_violin_plots(
             label=f"Threshold: {threshold_value:.3f}",
         )
 
-        # Customize plot with counts and threshold info
-        correct_count = len(correct_data[metric])
-        incorrect_count = len(incorrect_data[metric])
-        analysis = correctness_analysis[metric]
-
-        ax.set_xticks([1, 2])
+        # Customize plot
+        ax.set_xlim(0, 1)
+        ax.set_xticks([0.25, 0.75])
         ax.set_xticklabels(
-            [f"Correct\n(n={correct_count})", f"Incorrect\n(n={incorrect_count})"]
+            [
+                f"Correct\n(n={len(correct_data[metric])})",
+                f"Incorrect\n(n={len(incorrect_data[metric])})",
+            ]
         )
         ax.set_ylabel(f"{metric.replace('_', ' ').title()}")
 
         # Enhanced title with threshold info
         direction = "<=" if metric in ["agreement_ratio", "group_top_frac"] else ">="
+        analysis = correctness_analysis[metric]
         selected_correct = analysis["correct_selected"]
         selected_incorrect = analysis["incorrect_selected"]
-        title = f"{metric.replace('_', ' ').title()} Distribution\nThreshold {direction} {threshold_value:.3f}: {selected_correct}C + {selected_incorrect}I = {selected_correct + selected_incorrect} total"
+        total_selected = selected_correct + selected_incorrect
+
+        title = f"{metric.replace('_', ' ').title()}\nThreshold {direction} {threshold_value:.3f}: {selected_correct}C + {selected_incorrect}I = {total_selected}"
         ax.set_title(title, fontsize=10)
 
         ax.grid(True, alpha=0.3)
         ax.legend(loc="upper right", fontsize=8)
 
     plt.suptitle(
-        f"Uncertainty Metrics: Correct vs Incorrect Answers\nRuns: {', '.join(run_ids)}"
+        f"Split Violin Plots: Correct vs Incorrect Distribution\nRuns: {', '.join(run_ids)}"
     )
     plt.tight_layout()
 
@@ -238,10 +408,10 @@ def create_violin_plots(
     output_dir = Path("figures/selection")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    output_file = output_dir / f"violin_metrics_{'_'.join(run_ids)}.png"
+    output_file = output_dir / f"split_violins_{'_'.join(run_ids)}.png"
     plt.savefig(output_file, dpi=200, bbox_inches="tight")
 
-    print(f"Violin plots saved to: {output_file}")
+    print(f"Split violin plots saved to: {output_file}")
     plt.close()
 
 
