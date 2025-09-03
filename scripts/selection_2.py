@@ -422,6 +422,16 @@ def create_split_violin_plots(
             if key in parts_incorrect:
                 parts_incorrect[key].set_visible(False)
 
+        # Set proper y-axis limits to ensure violin plots stretch from top to bottom
+        all_values = correct_data[metric] + incorrect_data[metric]
+        y_min = min(all_values)
+        y_max = max(all_values)
+
+        # Add small padding to ensure full visibility
+        y_range = y_max - y_min
+        padding = y_range * 0.05 if y_range > 0 else 0.05
+        ax.set_ylim(y_min - padding, y_max + padding)
+
         # Add threshold line and selection visualization
         threshold_value = thresholds[metric]
         analysis = correctness_analysis[metric]
@@ -429,16 +439,12 @@ def create_split_violin_plots(
         # Determine selection region based on metric type
         if metric in ["agreement_ratio", "group_top_frac"]:
             # For these metrics, we select values <= threshold (bottom region)
-            y_min = ax.get_ylim()[0] if hasattr(ax, "get_ylim") else 0
-            y_fill_min = y_min
+            y_fill_min = y_min - padding
             y_fill_max = threshold_value
-            selection_text = f"Selected\n≤ {threshold_value:.3f}"
         else:  # entropy_freq
             # For entropy, we select values >= threshold (top region)
-            y_max = ax.get_ylim()[1] if hasattr(ax, "get_ylim") else 1
             y_fill_min = threshold_value
-            y_fill_max = y_max if y_max > threshold_value else threshold_value + 0.1
-            selection_text = f"Selected\n≥ {threshold_value:.3f}"
+            y_fill_max = y_max + padding
 
         # Add shaded region to show what's being selected
         ax.axhspan(y_fill_min, y_fill_max, alpha=0.15, color="orange", zorder=0)
