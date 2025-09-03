@@ -19,11 +19,16 @@ from scripts.inference_visualiser import (
 )
 
 
-def calculate_thresholds(all_data: Dict[str, List[float]]) -> Dict[str, float]:
+def calculate_thresholds(
+    all_data: Dict[str, List[float]],
+    correct_data: Dict[str, List[float]],
+    incorrect_data: Dict[str, List[float]],
+) -> Dict[str, float]:
     """Calculate thresholds for each metric to capture 10% of data points.
 
-    Low values indicate high uncertainty: agreement_ratio, group_top_frac, prm_max, prm_mean, prm_margin, prm_top_frac
-    High values indicate high uncertainty: entropy_freq, entropy_weighted, prm_std
+    Direction is determined by comparing means: if incorrect answers have higher mean values,
+    then high values indicate uncertainty (use 90th percentile). If incorrect answers have
+    lower mean values, then low values indicate uncertainty (use 10th percentile).
     """
     thresholds = {}
 
@@ -32,30 +37,50 @@ def calculate_thresholds(all_data: Dict[str, List[float]]) -> Dict[str, float]:
     for metric in all_data.keys():
         combined_data[metric] = all_data[metric]
 
-    # Metrics where LOW values indicate HIGH uncertainty (use 10th percentile)
-    low_uncertainty_metrics = [
-        "agreement_ratio",
-        "group_top_frac",
-        "prm_max",
-        "prm_mean",
-        "prm_margin",
-        "prm_top_frac",
-    ]
-
-    # Metrics where HIGH values indicate HIGH uncertainty (use 90th percentile)
-    high_uncertainty_metrics = ["entropy_freq", "entropy_weighted", "prm_std"]
-
-    # Calculate thresholds
+    # Calculate thresholds based on data-driven direction
     for metric in combined_data.keys():
-        if metric in low_uncertainty_metrics:
-            thresholds[metric] = np.percentile(combined_data[metric], 10)
-        elif metric in high_uncertainty_metrics:
+        correct_mean = np.mean(correct_data[metric]) if correct_data[metric] else 0.0
+        incorrect_mean = (
+            np.mean(incorrect_data[metric]) if incorrect_data[metric] else 0.0
+        )
+
+        # If incorrect answers have higher mean values, high values indicate uncertainty
+        if incorrect_mean > correct_mean:
             thresholds[metric] = np.percentile(combined_data[metric], 90)
         else:
-            # Default to low uncertainty behavior for unknown metrics
+            # If incorrect answers have lower mean values, low values indicate uncertainty
             thresholds[metric] = np.percentile(combined_data[metric], 10)
 
     return thresholds
+
+
+def get_metric_direction(
+    metric: str,
+    correct_data: Dict[str, List[float]],
+    incorrect_data: Dict[str, List[float]],
+) -> str:
+    """Determine if a metric uses <= or >= threshold based on mean comparison.
+
+    Returns "<=" if low values indicate uncertainty, ">=" if high values indicate uncertainty.
+    """
+    correct_mean = np.mean(correct_data[metric]) if correct_data[metric] else 0.0
+    incorrect_mean = np.mean(incorrect_data[metric]) if incorrect_data[metric] else 0.0
+
+    # If incorrect answers have higher mean values, high values indicate uncertainty
+    if incorrect_mean > correct_mean:
+        return ">="
+    else:
+        # If incorrect answers have lower mean values, low values indicate uncertainty
+        return "<="
+
+
+def is_low_uncertainty_metric(
+    metric: str,
+    correct_data: Dict[str, List[float]],
+    incorrect_data: Dict[str, List[float]],
+) -> bool:
+    """Return True if low values indicate high uncertainty for this metric."""
+    return get_metric_direction(metric, correct_data, incorrect_data) == "<="
 
 
 def analyze_threshold_correctness(
@@ -66,21 +91,9 @@ def analyze_threshold_correctness(
     """Analyze how many correct vs incorrect answers fall within each threshold."""
     analysis = {}
 
-    # Metrics where LOW values indicate HIGH uncertainty (use <= threshold)
-    low_uncertainty_metrics = [
-        "agreement_ratio",
-        "group_top_frac",
-        "prm_max",
-        "prm_mean",
-        "prm_margin",
-        "prm_top_frac",
-    ]
-
-    # Metrics where HIGH values indicate HIGH uncertainty (use >= threshold)
-    high_uncertainty_metrics = ["entropy_freq", "entropy_weighted", "prm_std"]
-
     for metric in thresholds.keys():
-        if metric in low_uncertainty_metrics:
+        # Determine direction based on data
+        if is_low_uncertainty_metric(metric, correct_data, incorrect_data):
             # Count values <= threshold
             correct_selected = sum(
                 1 for x in correct_data[metric] if x <= thresholds[metric]
@@ -88,21 +101,13 @@ def analyze_threshold_correctness(
             incorrect_selected = sum(
                 1 for x in incorrect_data[metric] if x <= thresholds[metric]
             )
-        elif metric in high_uncertainty_metrics:
+        else:
             # Count values >= threshold
             correct_selected = sum(
                 1 for x in correct_data[metric] if x >= thresholds[metric]
             )
             incorrect_selected = sum(
                 1 for x in incorrect_data[metric] if x >= thresholds[metric]
-            )
-        else:
-            # Default to low uncertainty behavior
-            correct_selected = sum(
-                1 for x in correct_data[metric] if x <= thresholds[metric]
-            )
-            incorrect_selected = sum(
-                1 for x in incorrect_data[metric] if x <= thresholds[metric]
             )
 
         analysis[metric] = {
@@ -160,7 +165,7 @@ def analyze_and_plot(run_ids: List[str]) -> None:
                     all_incorrect_data[metric].append(metric_value)
 
     # Calculate thresholds for 10% selection
-    thresholds = calculate_thresholds(all_data)
+    thresholds = calculate_thresholds(all_data, all_correct_data, all_incorrect_data)
     correctness_analysis = analyze_threshold_correctness(
         all_correct_data, all_incorrect_data, thresholds
     )
@@ -179,21 +184,19 @@ def analyze_and_plot(run_ids: List[str]) -> None:
     total_points = len(all_data["agreement_ratio"])
     print(f"\nThreshold Analysis (targeting 10% of {total_points} data points):")
 
-    # Metrics where LOW values indicate HIGH uncertainty (use <= threshold)
-    low_uncertainty_metrics = [
-        "agreement_ratio",
-        "group_top_frac",
-        "prm_max",
-        "prm_mean",
-        "prm_margin",
-        "prm_top_frac",
-    ]
-
     for metric in metrics_list:
         if metric not in thresholds:
             continue
 
-        direction = "<=" if metric in low_uncertainty_metrics else ">="
+        # Determine direction based on actual data
+        direction = get_metric_direction(metric, all_correct_data, all_incorrect_data)
+        correct_mean = (
+            np.mean(all_correct_data[metric]) if all_correct_data[metric] else 0.0
+        )
+        incorrect_mean = (
+            np.mean(all_incorrect_data[metric]) if all_incorrect_data[metric] else 0.0
+        )
+
         analysis = correctness_analysis[metric]
         correct_pct = (
             100 * analysis["correct_selected"] / analysis["total_selected"]
@@ -204,6 +207,7 @@ def analyze_and_plot(run_ids: List[str]) -> None:
         print(
             f"  {metric.replace('_', ' ').title()}: {direction} {thresholds[metric]:.4f}"
         )
+        print(f"    Means: Correct={correct_mean:.3f}, Incorrect={incorrect_mean:.3f}")
         print(
             f"    Selected: {analysis['total_selected']} ({100 * analysis['total_selected'] / total_points:.1f}%)"
         )
@@ -247,16 +251,6 @@ def create_cumulative_line_charts(
     elif n_cols == 1:
         axes = axes.reshape(-1, 1)
 
-    # Metrics where LOW values indicate HIGH uncertainty
-    low_uncertainty_metrics = [
-        "agreement_ratio",
-        "group_top_frac",
-        "prm_max",
-        "prm_mean",
-        "prm_margin",
-        "prm_top_frac",
-    ]
-
     for i, metric in enumerate(metrics):
         row = i // n_cols
         col = i % n_cols
@@ -269,8 +263,8 @@ def create_cumulative_line_charts(
         for val in incorrect_data[metric]:
             combined_data.append((val, False))  # False = incorrect
 
-        # Sort data based on metric direction
-        if metric in low_uncertainty_metrics:
+        # Sort data based on data-driven metric direction
+        if is_low_uncertainty_metric(metric, correct_data, incorrect_data):
             # For these metrics, we accumulate from low to high (low → high)
             combined_data.sort(key=lambda x: x[0])
             x_label = f"{metric.replace('_', ' ').title()} (low → high)"
@@ -334,7 +328,7 @@ def create_cumulative_line_charts(
 
         # Customize plot with proper axis limits
         if metric_values:
-            if metric in low_uncertainty_metrics:
+            if is_low_uncertainty_metric(metric, correct_data, incorrect_data):
                 # For these metrics: low → high (left to right)
                 ax.set_xlim(min(metric_values), max(metric_values))
             else:
@@ -346,7 +340,7 @@ def create_cumulative_line_charts(
         ax.set_ylabel("Cumulative Fraction of Data")
 
         # Enhanced title with threshold info
-        direction = "<=" if metric in low_uncertainty_metrics else ">="
+        direction = get_metric_direction(metric, correct_data, incorrect_data)
         analysis = correctness_analysis[metric]
         selected_correct = analysis["correct_selected"]
         selected_incorrect = analysis["incorrect_selected"]
@@ -368,9 +362,9 @@ def create_cumulative_line_charts(
             axes[col].set_visible(False)
 
     plt.suptitle(
-        f"Cumulative Selection: Correct vs Incorrect Answers\nRuns: {', '.join(run_ids)}"
+        "Cumulative Selection: Correct vs Incorrect Answers", fontsize=14, y=0.98
     )
-    plt.tight_layout()
+    plt.tight_layout(rect=(0, 0, 1, 0.95))
 
     # Save the plot
     output_dir = Path("figures/selection")
@@ -403,16 +397,6 @@ def create_split_violin_plots(
         axes = axes.reshape(1, -1)
     elif n_cols == 1:
         axes = axes.reshape(-1, 1)
-
-    # Metrics where LOW values indicate HIGH uncertainty
-    low_uncertainty_metrics = [
-        "agreement_ratio",
-        "group_top_frac",
-        "prm_max",
-        "prm_mean",
-        "prm_margin",
-        "prm_top_frac",
-    ]
 
     for i, metric in enumerate(metrics):
         row = i // n_cols
@@ -455,7 +439,7 @@ def create_split_violin_plots(
             # Create two separate patches for inside and outside threshold
 
             # Split vertices based on threshold
-            if metric in low_uncertainty_metrics:
+            if is_low_uncertainty_metric(metric, correct_data, incorrect_data):
                 # For these metrics, inside threshold means y <= threshold_value
                 inside_vertices = vertices[vertices[:, 1] <= threshold_value]
                 outside_vertices = vertices[vertices[:, 1] > threshold_value]
@@ -507,7 +491,7 @@ def create_split_violin_plots(
             # Create two separate patches for inside and outside threshold
 
             # Split vertices based on threshold
-            if metric in low_uncertainty_metrics:
+            if is_low_uncertainty_metric(metric, correct_data, incorrect_data):
                 # For these metrics, inside threshold means y <= threshold_value
                 inside_vertices = vertices[vertices[:, 1] <= threshold_value]
                 outside_vertices = vertices[vertices[:, 1] > threshold_value]
@@ -551,7 +535,7 @@ def create_split_violin_plots(
         analysis = correctness_analysis[metric]
 
         # Determine selection region based on metric type
-        if metric in low_uncertainty_metrics:
+        if is_low_uncertainty_metric(metric, correct_data, incorrect_data):
             # For these metrics, we select values <= threshold (bottom region)
             y_fill_min = y_min - padding
             y_fill_max = threshold_value
@@ -588,7 +572,7 @@ def create_split_violin_plots(
         ax.set_title(title, fontsize=10)
 
         # Create enhanced legend with selection counts
-        direction = "<=" if metric in low_uncertainty_metrics else ">="
+        direction = get_metric_direction(metric, correct_data, incorrect_data)
         analysis = correctness_analysis[metric]
         selected_correct = analysis["correct_selected"]
         selected_incorrect = analysis["incorrect_selected"]
@@ -643,10 +627,10 @@ def create_split_violin_plots(
         else:
             axes[col].set_visible(False)
 
-    plt.suptitle(
-        f"Split Violin Plots: Correct vs Incorrect Distribution\nRuns: {', '.join(run_ids)}"
-    )
-    plt.tight_layout()
+    # plt.suptitle(
+    #     "Split Violin Plots: Correct vs Incorrect Distribution", fontsize=14, y=0.98
+    # )
+    # plt.tight_layout(rect=(0, 0, 1, 0.95))
 
     # Save the plot
     output_dir = Path("figures/selection")
