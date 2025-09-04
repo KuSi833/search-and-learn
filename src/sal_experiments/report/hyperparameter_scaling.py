@@ -411,11 +411,11 @@ def hyperparameter_scaling_report():
         ExperimentResult(
             method="WBoN",
             n="16",
-            accuracies=[0.846, 0.85, 0.868, 0.862],
+            accuracies=[0.870, 0.876, 0.870],
             runtimes=[
-                timedelta(minutes=41, seconds=58),
-                timedelta(minutes=42, seconds=40),
-                timedelta(minutes=41, seconds=37),
+                timedelta(hours=2, minutes=15, seconds=58),
+                timedelta(hours=2, minutes=18, seconds=40),
+                timedelta(hours=2, minutes=12, seconds=37),
             ],
         ),
         ExperimentResult(
