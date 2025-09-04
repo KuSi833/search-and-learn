@@ -2934,6 +2934,6 @@ def create_split_violin_plots(
 
 
 if __name__ == "__main__":
-    # run_ids = fusion_base_runs_best()
-    run_ids = [fusion_base_runs_best()[1]]
+    run_ids = fusion_base_runs_best()
+    # run_ids = [fusion_base_runs_best()[1]]
     analyze_and_plot(run_ids)
