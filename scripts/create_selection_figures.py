@@ -47,7 +47,7 @@ def create_complementarity_analysis():
     B_only = 12  # Agreement Ra only
     C_only = 12  # Entropy Freq only
 
-    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+    fig, ax = plt.subplots(1, 1, figsize=(6, 4))
 
     # Create clean Venn diagram
     venn = venn3(
@@ -56,7 +56,7 @@ def create_complementarity_analysis():
         ax=ax,
     )
 
-    # Color individual regions with project colors - both fill and edge
+    # Color individual regions with project colors - edges only, no fill
     individual_colors = {
         "100": BLUE,  # Group Top Frac only
         "010": ORANGE,  # Agreement Ratio only
@@ -66,10 +66,10 @@ def create_complementarity_analysis():
     for region_id, color in individual_colors.items():
         patch = venn.get_patch_by_id(region_id)
         if patch:
-            patch.set_facecolor(color)  # Colored fill
-            patch.set_edgecolor(color)  # Matching edge
-            patch.set_linewidth(1)  # Normal edge width
-            patch.set_alpha(0.7)  # Slight transparency for elegance
+            patch.set_facecolor("none")  # No fill
+            patch.set_edgecolor(color)  # Colored edge
+            patch.set_linewidth(3)  # Thicker edge for visibility
+            patch.set_alpha(1.0)
 
     # Handle overlap regions with subtle patterns/colors
     # Three-way overlap (ensemble) - keep GREEN
