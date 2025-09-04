@@ -55,27 +55,37 @@ def create_complementarity_analysis():
         ax=ax,
     )
 
-    # Use project colors only for individual regions, remove colors from overlaps
-    colors = {
+    # Color individual regions with project colors - edges only, no fill
+    individual_colors = {
         "100": BLUE,  # Group Top Frac only
         "010": ORANGE,  # Agreement Ratio only
         "001": PURPLE,  # Entropy Freq only
-        # Remove colors from overlaps - they'll be default/white
     }
 
-    for region_id, color in colors.items():
+    for region_id, color in individual_colors.items():
         patch = venn.get_patch_by_id(region_id)
         if patch:
-            patch.set_color(color)
-            patch.set_alpha(0.9)
+            patch.set_facecolor("none")  # No fill
+            patch.set_edgecolor(color)  # Colored edge
+            patch.set_linewidth(3)  # Thicker edge for visibility
+            patch.set_alpha(1.0)
 
-    # Make overlap regions white/transparent
-    overlap_regions = ["110", "101", "011", "111"]
-    for region_id in overlap_regions:
+    # Handle overlap regions with subtle patterns/colors
+    # Three-way overlap (ensemble) - keep GREEN
+    patch_111 = venn.get_patch_by_id("111")
+    if patch_111:
+        patch_111.set_color(GREEN)
+        patch_111.set_alpha(0.9)
+
+    # Two-way overlaps - remove color/fill, keep transparent
+    two_way_overlaps = ["110", "101", "011"]  # Simplified list
+
+    for region_id in two_way_overlaps:
         patch = venn.get_patch_by_id(region_id)
         if patch:
-            patch.set_color("white")
-            patch.set_alpha(0.3)
+            patch.set_facecolor("none")  # No fill
+            patch.set_edgecolor("none")  # No edge
+            patch.set_alpha(0.0)  # Fully transparent
 
     # Remove axes and make clean
     ax.set_frame_on(False)
