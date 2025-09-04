@@ -58,7 +58,7 @@ if __name__ == "__main__":
     )
     # PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
-    WANDB_CONFIG = WandbConfig(tags=set(["baseline"]))
+    WANDB_CONFIG = WandbConfig(tags=set(["baseline", "dvts-v2"]))
     # WANDB_CONFIG = WandbConfig(tags=set(["fusion-baseline"]))
 
     # DATASET_CONFIG = DatasetConfig.from_subset_file(
