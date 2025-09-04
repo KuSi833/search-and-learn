@@ -5,6 +5,7 @@ Create uncertainty selection analysis figures from selection.txt data
 
 from pathlib import Path
 
+import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -55,7 +56,7 @@ def create_complementarity_analysis():
         ax=ax,
     )
 
-    # Color individual regions with project colors - edges only, no fill
+    # Color individual regions with project colors - both fill and edge
     individual_colors = {
         "100": BLUE,  # Group Top Frac only
         "010": ORANGE,  # Agreement Ratio only
@@ -65,10 +66,10 @@ def create_complementarity_analysis():
     for region_id, color in individual_colors.items():
         patch = venn.get_patch_by_id(region_id)
         if patch:
-            patch.set_facecolor("none")  # No fill
-            patch.set_edgecolor(color)  # Colored edge
-            patch.set_linewidth(3)  # Thicker edge for visibility
-            patch.set_alpha(1.0)
+            patch.set_facecolor(color)  # Colored fill
+            patch.set_edgecolor(color)  # Matching edge
+            patch.set_linewidth(1)  # Normal edge width
+            patch.set_alpha(0.7)  # Slight transparency for elegance
 
     # Handle overlap regions with subtle patterns/colors
     # Three-way overlap (ensemble) - keep GREEN
@@ -77,15 +78,30 @@ def create_complementarity_analysis():
         patch_111.set_color(GREEN)
         patch_111.set_alpha(0.9)
 
-    # Two-way overlaps - remove color/fill, keep transparent
-    two_way_overlaps = ["110", "101", "011"]  # Simplified list
+    # Two-way overlaps - subtle blend colors that suggest combination
+    two_way_overlaps = {
+        "110": (BLUE, ORANGE),  # Group Top Frac × Agreement Ratio
+        "101": (BLUE, PURPLE),  # Group Top Frac × Entropy Freq
+        "011": (ORANGE, PURPLE),  # Agreement Ratio × Entropy Freq
+    }
 
-    for region_id in two_way_overlaps:
+    def blend_colors(color1, color2, alpha=0.3):
+        """Create a subtle blended color from two parent colors"""
+
+        rgb1 = mcolors.to_rgb(color1)
+        rgb2 = mcolors.to_rgb(color2)
+        # Average the RGB values for a blend
+        blended = tuple((c1 + c2) / 2 for c1, c2 in zip(rgb1, rgb2))
+        return blended
+
+    for region_id, (color1, color2) in two_way_overlaps.items():
         patch = venn.get_patch_by_id(region_id)
         if patch:
-            patch.set_facecolor("none")  # No fill
-            patch.set_edgecolor("none")  # No edge
-            patch.set_alpha(0.0)  # Fully transparent
+            # Use subtle blended color
+            blended_color = blend_colors(color1, color2)
+            patch.set_facecolor(blended_color)
+            patch.set_alpha(0.4)  # Subtle transparency
+            patch.set_edgecolor("none")  # Clean edges
 
     # Remove axes and make clean
     ax.set_frame_on(False)
@@ -162,10 +178,10 @@ def create_ensemble_mechanism():
     ensemble_f1_score = f1[3]  # 0.663
     improvement = ((ensemble_f1_score - best_individual_f1) / best_individual_f1) * 100
 
-    # Add the "+18.6%" text without arrow - lower it to stay within border
+    # Add the "+18.6%" text without arrow - positioned higher
     ax2.text(
         3,
-        ensemble_f1_score + 0.015,  # Reduced from 0.03 to stay within plot
+        ensemble_f1_score + 0.022,  # Moved up from 0.015 to 0.025
         f"+{improvement:.1f}%",
         ha="center",
         va="bottom",
