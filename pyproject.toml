@@ -22,6 +22,8 @@ dependencies = [
   "word2number>=1.1",
   "scipy>=1.16.1",
   "scikit-learn>=1.7.1",
+  "matplotlib-venn>=1.1.2",
+  "seaborn>=0.13.2",
 ]
 
 description = "Add your description here"
