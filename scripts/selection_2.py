@@ -613,6 +613,179 @@ def get_selected_questions_fixed_count(
     return selected_indices
 
 
+def export_venn_diagram_data(
+    count: int,
+    metric_names: List[str],
+    selected_by_metric: Dict[str, set],
+    three_way_overlap: set,
+    overlaps: Dict,
+):
+    """Export detailed Venn diagram data broken down by true/false predictions."""
+    console = Console()
+
+    console.print(
+        f"\n[bold green]═══ VENN DIAGRAM DATA EXPORT (N={count}) ═══[/bold green]"
+    )
+    console.print("Detailed breakdown for True/False prediction overlaps:\n")
+
+    # Get the three metrics (assuming order: A, B, C)
+    metric_A, metric_B, metric_C = metric_names[0], metric_names[1], metric_names[2]
+    set_A, set_B, set_C = (
+        selected_by_metric[metric_A],
+        selected_by_metric[metric_B],
+        selected_by_metric[metric_C],
+    )
+
+    # Calculate all 7 Venn diagram regions
+    # Three-way overlap (111)
+    ABC = three_way_overlap
+
+    # Two-way overlaps only (110, 101, 011)
+    AB_only = (set_A & set_B) - set_C  # A∩B - C
+    AC_only = (set_A & set_C) - set_B  # A∩C - B
+    BC_only = (set_B & set_C) - set_A  # B∩C - A
+
+    # Individual only (100, 010, 001)
+    A_only = set_A - set_B - set_C  # A - B - C
+    B_only = set_B - set_A - set_C  # B - A - C
+    C_only = set_C - set_A - set_B  # C - A - B
+
+    regions = {
+        "Three-way (ABC)": ABC,
+        f"{metric_A} ∩ {metric_B} only": AB_only,
+        f"{metric_A} ∩ {metric_C} only": AC_only,
+        f"{metric_B} ∩ {metric_C} only": BC_only,
+        f"{metric_A} only": A_only,
+        f"{metric_B} only": B_only,
+        f"{metric_C} only": C_only,
+    }
+
+    console.print(f"[bold]Metrics:[/bold] A={metric_A}, B={metric_B}, C={metric_C}")
+    console.print(f"[bold]Selection Count:[/bold] {count} each\n")
+
+    # Create detailed breakdown table
+    breakdown_table = Table(
+        title=f"Venn Diagram Regions Breakdown (N={count})",
+        show_header=True,
+        header_style="bold magenta",
+    )
+
+    breakdown_table.add_column("Region", style="cyan", no_wrap=True)
+    breakdown_table.add_column("Total", justify="right", style="blue")
+    breakdown_table.add_column("True Pred", justify="right", style="green")
+    breakdown_table.add_column("False Pred", justify="right", style="red")
+    breakdown_table.add_column("True %", justify="right", style="bright_green")
+    breakdown_table.add_column("False %", justify="right", style="bright_red")
+
+    # Calculate breakdowns for each region
+    total_true_preds = 0
+    total_false_preds = 0
+
+    for region_name, question_set in regions.items():
+        total_count = len(question_set)
+        true_preds = len(
+            [q for q in question_set if q.startswith("incorrect_")]
+        )  # True predictions = correctly identified incorrect
+        false_preds = len(
+            [q for q in question_set if q.startswith("correct_")]
+        )  # False predictions = incorrectly identified correct
+
+        true_pct = (true_preds / total_count * 100) if total_count > 0 else 0
+        false_pct = (false_preds / total_count * 100) if total_count > 0 else 0
+
+        total_true_preds += true_preds
+        total_false_preds += false_preds
+
+        breakdown_table.add_row(
+            region_name,
+            str(total_count),
+            str(true_preds),
+            str(false_preds),
+            f"{true_pct:.1f}%",
+            f"{false_pct:.1f}%",
+        )
+
+    console.print(breakdown_table)
+
+    # Summary statistics
+    console.print(f"\n[bold]Summary for N={count}:[/bold]")
+    console.print(f"• Total True Predictions: [green]{total_true_preds}[/green]")
+    console.print(f"• Total False Predictions: [red]{total_false_preds}[/red]")
+    console.print(
+        f"• True/False Ratio: [yellow]{total_true_preds / total_false_preds:.2f}[/yellow]"
+        if total_false_preds > 0
+        else "• True/False Ratio: [yellow]∞[/yellow]"
+    )
+
+    # Three-way overlap analysis
+    three_way_true = len([q for q in ABC if q.startswith("incorrect_")])
+    three_way_false = len([q for q in ABC if q.startswith("correct_")])
+    three_way_total = len(ABC)
+
+    if three_way_total > 0:
+        console.print(f"\n[bold]Three-way Overlap Analysis:[/bold]")
+        console.print(f"• Total questions: [blue]{three_way_total}[/blue]")
+        console.print(
+            f"• True predictions: [green]{three_way_true}[/green] ({three_way_true / three_way_total * 100:.1f}%)"
+        )
+        console.print(
+            f"• False predictions: [red]{three_way_false}[/red] ({three_way_false / three_way_total * 100:.1f}%)"
+        )
+        console.print(
+            f"• Three-way True/False ratio: [yellow]{three_way_true / three_way_false:.2f}[/yellow]"
+            if three_way_false > 0
+            else "• Three-way True/False ratio: [yellow]∞[/yellow]"
+        )
+
+    # Raw data for copy-paste into visualization script
+    console.print(f"\n[bold cyan]RAW DATA FOR VENN DIAGRAM (N={count}):[/bold cyan]")
+    console.print("[dim]# Copy this data into your visualization script[/dim]")
+    console.print(f"# Count: {count}")
+    console.print(f"# Metrics: {metric_A}, {metric_B}, {metric_C}")
+    console.print("")
+    console.print("# True predictions (correctly identified uncertain)")
+    console.print(f"true_ABC = {three_way_true}  # All three methods")
+    console.print(
+        f"true_AB_only = {len([q for q in AB_only if q.startswith('incorrect_')])}  # {metric_A} ∩ {metric_B} only"
+    )
+    console.print(
+        f"true_AC_only = {len([q for q in AC_only if q.startswith('incorrect_')])}  # {metric_A} ∩ {metric_C} only"
+    )
+    console.print(
+        f"true_BC_only = {len([q for q in BC_only if q.startswith('incorrect_')])}  # {metric_B} ∩ {metric_C} only"
+    )
+    console.print(
+        f"true_A_only = {len([q for q in A_only if q.startswith('incorrect_')])}  # {metric_A} only"
+    )
+    console.print(
+        f"true_B_only = {len([q for q in B_only if q.startswith('incorrect_')])}  # {metric_B} only"
+    )
+    console.print(
+        f"true_C_only = {len([q for q in C_only if q.startswith('incorrect_')])}  # {metric_C} only"
+    )
+    console.print("")
+    console.print("# False predictions (incorrectly identified uncertain)")
+    console.print(f"false_ABC = {three_way_false}  # All three methods")
+    console.print(
+        f"false_AB_only = {len([q for q in AB_only if q.startswith('correct_')])}  # {metric_A} ∩ {metric_B} only"
+    )
+    console.print(
+        f"false_AC_only = {len([q for q in AC_only if q.startswith('correct_')])}  # {metric_A} ∩ {metric_C} only"
+    )
+    console.print(
+        f"false_BC_only = {len([q for q in BC_only if q.startswith('correct_')])}  # {metric_B} ∩ {metric_C} only"
+    )
+    console.print(
+        f"false_A_only = {len([q for q in A_only if q.startswith('correct_')])}  # {metric_A} only"
+    )
+    console.print(
+        f"false_B_only = {len([q for q in B_only if q.startswith('correct_')])}  # {metric_B} only"
+    )
+    console.print(
+        f"false_C_only = {len([q for q in C_only if q.startswith('correct_')])}  # {metric_C} only"
+    )
+
+
 def analyze_ensemble_potential(
     correct_data: Dict[str, List[float]],
     incorrect_data: Dict[str, List[float]],
@@ -938,6 +1111,11 @@ def analyze_ensemble_potential_fixed_count(
             console.print(
                 f"• 3-way overlap precision: [bright_blue]{incorrect_in_overlap / len(three_way_overlap) * 100:.1f}%[/bright_blue]"
             )
+
+        # Export detailed Venn diagram data
+        export_venn_diagram_data(
+            count, metric_names, selected_by_metric, three_way_overlap, overlaps
+        )
 
     # Compare ensemble vs individual metrics with fixed count
     compare_ensemble_vs_individual_fixed_count(

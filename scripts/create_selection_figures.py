@@ -7,7 +7,6 @@ from pathlib import Path
 
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
-import numpy as np
 import seaborn as sns
 from matplotlib_venn import venn3
 
@@ -52,7 +51,7 @@ def create_complementarity_analysis():
     # Create clean Venn diagram
     venn = venn3(
         subsets=(A_only, B_only, AB_only, C_only, AC_only, BC_only, ABC),
-        set_labels=("Group Top Frac", "Agreement Ratio", "Entropy Freq"),
+        set_labels=("Agreement Ratio", "Group Top Frac", "Prm Margin"),
         ax=ax,
     )
 
@@ -66,17 +65,30 @@ def create_complementarity_analysis():
     for region_id, color in individual_colors.items():
         patch = venn.get_patch_by_id(region_id)
         if patch:
-            patch.set_facecolor("none")  # No fill
-            patch.set_edgecolor(color)  # Colored edge
-            patch.set_linewidth(3)  # Thicker edge for visibility
+            patch.set_facecolor(color)  # No fill
+            # patch.set_edgecolor(color)  # Colored edge
+            patch.set_linewidth(1)  # Thicker edge for visibility
             patch.set_alpha(1.0)
 
     # Handle overlap regions with subtle patterns/colors
     # Three-way overlap (ensemble) - keep GREEN
+    def blend_colors(color1, color2, alpha=0.3):
+        """Create a subtle blended color from two parent colors"""
+
+        rgb1 = mcolors.to_rgb(color1)
+        rgb2 = mcolors.to_rgb(color2)
+        # Average the RGB values for a blend
+        blended = (
+            (rgb1[0] + rgb2[0]) / 2,
+            (rgb1[1] + rgb2[1]) / 2,
+            (rgb1[2] + rgb2[2]) / 2,
+        )
+        return blended
+
     patch_111 = venn.get_patch_by_id("111")
     if patch_111:
-        patch_111.set_color(GREEN)
-        patch_111.set_alpha(0.9)
+        patch_111.set_color(GOLD)
+        patch_111.set_alpha(0.6)
 
     # Two-way overlaps - subtle blend colors that suggest combination
     two_way_overlaps = {
@@ -84,15 +96,6 @@ def create_complementarity_analysis():
         "101": (BLUE, PURPLE),  # Group Top Frac × Entropy Freq
         "011": (ORANGE, PURPLE),  # Agreement Ratio × Entropy Freq
     }
-
-    def blend_colors(color1, color2, alpha=0.3):
-        """Create a subtle blended color from two parent colors"""
-
-        rgb1 = mcolors.to_rgb(color1)
-        rgb2 = mcolors.to_rgb(color2)
-        # Average the RGB values for a blend
-        blended = tuple((c1 + c2) / 2 for c1, c2 in zip(rgb1, rgb2))
-        return blended
 
     for region_id, (color1, color2) in two_way_overlaps.items():
         patch = venn.get_patch_by_id(region_id)
@@ -112,6 +115,152 @@ def create_complementarity_analysis():
     )
     plt.close()
     print("✓ Created complementarity_analysis.png")
+
+
+def create_true_false_overlap():
+    """
+    Figure 2: Side-by-side Venn diagrams showing overlap of True and False predictions
+    Shows how different methods complement each other in capturing correct vs incorrect uncertain questions
+    """
+    # Create figure with two subplots side by side
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+
+    # Data from ven.txt - N=75 with original metrics (ALL regions populated!)
+    # Metrics: A=group_top_frac, B=agreement_ratio, C=prm_margin
+    # This dataset has all regions populated with meaningful numbers
+
+    # True predictions (correctly identified uncertain)
+    true_ABC = 7  # All three methods - 87.5% accuracy
+    true_AB_only = 33  # group_top_frac ∩ agreement_ratio only - 86.8% accuracy
+    true_AC_only = 3  # group_top_frac ∩ prm_margin only - 100.0% accuracy!
+    true_BC_only = 21  # agreement_ratio ∩ prm_margin only - 80.8% accuracy
+    true_A_only = 25  # group_top_frac only - 96.2% accuracy
+    true_B_only = 1  # agreement_ratio only - 33.3% accuracy
+    true_C_only = 27  # prm_margin only - 71.1% accuracy
+
+    # False predictions (incorrectly identified uncertain)
+    false_ABC = 1  # All three methods - Only 1 false positive!
+    false_AB_only = 5  # group_top_frac ∩ agreement_ratio only
+    false_AC_only = 0  # group_top_frac ∩ prm_margin only - Perfect!
+    false_BC_only = 5  # agreement_ratio ∩ prm_margin only
+    false_A_only = 4  # group_top_frac only
+    false_B_only = 6  # agreement_ratio only
+    false_C_only = 7  # prm_margin only
+
+    # Create Venn diagram for True predictions
+    venn_true = venn3(
+        subsets=(
+            true_A_only,
+            true_B_only,
+            true_AB_only,
+            true_C_only,
+            true_AC_only,
+            true_BC_only,
+            true_ABC,
+        ),
+        set_labels=("Group Top Frac", "Agreement Ratio", "PRM Margin"),
+        ax=ax1,
+    )
+
+    # Color the True predictions Venn diagram with green tones
+    true_colors = {
+        "100": GREEN,  # Group Top Frac only
+        "010": GREEN,  # Agreement Ratio only
+        "001": GREEN,  # PRM Margin only
+        "110": GREEN,  # Group Top Frac × Agreement Ratio
+        "101": GREEN,  # Group Top Frac × PRM Margin
+        "011": GREEN,  # Agreement Ratio × PRM Margin
+        "111": GREEN,  # All three methods
+    }
+
+    # Apply colors to True predictions with varying alpha for different regions
+    alphas_true = {
+        "100": 0.3,
+        "010": 0.3,
+        "001": 0.3,  # Individual methods - light
+        "110": 0.5,
+        "101": 0.5,
+        "011": 0.5,  # Two-way overlaps - medium
+        "111": 0.8,  # Three-way overlap - strong
+    }
+
+    for region_id, color in true_colors.items():
+        patch = venn_true.get_patch_by_id(region_id)
+        if patch:
+            patch.set_facecolor(color)
+            patch.set_alpha(alphas_true.get(region_id, 0.5))
+            patch.set_edgecolor("white")
+            patch.set_linewidth(1)
+
+    ax1.set_title(
+        "True Predictions Overlap",
+        fontsize=12,
+        fontweight="bold",
+        color=GREEN,
+        pad=20,
+    )
+
+    # Create Venn diagram for False predictions
+    venn_false = venn3(
+        subsets=(
+            false_A_only,
+            false_B_only,
+            false_AB_only,
+            false_C_only,
+            false_AC_only,
+            false_BC_only,
+            false_ABC,
+        ),
+        set_labels=("Group Top Frac", "Agreement Ratio", "PRM Margin"),
+        ax=ax2,
+    )
+
+    # Color the False predictions Venn diagram with red tones
+    false_colors = {
+        "100": RED,  # Group Top Frac only
+        "010": RED,  # Agreement Ratio only
+        "001": RED,  # PRM Margin only
+        "110": RED,  # Group Top Frac × Agreement Ratio
+        "101": RED,  # Group Top Frac × PRM Margin
+        "011": RED,  # Agreement Ratio × PRM Margin
+        "111": RED,  # All three methods
+    }
+
+    # Apply colors to False predictions with varying alpha for different regions
+    alphas_false = {
+        "100": 0.3,
+        "010": 0.3,
+        "001": 0.3,  # Individual methods - light
+        "110": 0.5,
+        "101": 0.5,
+        "011": 0.5,  # Two-way overlaps - medium
+        "111": 0.8,  # Three-way overlap - strong
+    }
+
+    for region_id, color in false_colors.items():
+        patch = venn_false.get_patch_by_id(region_id)
+        if patch:
+            patch.set_facecolor(color)
+            patch.set_alpha(alphas_false.get(region_id, 0.5))
+            patch.set_edgecolor("white")
+            patch.set_linewidth(1)
+
+    ax2.set_title(
+        "False Predictions Overlap",
+        fontsize=12,
+        fontweight="bold",
+        color=RED,
+        pad=20,
+    )
+
+    # Clean up both axes
+    ax1.set_frame_on(False)
+    ax2.set_frame_on(False)
+
+    plt.tight_layout()
+    plt.savefig(output_dir / "true_false_overlap.png", dpi=300, bbox_inches="tight")
+    plt.close()
+    print("✓ Created true_false_overlap.png")
 
 
 def create_ensemble_mechanism():
@@ -155,7 +304,7 @@ def create_ensemble_mechanism():
     ax1.grid(True, alpha=0.3)
 
     # 2. F1 Score comparison - focus on N=100 results
-    bars = ax2.bar(methods, f1, color=colors, alpha=0.9, edgecolor="white", linewidth=1)
+    ax2.bar(methods, f1, color=colors, alpha=0.9, edgecolor="white", linewidth=1)
     ax2.set_ylabel("F1 Score", fontsize=12)
     ax2.set_ylim(0.4, 0.7)
 
@@ -205,9 +354,13 @@ if __name__ == "__main__":
     print("Creating uncertainty selection analysis figures...")
 
     create_complementarity_analysis()
+    create_true_false_overlap()
     create_ensemble_mechanism()
 
     print(f"\nAll figures saved to: {output_dir}")
     print("\nFigure locations:")
     print("1. complementarity_analysis.png - Venn diagram showing metric overlap")
-    print("2. ensemble_mechanism.png - Precision-recall and F1 score comparison")
+    print(
+        "2. true_false_overlap.png - Side-by-side Venn diagrams for True/False predictions"
+    )
+    print("3. ensemble_mechanism.png - Precision-recall and F1 score comparison")
