@@ -305,9 +305,8 @@ def plot_accuracy_vs_latency(
     for idx, (method, items) in enumerate(grouped.items()):
         color = color_palette.get(method, fallback_cycle[idx % len(fallback_cycle)])
 
-        accuracies = []
-        latencies = []
-        n_values = []
+        # Collect data for this method to draw connecting lines
+        method_data = []
 
         for item in items:
             if item.runtimes is None:
@@ -325,36 +324,43 @@ def plot_accuracy_vs_latency(
             ]
             latency = np.mean(latencies_per_problem)
 
-            accuracies.append(acc)
-            latencies.append(latency)
-            n_values.append(_numeric_to_n(_parse_n_to_numeric(item.n)))
-            all_points.append(
-                (latency, acc, method, _numeric_to_n(_parse_n_to_numeric(item.n)))
+            n_value = _numeric_to_n(_parse_n_to_numeric(item.n))
+            marker = marker_map.get(n_value, "D")
+
+            # Plot scatter points
+            ax.scatter(
+                latency,
+                acc,
+                color=color,
+                marker=marker,
+                s=80,
+                alpha=0.8,
+                label=f"{method} (n={n_value})",
+                edgecolors="white",
+                linewidth=1,
+                zorder=2,  # Above the lines
             )
 
-        if not accuracies:  # Skip if no valid data
-            continue
+            # Store data for connecting lines
+            method_data.append((n_value, latency, acc))
+            all_points.append((latency, acc, method, n_value))
 
-        # Plot points for each n value
-        for n in set(n_values):
-            n_mask = [nv == n for nv in n_values]
-            n_accs = [acc for acc, mask in zip(accuracies, n_mask) if mask]
-            n_lats = [lat for lat, mask in zip(latencies, n_mask) if mask]
+        # Connect points of the same method with lines
+        if len(method_data) > 1:
+            # Sort by n value for proper line connection
+            method_data.sort(key=lambda x: x[0])
+            x_coords = [point[1] for point in method_data]  # latency
+            y_coords = [point[2] for point in method_data]  # accuracy
 
-            if n_accs:
-                marker = marker_map.get(n, "D")
-
-                ax.scatter(
-                    n_lats,
-                    n_accs,
-                    color=color,
-                    marker=marker,
-                    s=80,
-                    alpha=0.8,
-                    label=f"{method} (n={n})",
-                    edgecolors="white",
-                    linewidth=1,
-                )
+            ax.plot(
+                x_coords,
+                y_coords,
+                color=color,
+                linestyle="-",
+                alpha=0.6,
+                linewidth=2,
+                zorder=1,  # Behind the points
+            )
 
     # Customize axes
     ax.set_xlabel("Average Latency per Problem (s)", fontsize=12)
@@ -371,13 +377,6 @@ def plot_accuracy_vs_latency(
 
     # Create legend
     ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", frameon=True, fontsize=9)
-
-    plt.title(
-        "Accuracy vs Computational Cost Trade-off",
-        fontsize=14,
-        fontweight="bold",
-        pad=20,
-    )
     plt.tight_layout()
 
     # Save the plot
