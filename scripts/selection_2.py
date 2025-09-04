@@ -320,6 +320,497 @@ def print_coverage_analysis_table(
     )
 
 
+def get_selected_questions(
+    metric: str,
+    correct_data: Dict[str, List[float]],
+    incorrect_data: Dict[str, List[float]],
+    all_data: Dict[str, List[float]],
+    selection_rate: float,
+) -> set:
+    """Get the set of question indices selected by a metric at a given selection rate."""
+    # Calculate threshold for this selection rate
+    if is_low_uncertainty_metric(metric, correct_data, incorrect_data):
+        threshold = np.percentile(all_data[metric], selection_rate)
+        # Select values <= threshold (uncertain)
+        selected_indices = set()
+        idx = 0
+        for val in correct_data[metric]:
+            if val <= threshold:
+                selected_indices.add(f"correct_{idx}")
+            idx += 1
+        idx = 0
+        for val in incorrect_data[metric]:
+            if val <= threshold:
+                selected_indices.add(f"incorrect_{idx}")
+            idx += 1
+    else:
+        threshold = np.percentile(all_data[metric], 100 - selection_rate)
+        # Select values >= threshold (uncertain)
+        selected_indices = set()
+        idx = 0
+        for val in correct_data[metric]:
+            if val >= threshold:
+                selected_indices.add(f"correct_{idx}")
+            idx += 1
+        idx = 0
+        for val in incorrect_data[metric]:
+            if val >= threshold:
+                selected_indices.add(f"incorrect_{idx}")
+            idx += 1
+
+    return selected_indices
+
+
+def analyze_ensemble_potential(
+    correct_data: Dict[str, List[float]],
+    incorrect_data: Dict[str, List[float]],
+    all_data: Dict[str, List[float]],
+):
+    """Analyze overlap between top 3 metrics to determine ensemble potential."""
+    console = Console()
+
+    # Get top 3 metrics by F1 score at 10%
+    results_10 = calculate_f1_score_for_coverage(
+        correct_data, incorrect_data, all_data, 10
+    )
+    metrics_with_f1 = [
+        (metric, results_10[metric]["f1"]) for metric in results_10.keys()
+    ]
+    top_3_metrics = sorted(metrics_with_f1, key=lambda x: x[1], reverse=True)[:3]
+
+    console.print("\n[bold cyan]ENSEMBLE ANALYSIS - TOP 3 METRICS[/bold cyan]")
+    console.print("Analyzing overlap between top 3 performing metrics:\n")
+
+    for i, (metric, f1_score) in enumerate(top_3_metrics, 1):
+        console.print(
+            f"{i}. [cyan]{metric.replace('_', ' ').title()}[/cyan] (F1: {f1_score:.3f})"
+        )
+
+    # Analyze at 10% and 15% selection rates
+    selection_rates = [10, 15]
+
+    for rate in selection_rates:
+        console.print(
+            f"\n[bold yellow]═══ {rate}% Selection Rate Analysis ═══[/bold yellow]"
+        )
+
+        # Get selected questions for each metric
+        selected_by_metric = {}
+        for metric, _ in top_3_metrics:
+            selected_by_metric[metric] = get_selected_questions(
+                metric, correct_data, incorrect_data, all_data, rate
+            )
+
+        # Calculate pairwise overlaps
+        metric_names = [metric for metric, _ in top_3_metrics]
+
+        # Create overlap table
+        overlap_table = Table(
+            title=f"Pairwise Overlap at {rate}% Selection",
+            show_header=True,
+            header_style="bold magenta",
+        )
+        overlap_table.add_column("Metric Pair", style="cyan")
+        overlap_table.add_column("Overlap Count", justify="right", style="green")
+        overlap_table.add_column("Overlap %", justify="right", style="yellow")
+        overlap_table.add_column("Union Count", justify="right", style="blue")
+        overlap_table.add_column(
+            "Jaccard Index", justify="right", style="bright_magenta"
+        )
+
+        total_questions = len(correct_data[metric_names[0]]) + len(
+            incorrect_data[metric_names[0]]
+        )
+        expected_selected = int(total_questions * rate / 100)
+
+        # Calculate all pairwise overlaps
+        overlaps = {}
+        for i in range(len(metric_names)):
+            for j in range(i + 1, len(metric_names)):
+                metric_a, metric_b = metric_names[i], metric_names[j]
+                set_a = selected_by_metric[metric_a]
+                set_b = selected_by_metric[metric_b]
+
+                overlap = set_a & set_b
+                union = set_a | set_b
+                overlap_count = len(overlap)
+                union_count = len(union)
+                overlap_pct = (
+                    (overlap_count / expected_selected) * 100
+                    if expected_selected > 0
+                    else 0
+                )
+                jaccard = overlap_count / union_count if union_count > 0 else 0
+
+                overlaps[(metric_a, metric_b)] = {
+                    "overlap_count": overlap_count,
+                    "overlap_pct": overlap_pct,
+                    "union_count": union_count,
+                    "jaccard": jaccard,
+                }
+
+                # Color code Jaccard index
+                if jaccard >= 0.7:
+                    jaccard_style = "[red]"  # High overlap - bad for ensemble
+                elif jaccard >= 0.5:
+                    jaccard_style = "[yellow]"  # Medium overlap
+                else:
+                    jaccard_style = "[green]"  # Low overlap - good for ensemble
+
+                pair_name = f"{metric_a.replace('_', ' ').title()[:12]} × {metric_b.replace('_', ' ').title()[:12]}"
+
+                overlap_table.add_row(
+                    pair_name,
+                    str(overlap_count),
+                    f"{overlap_pct:.1f}%",
+                    str(union_count),
+                    f"{jaccard_style}{jaccard:.3f}[/{jaccard_style.strip('[]')}]",
+                )
+
+        console.print(overlap_table)
+
+        # Calculate three-way overlap
+        set_all = [selected_by_metric[metric] for metric, _ in top_3_metrics]
+        three_way_overlap = set_all[0] & set_all[1] & set_all[2]
+        three_way_union = set_all[0] | set_all[1] | set_all[2]
+
+        console.print("\n[bold]Three-way Analysis:[/bold]")
+        console.print(
+            f"• Questions selected by ALL 3 metrics: [green]{len(three_way_overlap)}[/green]"
+        )
+        console.print(
+            f"• Questions selected by ANY metric: [blue]{len(three_way_union)}[/blue]"
+        )
+        console.print(
+            f"• Three-way overlap rate: [yellow]{len(three_way_overlap) / expected_selected * 100:.1f}%[/yellow]"
+        )
+
+        # Analyze incorrect vs correct in overlaps
+        incorrect_in_overlap = len(
+            [q for q in three_way_overlap if q.startswith("incorrect_")]
+        )
+        correct_in_overlap = len(
+            [q for q in three_way_overlap if q.startswith("correct_")]
+        )
+
+        if len(three_way_overlap) > 0:
+            console.print(
+                f"• In 3-way overlap: [red]{incorrect_in_overlap}[/red] incorrect, [green]{correct_in_overlap}[/green] correct"
+            )
+            console.print(
+                f"• 3-way overlap precision: [bright_blue]{incorrect_in_overlap / len(three_way_overlap) * 100:.1f}%[/bright_blue]"
+            )
+
+    # Ensemble recommendation
+    console.print("\n[bold cyan]═══ ENSEMBLE RECOMMENDATION ═══[/bold cyan]")
+
+    # Calculate average Jaccard index across all pairs at both rates
+    all_jaccards = []
+    for rate in [10, 15]:
+        selected_by_metric = {}
+        for metric, _ in top_3_metrics:
+            selected_by_metric[metric] = get_selected_questions(
+                metric, correct_data, incorrect_data, all_data, rate
+            )
+
+        for i in range(len(metric_names)):
+            for j in range(i + 1, len(metric_names)):
+                metric_a, metric_b = metric_names[i], metric_names[j]
+                set_a = selected_by_metric[metric_a]
+                set_b = selected_by_metric[metric_b]
+                overlap = len(set_a & set_b)
+                union = len(set_a | set_b)
+                jaccard = overlap / union if union > 0 else 0
+                all_jaccards.append(jaccard)
+
+    avg_jaccard = np.mean(all_jaccards)
+
+    if avg_jaccard < 0.5:
+        recommendation = "[green]HIGHLY RECOMMENDED[/green]"
+        reason = "Low overlap suggests metrics capture different uncertainty patterns"
+    elif avg_jaccard < 0.7:
+        recommendation = "[yellow]POTENTIALLY BENEFICIAL[/yellow]"
+        reason = "Moderate overlap - ensemble may provide some benefit"
+    else:
+        recommendation = "[red]NOT RECOMMENDED[/red]"
+        reason = "High overlap suggests metrics are redundant"
+
+    console.print(
+        f"Average Jaccard Index: [bright_blue]{avg_jaccard:.3f}[/bright_blue]"
+    )
+    console.print(f"Ensemble Recommendation: {recommendation}")
+    console.print(f"Reasoning: {reason}")
+
+    console.print(
+        "\n[dim]Note: Jaccard Index measures overlap (intersection/union). Lower values indicate better ensemble potential.[/dim]"
+    )
+
+    # Compare ensemble vs individual metrics
+    compare_ensemble_vs_individual(
+        correct_data, incorrect_data, all_data, top_3_metrics
+    )
+
+
+def compare_ensemble_vs_individual(
+    correct_data: Dict[str, List[float]],
+    incorrect_data: Dict[str, List[float]],
+    all_data: Dict[str, List[float]],
+    top_3_metrics: List[tuple],
+):
+    """Compare individual metrics vs ensemble approaches at 10% selection rate."""
+    console = Console()
+
+    console.print("\n[bold cyan]═══ ENSEMBLE vs INDIVIDUAL COMPARISON ═══[/bold cyan]")
+    console.print(
+        "Comparing individual metrics with ensemble (OR logic) at 10% selection rate\n"
+    )
+
+    selection_rate = 10
+
+    # Get individual metric performance at 10%
+    individual_results = {}
+    selected_sets = {}
+
+    for metric, f1_score in top_3_metrics:
+        # Calculate individual performance
+        individual_results[metric] = calculate_f1_score_for_coverage(
+            correct_data, incorrect_data, all_data, selection_rate
+        )[metric]
+
+        # Get selected questions for this metric
+        selected_sets[metric] = get_selected_questions(
+            metric, correct_data, incorrect_data, all_data, selection_rate
+        )
+
+    # Calculate ensemble performance (OR logic - select if ANY metric flags as uncertain)
+    ensemble_selected = set()
+    for metric_set in selected_sets.values():
+        ensemble_selected |= metric_set
+
+    # Debug: Show individual selections vs ensemble
+    console.print("\n[dim]DEBUG: Individual metric selections at 10%:[/dim]")
+    for i, (metric, _) in enumerate(top_3_metrics):
+        selected_count = len(selected_sets[metric])
+        console.print(f"[dim]• {metric}: {selected_count} questions[/dim]")
+
+    console.print(f"[dim]• Ensemble (OR): {len(ensemble_selected)} questions[/dim]")
+
+    # Calculate overlaps for debugging
+    metric_names = [metric for metric, _ in top_3_metrics]
+    if len(metric_names) >= 2:
+        overlap_01 = len(
+            selected_sets[metric_names[0]] & selected_sets[metric_names[1]]
+        )
+        console.print(
+            f"[dim]• Overlap {metric_names[0][:8]} & {metric_names[1][:8]}: {overlap_01}[/dim]"
+        )
+    if len(metric_names) >= 3:
+        overlap_02 = len(
+            selected_sets[metric_names[0]] & selected_sets[metric_names[2]]
+        )
+        overlap_12 = len(
+            selected_sets[metric_names[1]] & selected_sets[metric_names[2]]
+        )
+        three_way = len(
+            selected_sets[metric_names[0]]
+            & selected_sets[metric_names[1]]
+            & selected_sets[metric_names[2]]
+        )
+        console.print(
+            f"[dim]• Overlap {metric_names[0][:8]} & {metric_names[2][:8]}: {overlap_02}[/dim]"
+        )
+        console.print(
+            f"[dim]• Overlap {metric_names[1][:8]} & {metric_names[2][:8]}: {overlap_12}[/dim]"
+        )
+        console.print(f"[dim]• Three-way overlap: {three_way}[/dim]")
+
+        # Check if metrics are selecting identical sets
+        if selected_sets[metric_names[0]] == selected_sets[metric_names[1]]:
+            console.print(
+                f"[dim red]WARNING: {metric_names[0]} and {metric_names[1]} select IDENTICAL questions![/dim red]"
+            )
+        if selected_sets[metric_names[0]] == selected_sets[metric_names[2]]:
+            console.print(
+                f"[dim red]WARNING: {metric_names[0]} and {metric_names[2]} select IDENTICAL questions![/dim red]"
+            )
+        if selected_sets[metric_names[1]] == selected_sets[metric_names[2]]:
+            console.print(
+                f"[dim red]WARNING: {metric_names[1]} and {metric_names[2]} select IDENTICAL questions![/dim red]"
+            )
+
+        # Show some examples of unique selections
+        unique_to_0 = (
+            selected_sets[metric_names[0]]
+            - selected_sets[metric_names[1]]
+            - selected_sets[metric_names[2]]
+        )
+        unique_to_1 = (
+            selected_sets[metric_names[1]]
+            - selected_sets[metric_names[0]]
+            - selected_sets[metric_names[2]]
+        )
+        unique_to_2 = (
+            selected_sets[metric_names[2]]
+            - selected_sets[metric_names[0]]
+            - selected_sets[metric_names[1]]
+        )
+
+        console.print(
+            f"[dim]• Unique to {metric_names[0][:8]}: {len(unique_to_0)}[/dim]"
+        )
+        console.print(
+            f"[dim]• Unique to {metric_names[1][:8]}: {len(unique_to_1)}[/dim]"
+        )
+        console.print(
+            f"[dim]• Unique to {metric_names[2][:8]}: {len(unique_to_2)}[/dim]"
+        )
+
+    # Calculate ensemble confusion matrix
+    total_correct = len(correct_data[list(correct_data.keys())[0]])
+    total_incorrect = len(incorrect_data[list(incorrect_data.keys())[0]])
+
+    # Count correct/incorrect in ensemble selection
+    ensemble_correct_selected = len(
+        [q for q in ensemble_selected if q.startswith("correct_")]
+    )
+    ensemble_incorrect_selected = len(
+        [q for q in ensemble_selected if q.startswith("incorrect_")]
+    )
+
+    # Calculate ensemble metrics
+    tp = ensemble_incorrect_selected  # True positives: incorrect answers flagged as uncertain
+    fp = ensemble_correct_selected  # False positives: correct answers flagged as uncertain
+    fn = (
+        total_incorrect - ensemble_incorrect_selected
+    )  # False negatives: incorrect answers not flagged
+
+    ensemble_precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    ensemble_recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    ensemble_f1 = (
+        2
+        * (ensemble_precision * ensemble_recall)
+        / (ensemble_precision + ensemble_recall)
+        if (ensemble_precision + ensemble_recall) > 0
+        else 0.0
+    )
+
+    # Create comparison table
+    comparison_table = Table(
+        title="Individual vs Ensemble Performance Comparison (10% Selection Rate)",
+        show_header=True,
+        header_style="bold magenta",
+    )
+
+    comparison_table.add_column("Method", style="cyan", no_wrap=True)
+    comparison_table.add_column("Selected", justify="right", style="blue")
+    comparison_table.add_column("Corr.Sel", justify="right", style="red")
+    comparison_table.add_column("Incor.Sel", justify="right", style="green")
+    comparison_table.add_column("Precision", justify="right", style="bright_blue")
+    comparison_table.add_column("Recall", justify="right", style="bright_green")
+    comparison_table.add_column("F1", justify="right", style="bright_magenta")
+    comparison_table.add_column("Improvement", justify="right", style="yellow")
+
+    # Add individual metrics to table
+    baseline_f1 = 0
+    for i, (metric, _) in enumerate(top_3_metrics):
+        result = individual_results[metric]
+
+        # Color-code F1 scores
+        f1_value = result["f1"]
+        if f1_value >= 0.5:
+            f1_style = "[bright_green]"
+        elif f1_value >= 0.3:
+            f1_style = "[yellow]"
+        else:
+            f1_style = "[red]"
+
+        if i == 0:  # Use first metric as baseline
+            baseline_f1 = f1_value
+            improvement = "baseline"
+        else:
+            improvement = (
+                f"{((f1_value - baseline_f1) / baseline_f1 * 100):+.1f}%"
+                if baseline_f1 > 0
+                else "N/A"
+            )
+
+        comparison_table.add_row(
+            metric.replace("_", " ").title(),
+            str(result["total_selected"]),
+            str(result["fp"]),  # correct selected
+            str(result["tp"]),  # incorrect selected
+            f"{result['precision']:.3f}",
+            f"{result['recall']:.3f}",
+            f"{f1_style}{result['f1']:.3f}[/{f1_style.strip('[]')}]",
+            improvement,
+        )
+
+    # Add ensemble row
+    ensemble_f1_style = (
+        "[bright_green]"
+        if ensemble_f1 >= 0.5
+        else "[yellow]"
+        if ensemble_f1 >= 0.3
+        else "[red]"
+    )
+    ensemble_improvement = (
+        f"{((ensemble_f1 - baseline_f1) / baseline_f1 * 100):+.1f}%"
+        if baseline_f1 > 0
+        else "N/A"
+    )
+
+    comparison_table.add_row(
+        "[bold]Ensemble (OR)[/bold]",
+        str(len(ensemble_selected)),
+        str(ensemble_correct_selected),
+        str(ensemble_incorrect_selected),
+        f"{ensemble_precision:.3f}",
+        f"{ensemble_recall:.3f}",
+        f"{ensemble_f1_style}{ensemble_f1:.3f}[/{ensemble_f1_style.strip('[]')}]",
+        f"[bold]{ensemble_improvement}[/bold]",
+    )
+
+    console.print(comparison_table)
+
+    # Summary analysis
+    console.print("\n[bold]Ensemble Analysis Summary:[/bold]")
+    console.print(
+        f"• Ensemble selects [blue]{len(ensemble_selected)}[/blue] total questions ({len(ensemble_selected) / (total_correct + total_incorrect) * 100:.1f}% of dataset)"
+    )
+    console.print(
+        f"• Individual metrics select ~[blue]{individual_results[top_3_metrics[0][0]]['total_selected']}[/blue] questions each (~10% of dataset)"
+    )
+    console.print(
+        f"• Ensemble precision: [bright_blue]{ensemble_precision:.3f}[/bright_blue] vs best individual: [bright_blue]{max(r['precision'] for r in individual_results.values()):.3f}[/bright_blue]"
+    )
+    console.print(
+        f"• Ensemble recall: [bright_green]{ensemble_recall:.3f}[/bright_green] vs best individual: [bright_green]{max(r['recall'] for r in individual_results.values()):.3f}[/bright_green]"
+    )
+    console.print(
+        f"• Ensemble F1: [bright_magenta]{ensemble_f1:.3f}[/bright_magenta] vs best individual: [bright_magenta]{max(r['f1'] for r in individual_results.values()):.3f}[/bright_magenta]"
+    )
+
+    # Recommendation
+    best_individual_f1 = max(r["f1"] for r in individual_results.values())
+    f1_improvement = ensemble_f1 - best_individual_f1
+
+    if f1_improvement > 0.05:
+        recommendation = "[green]ENSEMBLE RECOMMENDED[/green]"
+        reason = f"Significant F1 improvement: +{f1_improvement:.3f}"
+    elif f1_improvement > 0.02:
+        recommendation = "[yellow]ENSEMBLE BENEFICIAL[/yellow]"
+        reason = f"Moderate F1 improvement: +{f1_improvement:.3f}"
+    elif f1_improvement > -0.02:
+        recommendation = "[yellow]MARGINAL BENEFIT[/yellow]"
+        reason = f"Small F1 change: {f1_improvement:+.3f}"
+    else:
+        recommendation = "[red]INDIVIDUAL BETTER[/red]"
+        reason = f"F1 decrease: {f1_improvement:+.3f}"
+
+    console.print(f"\n[bold]Final Recommendation:[/bold] {recommendation}")
+    console.print(f"[bold]Reasoning:[/bold] {reason}")
+
+
 def export_llm_readable_data(
     output_file: Path,
     run_ids: List[str],
@@ -575,6 +1066,9 @@ def analyze_and_plot(run_ids: List[str]) -> None:
 
     # Print comprehensive coverage analysis table
     print_coverage_analysis_table(all_correct_data, all_incorrect_data, all_data)
+
+    # Analyze ensemble potential with top 3 metrics
+    analyze_ensemble_potential(all_correct_data, all_incorrect_data, all_data)
 
 
 def create_cumulative_line_charts(

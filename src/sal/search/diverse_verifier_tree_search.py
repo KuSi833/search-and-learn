@@ -33,6 +33,17 @@ logger = logging.getLogger()
 def _dvts(
     batch_of_prompts: list[str], experiment_config: ExperimentConfig, llm: LLM, prm: PRM
 ):
+    sampling_params = SamplingParams(
+        temperature=experiment_config.search_config.temperature,
+        max_tokens=experiment_config.search_config.max_tokens,
+        top_p=experiment_config.search_config.top_p,
+        stop=[
+            "\n\n"
+        ],  # we consider that a step in the problem is indicated by a double newline
+        include_stop_str_in_output=True,
+        n=1,
+    )
+
     beams: list[Beam] = []
     for prompt in batch_of_prompts:
         for i in range(experiment_config.n_beams):
@@ -59,33 +70,63 @@ def _dvts(
         desc="Beam search iterations",
     ):
         # generation
-        gen_beams = [b for b in beams if not b.pruned and not b.completed]
+        gen_beams = [b for b in beams if not b.pruned]
         if len(gen_beams) == 0:
             break
 
-        # Enforce per-beam completion token budget (similar to beam_search)
-        max_new_tokens = int(experiment_config.search_config.max_tokens)
-        for b in gen_beams:
-            if b.completion_tokens >= max_new_tokens:
-                b.completed = True
-        gen_beams = [b for b in gen_beams if not b.completed]
-        if len(gen_beams) == 0:
-            break
-        remainings = [max_new_tokens - b.completion_tokens for b in gen_beams]
-        step_cap = int(max(1, min(remainings)))
+        # Check token limits before generation to avoid vLLM errors
+        tokenizer = llm.get_tokenizer()
+        max_context_length = 4096  # vLLM limit
+
+        # Calculate current token usage for each beam and adjust max_tokens accordingly
+        remaining_tokens = []
+        for beam in gen_beams:
+            # Build the conversation to get accurate token count
+            conv = build_conv(
+                beam.prompt, beam.current_text or "", experiment_config.system_prompt
+            )
+            continue_final_message = i > 0
+            add_generation_prompt = i == 0
+
+            if experiment_config.custom_chat_template is not None:
+                tokenizer.chat_template = experiment_config.custom_chat_template
+            templated_conv = tokenizer.apply_chat_template(
+                [conv],
+                add_generation_prompt=add_generation_prompt,
+                continue_final_message=continue_final_message,
+                tokenize=False,
+            )[0]
+
+            current_tokens = len(
+                tokenizer.encode(templated_conv, add_special_tokens=False)
+            )
+            remaining = max_context_length - current_tokens - 50  # Leave some buffer
+            remaining_tokens.append(max(1, remaining))
+
+        # Use the minimum remaining tokens to ensure no beam exceeds the limit
+        safe_max_tokens = min(remaining_tokens) if remaining_tokens else 1
+        if safe_max_tokens <= 1:
+            # If we're at the token limit, prune these beams and continue
+            for beam in gen_beams:
+                beam.pruned = True
+            continue
 
         if i == experiment_config.beam_search_config.num_iterations - 1:
             # last iteration, generate to EOS
             sampling_params = SamplingParams(
                 temperature=experiment_config.search_config.temperature,
-                max_tokens=experiment_config.search_config.max_tokens,
+                max_tokens=min(
+                    experiment_config.search_config.max_tokens, safe_max_tokens
+                ),
                 top_p=experiment_config.search_config.top_p,
                 n=1,
             )
         else:
             sampling_params = SamplingParams(
                 temperature=experiment_config.search_config.temperature,
-                max_tokens=experiment_config.search_config.max_tokens,
+                max_tokens=min(
+                    experiment_config.search_config.max_tokens, safe_max_tokens
+                ),
                 top_p=experiment_config.search_config.top_p,
                 stop=[
                     "\n\n"
@@ -93,9 +134,6 @@ def _dvts(
                 include_stop_str_in_output=True,
                 n=1,
             )
-
-        # Cap per-step generation to not exceed any beam's remaining budget
-        sampling_params.max_tokens = int(min(int(sampling_params.max_tokens), step_cap))
 
         convs = [
             build_conv(b.prompt, b.current_text, experiment_config.system_prompt)
@@ -153,8 +191,6 @@ def _dvts(
 
         all_scores = prm.score(prompts, completions)
 
-        # Get tokenizer for counting tokens
-        tokenizer = llm.get_tokenizer()
         for beam, scores in zip(gen_beams, all_scores, strict=True):
             if not beam.next_texts or not beam.stop_reasons:
                 beam.pruned = True
@@ -172,17 +208,9 @@ def _dvts(
                 [float(s)] if not isinstance(s, list) else s for s in scores
             ]
             beam.previous_text = beam.current_text
-
-            # Track token usage for the selected completion
-            next_piece = beam.next_texts[best_score_ind]
-            generated_token_count = len(
-                tokenizer.encode(next_piece, add_special_tokens=False)
-            )
-            beam.completion_tokens += generated_token_count
-
             current_text = beam.current_text or ""
-            beam.current_text = current_text + next_piece
-            beam.history.append(next_piece)
+            beam.current_text = current_text + beam.next_texts[best_score_ind]
+            beam.history.append(beam.next_texts[best_score_ind])
             selected_score = scores[best_score_ind]
             beam.best_scores = (
                 [float(selected_score)]
@@ -190,13 +218,11 @@ def _dvts(
                 else selected_score
             )
 
-            # Check completion conditions including token limit
             if (
-                next_piece == ""
+                beam.next_texts[best_score_ind] == ""
                 or beam.stop_reasons[best_score_ind] == "EOS"
-                or beam.completion_tokens >= max_new_tokens
             ):
-                # stopped on EOS or reached token limit, prune
+                # stopped on EOS, prune
                 beam.pruned = True
 
         # filter / prune
@@ -206,46 +232,36 @@ def _dvts(
 
     # we need to copy the results from the last iteration in to beam_width beams as otherwise we would only have n/m results
     output: list[Beam] = []
-    # Get tokenizer for final token calculations
-    tokenizer = llm.get_tokenizer()
     for beam in beams:
         for i in range(experiment_config.beam_search_config.beam_width):
-            # Calculate completion tokens for this specific beam output
-            if beam.next_texts and i < len(beam.next_texts):
-                next_text = beam.next_texts[i]
-                additional_tokens = len(
-                    tokenizer.encode(next_text, add_special_tokens=False)
-                )
-                total_completion_tokens = beam.completion_tokens + additional_tokens
-            else:
-                total_completion_tokens = beam.completion_tokens
-
-            # Safely construct current_text
             previous_text = beam.previous_text or ""
             next_text = (
                 beam.next_texts[i]
                 if beam.next_texts and i < len(beam.next_texts)
                 else ""
             )
-            final_text = previous_text + next_text
+            current_text = previous_text + next_text
+            best_scores = (
+                beam.all_scores[i]
+                if beam.all_scores and i < len(beam.all_scores)
+                else [0.0]
+            )
 
             output.append(
                 Beam(
                     prompt=beam.prompt,
                     index=beam.index,
-                    current_text=final_text,
+                    current_text=current_text,
                     next_texts=None,
                     lookahead_texts=None,
                     stop_reasons=None,
-                    best_scores=beam.all_scores[i]
-                    if beam.all_scores and i < len(beam.all_scores)
-                    else [0.0],
+                    best_scores=best_scores,
                     all_scores=beam.all_scores,
                     previous_text=beam.current_text,
                     pruned=beam.pruned,
                     history=beam.history,
-                    completed=beam.completed,
-                    completion_tokens=total_completion_tokens,
+                    completed=False,
+                    completion_tokens=0,
                 )
             )
 
@@ -279,7 +295,7 @@ def dvts(examples, experiment_config: ExperimentConfig, llm: LLM, prm: PRM):
             ].current_text
         )
         results["scores"].append([b.best_scores for b in beams])
-        results["completion_tokens"].append([b.completion_tokens for b in beams])
+        results["completion_tokens"].append(-1)
 
     # TODO: construct and store the tree
 

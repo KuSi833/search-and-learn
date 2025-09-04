@@ -67,7 +67,8 @@ if __name__ == "__main__":
     #     benchmark=Benchmarks.MATH500.value,
     #     project_root=project_root,
     # )
-    DATASET_CONFIG = DatasetConfig(num_samples=500)
+    # DATASET_CONFIG = DatasetConfig(num_samples=500)
+    DATASET_CONFIG = DatasetConfig(dataset_start=100, dataset_end=110)
     # DATASET_CONFIG = DatasetConfig(
     #     dataset_name=Benchmarks.AIME24.value.hf_name,
     #     dataset_split="train",
@@ -133,8 +134,8 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    # for n in [4, 8, 16]:
-    for n in [16, 8, 4]:
+    for n in [4, 8, 16]:
+        # for n in [16, 8, 4]:
         # for _ in range(3):
         # for cfg in [BEAM_SEARCH_CONFIG, BEST_OF_N_CONFIG, DVTS_CONFIG]:
         for cfg in [DVTS_CONFIG]:
