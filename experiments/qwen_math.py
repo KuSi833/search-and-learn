@@ -67,8 +67,8 @@ if __name__ == "__main__":
     #     benchmark=Benchmarks.MATH500.value,
     #     project_root=project_root,
     # )
-    # DATASET_CONFIG = DatasetConfig(num_samples=500)
-    DATASET_CONFIG = DatasetConfig(dataset_start=100, dataset_end=110)
+    DATASET_CONFIG = DatasetConfig(num_samples=500)
+    # DATASET_CONFIG = DatasetConfig(dataset_start=100, dataset_end=110)
     # DATASET_CONFIG = DatasetConfig(
     #     dataset_name=Benchmarks.AIME24.value.hf_name,
     #     dataset_split="train",
