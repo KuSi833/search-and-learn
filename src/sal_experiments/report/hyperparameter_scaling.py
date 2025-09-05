@@ -482,121 +482,14 @@ def hyperparameter_scaling_report():
             accuracies=[87.40, 87.20, 87.60],
             runtimes=[
                 timedelta(hours=1, minutes=25, seconds=10)
-                + timedelta(minutes=26, seconds=8),
+                + timedelta(minutes=13, seconds=45),
                 timedelta(hours=1, minutes=24, seconds=36)
-                + timedelta(minutes=25, seconds=54),
+                + timedelta(minutes=13, seconds=45),
                 timedelta(hours=1, minutes=24, seconds=24)
-                + timedelta(minutes=26, seconds=15),
+                + timedelta(minutes=13, seconds=45),
             ],
             notes="Different scale",
         ),
     ]
     display_hyperparameter_scaling_table(RESULTS)
     plot_accuracy_vs_latency(RESULTS)
-    # plot_hyperparameter_scaling(RESULTS)
-
-    # WITH BATCHING (sort of mixed and all over the place)
-    #     RESULTS = [
-    #     ExperimentResult(
-    #         method="WBoN",
-    #         n="4",
-    #         accuracies=[0.854, 0.856, 0.84],
-    #         runtimes=[
-    #             timedelta(minutes=9, seconds=47),
-    #             timedelta(minutes=11, seconds=5),
-    #             timedelta(minutes=9, seconds=41),
-    #         ],
-    #     ),
-    #     ExperimentResult(
-    #         method="WBoN",
-    #         n="8",
-    #         accuracies=[0.874, 0.828, 0.866],
-    #         runtimes=[
-    #             timedelta(minutes=16, seconds=15),
-    #             timedelta(minutes=18, seconds=33),
-    #             timedelta(minutes=20, seconds=13),
-    #         ],
-    #     ),
-    #     ExperimentResult(
-    #         method="WBoN",
-    #         n="16",
-    #         accuracies=[0.846, 0.85, 0.868, 0.862],
-    #         runtimes=[
-    #             timedelta(minutes=41, seconds=58),
-    #             timedelta(minutes=42, seconds=40),
-    #             timedelta(minutes=41, seconds=37),
-    #             timedelta(minutes=41, seconds=58),
-    #         ],
-    #     ),
-    #     ExperimentResult(
-    #         method="DVTS",
-    #         n="4",
-    #         accuracies=[0.832, 0.834, 0.828],
-    #         runtimes=[
-    #             timedelta(minutes=34, seconds=51),
-    #             timedelta(minutes=35, seconds=4),
-    #             timedelta(minutes=34, seconds=54),
-    #         ],
-    #     ),
-    #     ExperimentResult(
-    #         method="DVTS",
-    #         n="8",
-    #         accuracies=[0.82, 0.84, 0.84],
-    #         runtimes=[
-    #             timedelta(minutes=34, seconds=50),
-    #             timedelta(minutes=37, seconds=57),
-    #             timedelta(minutes=34, seconds=56),
-    #         ],
-    #     ),
-    #     ExperimentResult(
-    #         method="DVTS",
-    #         n="16",
-    #         accuracies=[0.834, 0.834, 0.836],
-    #         runtimes=[
-    #             timedelta(minutes=38, seconds=55),
-    #             timedelta(minutes=39, seconds=15),
-    #             timedelta(minutes=43, seconds=10),
-    #         ],
-    #     ),
-    #     ExperimentResult(
-    #         method="Beam Search",
-    #         n="4",
-    #         accuracies=[0.826, 0.831, 0.833],
-    #         runtimes=[
-    #             timedelta(hours=1, minutes=45),
-    #             timedelta(hours=1, minutes=43),
-    #             timedelta(hours=1, minutes=46),
-    #         ],
-    #     ),
-    #     ExperimentResult(
-    #         method="Beam Search",
-    #         n="8",
-    #         accuracies=[0.801, 0.81, 0.826],
-    #         runtimes=[
-    #             timedelta(hours=10, minutes=47),
-    #             timedelta(hours=11, minutes=18),
-    #             timedelta(hours=11, minutes=3),
-    #         ],
-    #     ),
-    #     ExperimentResult(
-    #         method="Beam Search",
-    #         n="16",
-    #         accuracies=[0.872, 0.878, 0.864],
-    #         runtimes=[
-    #             timedelta(hours=15, minutes=41),
-    #             timedelta(hours=16, minutes=7),
-    #             timedelta(hours=15, minutes=41),
-    #         ],
-    #     ),
-    #     ExperimentResult(
-    #         method="CGAI",
-    #         n="4→8",
-    #         accuracies=[87.40, 87.20, 87.60],
-    #         runtimes=[
-    #             timedelta(minutes=9, seconds=47) + timedelta(minutes=3, seconds=4),
-    #             timedelta(minutes=9, seconds=41) + timedelta(minutes=3, seconds=3),
-    #             timedelta(minutes=9, seconds=32) + timedelta(minutes=3, seconds=5),
-    #         ],
-    #         notes="Different scale",
-    #     ),
-    # ]
