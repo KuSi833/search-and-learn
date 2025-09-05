@@ -300,6 +300,8 @@ def plot_accuracy_vs_latency(
 
     # Collect all data points for analysis
     all_points = []
+    # Collect points that need latency annotations (n=4 and CGAI)
+    annotate_points = []
 
     # Plot each method
     for idx, (method, items) in enumerate(grouped.items()):
@@ -345,6 +347,10 @@ def plot_accuracy_vs_latency(
             method_data.append((n_value, latency, acc))
             all_points.append((latency, acc, method, n_value))
 
+            # Check if this point should be annotated (n=4 or CGAI)
+            if n_value == 4 or method == "CGAI":  # n=2 corresponds to 4 generations
+                annotate_points.append((latency, acc, method, n_value))
+
         # Connect points of the same method with lines
         if len(method_data) > 1:
             # Sort by n value for proper line connection
@@ -374,6 +380,27 @@ def plot_accuracy_vs_latency(
     if latency_values and max(latency_values) / min(latency_values) > 10:
         ax.set_xscale("log")
         ax.set_xlabel("Average Latency per Problem (s) [log scale]", fontsize=12)
+
+    # Add latency annotations next to specific points
+    for latency, acc, method, n_value in annotate_points:
+        # Format latency appropriately
+        if latency >= 1:
+            label_text = f"{latency:.2f}s"
+        else:
+            label_text = f"{latency * 1000:.0f}ms"
+
+        # Position the text next to the point (slightly offset)
+        ax.annotate(
+            label_text,
+            xy=(latency, acc),
+            xytext=(5, 5),  # 5 points offset from the point
+            textcoords="offset points",
+            ha="left",
+            va="bottom",
+            fontsize=10,
+            color="black",
+            zorder=3,
+        )
 
     # Create legend
     ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", frameon=True, fontsize=9)
