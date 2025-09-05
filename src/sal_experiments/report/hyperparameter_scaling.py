@@ -199,7 +199,7 @@ def plot_hyperparameter_scaling(
     for res in results:
         grouped.setdefault(res.method, []).append(res)
 
-    plt.figure(figsize=(7, 4.2), dpi=150)
+    plt.figure(figsize=(9, 5.5), dpi=150)  # Increased from (7, 4.2) to (9, 5.5)
 
     # Collect all unique n positions (n = log2(generations))
     x_ticks: List[int] = []
@@ -234,7 +234,15 @@ def plot_hyperparameter_scaling(
         stds = list(np.array(stds)[order])
 
         if len(xs) >= 2:
-            plt.plot(xs, means, label=method, color=color, marker="o", linewidth=2)
+            plt.plot(
+                xs,
+                means,
+                label=method,
+                color=color,
+                marker="o",
+                linewidth=2.6,
+                markersize=8,
+            )  # Increased linewidth and markersize
             lower = np.array(means) - np.array(stds)
             upper = np.array(means) + np.array(stds)
             plt.fill_between(xs, lower, upper, color=color, alpha=0.2)
@@ -246,16 +254,18 @@ def plot_hyperparameter_scaling(
                 yerr=stds,
                 fmt="o",
                 color=color,
-                elinewidth=1.2,
-                capsize=3,
+                elinewidth=1.6,  # Increased from 1.2 to 1.6
+                capsize=4,  # Increased from 3 to 4
+                markersize=8,  # Added markersize
                 label=method,
             )
 
-    plt.xlabel("n")
-    plt.ylabel("Accuracy (%)")
-    plt.xticks(x_ticks, x_ticklabels)
+    plt.xlabel("n", fontsize=16)  # Increased font size
+    plt.ylabel("Accuracy (%)", fontsize=16)  # Increased font size
+    plt.xticks(x_ticks, x_ticklabels, fontsize=13)  # Increased tick label size
+    plt.yticks(fontsize=13)  # Increased tick label size
     plt.grid(True, axis="y", linestyle=":", linewidth=0.6, alpha=0.6)
-    plt.legend(frameon=True)
+    plt.legend(frameon=True, fontsize=12)  # Increased legend font size
     plt.tight_layout()
 
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -296,7 +306,7 @@ def plot_accuracy_vs_latency(
     for res in results:
         grouped.setdefault(res.method, []).append(res)
 
-    fig, ax = plt.subplots(figsize=(10, 7), dpi=150)
+    fig, ax = plt.subplots(figsize=(13, 7), dpi=150)
 
     # Collect all data points for analysis
     all_points = []
@@ -329,17 +339,23 @@ def plot_accuracy_vs_latency(
             n_value = _numeric_to_n(_parse_n_to_numeric(item.n))
             marker = marker_map.get(n_value, "D")
 
+            # Create legend label - special case for CGAI to show arrow
+            if method == "CGAI":
+                legend_label = f"{method} (n=2→3)"
+            else:
+                legend_label = f"{method} (n={n_value})"
+
             # Plot scatter points
             ax.scatter(
                 latency,
                 acc,
                 color=color,
                 marker=marker,
-                s=80,
+                s=104,  # Increased from 80 to ~130% (104)
                 alpha=0.8,
-                label=f"{method} (n={n_value})",
+                label=legend_label,
                 edgecolors="white",
-                linewidth=1,
+                linewidth=1.3,  # Increased from 1 to 1.3
                 zorder=2,  # Above the lines
             )
 
@@ -364,13 +380,20 @@ def plot_accuracy_vs_latency(
                 color=color,
                 linestyle="-",
                 alpha=0.6,
-                linewidth=2,
+                linewidth=2.6,  # Increased from 2 to 2.6
                 zorder=1,  # Behind the points
             )
 
     # Customize axes
-    ax.set_xlabel("Average Latency per Problem (s)", fontsize=12)
-    ax.set_ylabel("Accuracy (%)", fontsize=12)
+    ax.set_xlabel(
+        "Average Latency per Problem (s)", fontsize=16
+    )  # Increased from 12 to 16
+    ax.set_ylabel("Accuracy (%)", fontsize=16)  # Increased from 12 to 16
+
+    # Increase tick label sizes
+    ax.tick_params(
+        axis="both", which="major", labelsize=13
+    )  # Increased tick label size
 
     # Add grid
     ax.grid(True, linestyle=":", linewidth=0.6, alpha=0.6)
@@ -379,7 +402,21 @@ def plot_accuracy_vs_latency(
     latency_values = [point[0] for point in all_points]
     if latency_values and max(latency_values) / min(latency_values) > 10:
         ax.set_xscale("log")
-        ax.set_xlabel("Average Latency per Problem (s) [log scale]", fontsize=12)
+        ax.set_xlabel(
+            "Average Latency per Problem (s) [log scale]", fontsize=16
+        )  # Increased from 12 to 16
+
+    # Add horizontal reference line for Qwen2.5-Math-72B CoT performance
+    cot_accuracy = 85.9  # Qwen2.5-Math-72B-Instruct Chain-of-Thought performance
+    ax.axhline(
+        y=cot_accuracy,
+        color="gray",
+        linestyle="--",
+        linewidth=2,
+        alpha=0.7,
+        zorder=0.5,
+        label="Qwen2.5-Math-72B CoT",
+    )
 
     # Add latency annotations next to specific points
     for latency, acc, method, n_value in annotate_points:
@@ -393,17 +430,19 @@ def plot_accuracy_vs_latency(
         ax.annotate(
             label_text,
             xy=(latency, acc),
-            xytext=(5, 5),  # 5 points offset from the point
+            xytext=(-45, 5),  # Slightly increased offset
             textcoords="offset points",
             ha="left",
             va="bottom",
-            fontsize=10,
+            fontsize=13,  # Increased from 10 to 13
             color="black",
             zorder=3,
         )
 
     # Create legend
-    ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", frameon=True, fontsize=9)
+    ax.legend(
+        bbox_to_anchor=(1.05, 1), loc="upper left", frameon=True, fontsize=12
+    )  # Increased from 9 to 12
     plt.tight_layout()
 
     # Save the plot
