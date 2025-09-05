@@ -58,7 +58,7 @@ if __name__ == "__main__":
     )
     # PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
-    WANDB_CONFIG = WandbConfig(tags=set(["baseline", "dvts-v2"]))
+    WANDB_CONFIG = WandbConfig(tags=set(["baseline", "filter-duplicates"]))
     # WANDB_CONFIG = WandbConfig(tags=set(["fusion-baseline"]))
 
     # DATASET_CONFIG = DatasetConfig.from_subset_file(
@@ -103,6 +103,7 @@ if __name__ == "__main__":
 
     DVTS_CONFIG = ExperimentConfig(
         approach="dvts",
+        filter_duplicates=True,
         custom_chat_template=None,
         search_config=SearchConfig(
             n=4,
@@ -134,17 +135,17 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    # for n in [4, 8, 16]:
-    for n in [32]:
+    for n in [4, 8, 16]:
+        # for n in [32]:
         # for n in [16, 8, 4]:
         # for _ in range(3):
-        # for cfg in [DVTS_CONFIG]:
-        for cfg in [BEAM_SEARCH_CONFIG]:
+        for cfg in [DVTS_CONFIG]:
+            # for cfg in [BEAM_SEARCH_CONFIG]:
             # for cfg in [BEST_OF_N_CONFIG, BEAM_SEARCH_CONFIG, DVTS_CONFIG]:
             # for cfg in [BEST_OF_N_CONFIG]:
             cfg_var = copy.deepcopy(cfg)
             cfg_var.search_config.n = n
-            cfg_var.search_config.search_batch_size = 1
+            cfg_var.search_config.search_batch_size = 25
             experiment_configs.append(cfg_var)
 
     run(BASE_CONFIG, experiment_configs)

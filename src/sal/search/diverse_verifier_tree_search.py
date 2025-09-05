@@ -247,23 +247,33 @@ def _dvts(
                 else [0.0]
             )
 
-            output.append(
-                Beam(
-                    prompt=beam.prompt,
-                    index=beam.index,
-                    current_text=current_text,
-                    next_texts=None,
-                    lookahead_texts=None,
-                    stop_reasons=None,
-                    best_scores=best_scores,
-                    all_scores=beam.all_scores,
-                    previous_text=beam.current_text,
-                    pruned=beam.pruned,
-                    history=beam.history,
-                    completed=False,
-                    completion_tokens=0,
-                )
+            candidate = Beam(
+                prompt=beam.prompt,
+                index=beam.index,
+                current_text=current_text,
+                next_texts=None,
+                lookahead_texts=None,
+                stop_reasons=None,
+                best_scores=best_scores,
+                all_scores=beam.all_scores,
+                previous_text=beam.current_text,
+                pruned=beam.pruned,
+                history=beam.history,
+                completed=False,
+                completion_tokens=0,
             )
+
+            # Apply duplicate filtering if enabled
+            if experiment_config.filter_duplicates:
+                # Check if this current_text already exists for this prompt
+                if any(
+                    b.prompt == candidate.prompt
+                    and b.current_text == candidate.current_text
+                    for b in output
+                ):
+                    continue
+
+            output.append(candidate)
 
     return output
 
