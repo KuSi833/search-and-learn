@@ -418,6 +418,100 @@ def plot_accuracy_vs_latency(
         label="Qwen2.5-Math-72B CoT",
     )
 
+    # Collect specific points for comparison arrows
+    wbon_n3_point = None
+    beam_n4_point = None
+    cgai_point = None
+
+    for latency, acc, method, n_value in all_points:
+        if method == "WBoN" and n_value == 3:  # n=3 corresponds to 8 generations
+            wbon_n3_point = (latency, acc)
+        elif (
+            method == "Beam Search" and n_value == 4
+        ):  # n=4 corresponds to 16 generations
+            beam_n4_point = (latency, acc)
+        elif method == "CGAI":
+            cgai_point = (latency, acc)
+
+    # Add axis-aligned comparison arrows
+    arrow_offset = 0.02  # Small offset so arrows don't touch CGAI point
+
+    if wbon_n3_point and cgai_point:
+        # Vertical arrow showing accuracy improvement (aligned with CGAI x-position)
+        acc_improvement = cgai_point[1] - wbon_n3_point[1]
+        arrow_start = (cgai_point[0], wbon_n3_point[1])
+        arrow_end = (
+            cgai_point[0],
+            cgai_point[1] - arrow_offset * (cgai_point[1] - wbon_n3_point[1]),
+        )
+
+        ax.annotate(
+            "",
+            xy=arrow_end,
+            xytext=arrow_start,
+            arrowprops=dict(
+                arrowstyle="->",
+                color=_rich_color_to_hex(GREEN),
+                alpha=0.8,
+                linewidth=2,
+                linestyle="-",
+            ),
+            zorder=1.5,
+        )
+        # Add accuracy improvement label
+        mid_y = (arrow_start[1] + arrow_end[1]) / 2
+        ax.text(
+            cgai_point[0] + 0.15,  # Slightly to the right of the arrow
+            mid_y + 0.5,
+            f"+{acc_improvement:.1f}%",
+            ha="left",
+            va="center",
+            fontsize=12,
+            color=_rich_color_to_hex(GREEN),
+            alpha=1,
+            weight="bold",
+        )
+
+    if beam_n4_point and cgai_point:
+        # Horizontal arrow showing latency reduction (aligned with CGAI y-position)
+        latency_reduction = beam_n4_point[0] - cgai_point[0]
+        arrow_start = (beam_n4_point[0], cgai_point[1])
+        arrow_end = (
+            cgai_point[0] + arrow_offset * (beam_n4_point[0] - cgai_point[0]) - 1.83,
+            cgai_point[1],
+        )
+
+        ax.annotate(
+            "",
+            xy=arrow_end,
+            xytext=arrow_start,
+            arrowprops=dict(
+                arrowstyle="->",
+                color=_rich_color_to_hex(GREEN),
+                alpha=1,
+                linewidth=2,
+                linestyle="-",
+            ),
+            zorder=1.5,
+        )
+        # Add latency reduction label
+        mid_x = (arrow_start[0] + arrow_end[0]) / 2
+        if latency_reduction >= 1:
+            reduction_text = f"-{latency_reduction:.1f}s"
+        else:
+            reduction_text = f"-{latency_reduction * 1000:.0f}ms"
+        ax.text(
+            mid_x,
+            cgai_point[1] - 0.2,  # Slightly above the arrow
+            reduction_text,
+            ha="center",
+            va="bottom",
+            fontsize=12,
+            color=_rich_color_to_hex(GREEN),
+            alpha=0.9,
+            weight="bold",
+        )
+
     # Add latency annotations next to specific points
     for latency, acc, method, n_value in annotate_points:
         # Format latency appropriately
