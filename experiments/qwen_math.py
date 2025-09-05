@@ -138,7 +138,8 @@ if __name__ == "__main__":
     for n in [32]:
         # for n in [16, 8, 4]:
         # for _ in range(3):
-        for cfg in [DVTS_CONFIG]:
+        # for cfg in [DVTS_CONFIG]:
+        for cfg in [BEAM_SEARCH_CONFIG]:
             # for cfg in [BEST_OF_N_CONFIG, BEAM_SEARCH_CONFIG, DVTS_CONFIG]:
             # for cfg in [BEST_OF_N_CONFIG]:
             cfg_var = copy.deepcopy(cfg)
