@@ -1,0 +1,1208 @@
+…arch-and-learn on  overlap-&-ensamble [$!?⇡] is 📦 v0.1.0 via 🐍 v3.11.10 (search-and-learn) 
+❯ python -m scripts.selection_2
+Analyzing 3 runs: gfw8x07r, 77pyab58, tqfyvf5w
+Processing gfw8x07r: 500 questions
+Processing 77pyab58: 500 questions
+Processing tqfyvf5w: 500 questions
+Cumulative line charts saved to: figures/selection/cumulative_lines_gfw8x07r_77pyab58_tqfyvf5w.png
+LLM-readable data exported to: figures/selection/cumulative_lines_gfw8x07r_77pyab58_tqfyvf5w.json
+Split violin plots saved to: figures/selection/split_violins_gfw8x07r_77pyab58_tqfyvf5w.png
+LLM-readable data exported to: figures/selection/split_violins_gfw8x07r_77pyab58_tqfyvf5w.json
+
+Threshold Analysis (targeting 10% of 1500 data points):
+  Agreement Ratio: <= 0.5000
+    Means: Correct=0.947, Incorrect=0.487
+    Selected: 233 (15.5%)
+    Correct: 76 (32.6% of selected)
+    Incorrect: 157 (67.4% of selected)
+
+  Entropy Freq: >= 0.9464
+    Means: Correct=0.125, Incorrect=0.835
+    Selected: 233 (15.5%)
+    Correct: 76 (32.6% of selected)
+    Incorrect: 157 (67.4% of selected)
+
+  Group Top Frac: <= 0.5343
+    Means: Correct=0.962, Incorrect=0.605
+    Selected: 150 (10.0%)
+    Correct: 40 (26.7% of selected)
+    Incorrect: 110 (73.3% of selected)
+
+  Entropy Weighted: >= 0.8113
+    Means: Correct=0.091, Incorrect=0.661
+    Selected: 193 (12.9%)
+    Correct: 94 (48.7% of selected)
+    Incorrect: 99 (51.3% of selected)
+
+  Prm Max: <= 1.0000
+    Means: Correct=0.998, Incorrect=0.951
+    Selected: 1500 (100.0%)
+    Correct: 1289 (85.9% of selected)
+    Incorrect: 211 (14.1% of selected)
+
+  Prm Mean: <= 0.7554
+    Means: Correct=0.970, Incorrect=0.729
+    Selected: 150 (10.0%)
+    Correct: 53 (35.3% of selected)
+    Incorrect: 97 (64.7% of selected)
+
+  Prm Std: >= 0.4061
+    Means: Correct=0.037, Incorrect=0.223
+    Selected: 150 (10.0%)
+    Correct: 83 (55.3% of selected)
+    Incorrect: 67 (44.7% of selected)
+
+  Prm Margin: >= 0.0000
+    Means: Correct=0.005, Incorrect=0.095
+    Selected: 1500 (100.0%)
+    Correct: 1289 (85.9% of selected)
+    Incorrect: 211 (14.1% of selected)
+
+  Prm Top Frac: >= 0.3309
+    Means: Correct=0.263, Incorrect=0.384
+    Selected: 151 (10.1%)
+    Correct: 55 (36.4% of selected)
+    Incorrect: 96 (63.6% of selected)
+
+
+Overall Summary:
+  Correct: 1289, Incorrect: 211
+  Accuracy: 85.9%
+
+COMPREHENSIVE METRIC ANALYSIS
+Dataset: 1289 correct, 211 incorrect, 1500 total answers
+
+                      Raw Counts, Precision, Recall, F1 by Selection Rate                      
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┓
+┃ Metric           ┃ Sele… ┃ Thre… ┃ Corr.… ┃ Inco… ┃ Corr.… ┃ Inco… ┃ Preci… ┃ Reca… ┃    F1 ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━┩
+│ Agreement Ratio  │  10%  │ 0.50… │     76 │   157 │   1213 │    54 │  0.674 │ 0.744 │ 0.707 │
+│                  │  15%  │ 0.50… │     76 │   157 │   1213 │    54 │  0.674 │ 0.744 │ 0.707 │
+│                  │  20%  │ 0.75… │    183 │   184 │   1106 │    27 │  0.501 │ 0.872 │ 0.637 │
+│                  │  25%  │ 1.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │  30%  │ 1.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │       │       │        │       │        │       │        │       │       │
+│ Entropy Freq     │  10%  │ 0.94… │     76 │   157 │   1213 │    54 │  0.674 │ 0.744 │ 0.707 │
+│                  │  15%  │ 0.94… │     76 │   157 │   1213 │    54 │  0.674 │ 0.744 │ 0.707 │
+│                  │  20%  │ 0.81… │    183 │   184 │   1106 │    27 │  0.501 │ 0.872 │ 0.637 │
+│                  │  25%  │ 0.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │  30%  │ 0.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │       │       │        │       │        │       │        │       │       │
+│ Group Top Frac   │  10%  │ 0.53… │     40 │   110 │   1249 │   101 │  0.733 │ 0.521 │ 0.609 │
+│                  │  15%  │ 0.75… │    111 │   156 │   1178 │    55 │  0.584 │ 0.739 │ 0.653 │
+│                  │  20%  │ 0.86… │    135 │   165 │   1154 │    46 │  0.550 │ 0.782 │ 0.646 │
+│                  │  25%  │ 1.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │  30%  │ 1.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │       │       │        │       │        │       │        │       │       │
+│ Prm Mean         │  10%  │ 0.75… │     53 │    97 │   1236 │   114 │  0.647 │ 0.460 │ 0.537 │
+│                  │  15%  │ 0.83… │    107 │   118 │   1182 │    93 │  0.524 │ 0.559 │ 0.541 │
+│                  │  20%  │ 0.99… │    153 │   150 │   1136 │    61 │  0.495 │ 0.711 │ 0.584 │
+│                  │  25%  │ 0.99… │    218 │   165 │   1071 │    46 │  0.431 │ 0.782 │ 0.556 │
+│                  │  30%  │ 1.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │       │       │        │       │        │       │        │       │       │
+│ Prm Top Frac     │  10%  │ 0.33… │     55 │    96 │   1234 │   115 │  0.636 │ 0.455 │ 0.530 │
+│                  │  15%  │ 0.29… │    108 │   117 │   1181 │    94 │  0.520 │ 0.555 │ 0.537 │
+│                  │  20%  │ 0.25… │    151 │   150 │   1138 │    61 │  0.498 │ 0.711 │ 0.586 │
+│                  │  25%  │ 0.25… │    218 │   165 │   1071 │    46 │  0.431 │ 0.782 │ 0.556 │
+│                  │  30%  │ 0.25… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │       │       │        │       │        │       │        │       │       │
+│ Entropy Weighted │  10%  │ 0.81… │     94 │    99 │   1195 │   112 │  0.513 │ 0.469 │ 0.490 │
+│                  │  15%  │ 0.75… │    113 │   112 │   1176 │    99 │  0.498 │ 0.531 │ 0.514 │
+│                  │  20%  │ 0.43… │    137 │   163 │   1152 │    48 │  0.543 │ 0.773 │ 0.638 │
+│                  │  25%  │ 0.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │  30%  │ 0.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │       │       │        │       │        │       │        │       │       │
+│ Prm Std          │  10%  │ 0.40… │     83 │    67 │   1206 │   144 │  0.447 │ 0.318 │ 0.371 │
+│                  │  15%  │ 0.13… │    109 │   116 │   1180 │    95 │  0.516 │ 0.550 │ 0.532 │
+│                  │  20%  │ 0.00… │    153 │   147 │   1136 │    64 │  0.490 │ 0.697 │ 0.575 │
+│                  │  25%  │ 0.00… │    218 │   164 │   1071 │    47 │  0.429 │ 0.777 │ 0.553 │
+│                  │  30%  │ 0.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │       │       │        │       │        │       │        │       │       │
+│ Prm Max          │  10%  │ 1.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │  15%  │ 1.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │  20%  │ 1.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │  25%  │ 1.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │  30%  │ 1.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │       │       │        │       │        │       │        │       │       │
+│ Prm Margin       │  10%  │ 0.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │  15%  │ 0.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │  20%  │ 0.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │  25%  │ 0.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+│                  │  30%  │ 0.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
+└──────────────────┴───────┴───────┴────────┴───────┴────────┴───────┴────────┴───────┴───────┘
+
+Legend:
+• Select%: Percentage of data selected as 'uncertain' (based on percentile threshold)
+• Corr.Sel: Correct answers selected as uncertain (False Positives)
+• Incor.Sel: Incorrect answers selected as uncertain (True Positives)
+• Corr.NotSel: Correct answers not selected (True Negatives)
+• Incor.NotSel: Incorrect answers not selected (False Negatives)
+• Precision: TP/(TP+FP) = Incor.Sel/(Incor.Sel+Corr.Sel)
+• Recall: TP/(TP+FN) = Incor.Sel/(Incor.Sel+Incor.NotSel)
+• F1: Harmonic mean of precision and recall
+• F1 Color coding: ≥0.5 (Good), ≥0.3 (Fair), <0.3 (Poor)
+
+FIXED COUNT METRIC ANALYSIS
+Dataset: 1289 correct, 211 incorrect, 1500 total answers
+
+                  Raw Counts, Precision, Recall, F1 by Fixed Selection Count                   
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┓
+┃ Metric           ┃ Count ┃ Thre… ┃ Corr.… ┃ Inco… ┃ Corr.… ┃ Inco… ┃ Preci… ┃ Reca… ┃    F1 ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━┩
+│ Agreement Ratio  │  50   │ 0.25… │     13 │    37 │   1276 │   174 │  0.740 │ 0.175 │ 0.284 │
+│                  │  75   │ 0.25… │     13 │    62 │   1276 │   149 │  0.827 │ 0.294 │ 0.434 │
+│                  │  100  │ 0.25… │     13 │    87 │   1276 │   124 │  0.870 │ 0.412 │ 0.559 │
+│                  │  125  │ 0.50… │     33 │    92 │   1256 │   119 │  0.736 │ 0.436 │ 0.548 │
+│                  │  150  │ 0.50… │     58 │    92 │   1231 │   119 │  0.613 │ 0.436 │ 0.510 │
+│                  │       │       │        │       │        │       │        │       │       │
+│ Group Top Frac   │  50   │ 0.37… │      6 │    44 │   1283 │   167 │  0.880 │ 0.209 │ 0.337 │
+│                  │  75   │ 0.48… │      7 │    68 │   1282 │   143 │  0.907 │ 0.322 │ 0.476 │
+│                  │  100  │ 0.50… │     21 │    79 │   1268 │   132 │  0.790 │ 0.374 │ 0.508 │
+│                  │  125  │ 0.50… │     30 │    95 │   1259 │   116 │  0.760 │ 0.450 │ 0.565 │
+│                  │  150  │ 0.53… │     40 │   110 │   1249 │   101 │  0.733 │ 0.521 │ 0.609 │
+│                  │       │       │        │       │        │       │        │       │       │
+│ Prm Margin       │  50   │ 0.07… │     13 │    37 │   1276 │   174 │  0.740 │ 0.175 │ 0.284 │
+│                  │  75   │ 0.01… │     17 │    58 │   1272 │   153 │  0.773 │ 0.275 │ 0.406 │
+│                  │  100  │ 0.00… │     30 │    70 │   1259 │   141 │  0.700 │ 0.332 │ 0.450 │
+│                  │  125  │ 0.00… │     46 │    79 │   1243 │   132 │  0.632 │ 0.374 │ 0.470 │
+│                  │  150  │ 0.00… │     59 │    91 │   1230 │   120 │  0.607 │ 0.431 │ 0.504 │
+│                  │       │       │        │       │        │       │        │       │       │
+│ Prm Top Frac     │  50   │ 0.48… │     11 │    39 │   1278 │   172 │  0.780 │ 0.185 │ 0.299 │
+│                  │  75   │ 0.47… │     23 │    52 │   1266 │   159 │  0.693 │ 0.246 │ 0.364 │
+│                  │  100  │ 0.40… │     32 │    68 │   1257 │   143 │  0.680 │ 0.322 │ 0.437 │
+│                  │  125  │ 0.34… │     44 │    81 │   1245 │   130 │  0.648 │ 0.384 │ 0.482 │
+│                  │  150  │ 0.33… │     55 │    95 │   1234 │   116 │  0.633 │ 0.450 │ 0.526 │
+│                  │       │       │        │       │        │       │        │       │       │
+│ Prm Mean         │  50   │ 0.49… │     11 │    39 │   1278 │   172 │  0.780 │ 0.185 │ 0.299 │
+│                  │  75   │ 0.51… │     23 │    52 │   1266 │   159 │  0.693 │ 0.246 │ 0.364 │
+│                  │  100  │ 0.59… │     33 │    67 │   1256 │   144 │  0.670 │ 0.318 │ 0.431 │
+│                  │  125  │ 0.72… │     43 │    82 │   1246 │   129 │  0.656 │ 0.389 │ 0.488 │
+│                  │  150  │ 0.75… │     53 │    97 │   1236 │   114 │  0.647 │ 0.460 │ 0.537 │
+│                  │       │       │        │       │        │       │        │       │       │
+│ Entropy Freq     │  50   │ 1.00… │     34 │    16 │   1255 │   195 │  0.320 │ 0.076 │ 0.123 │
+│                  │  75   │ 1.00… │     34 │    41 │   1255 │   170 │  0.547 │ 0.194 │ 0.287 │
+│                  │  100  │ 1.00… │     34 │    66 │   1255 │   145 │  0.660 │ 0.313 │ 0.424 │
+│                  │  125  │ 1.00… │     34 │    91 │   1255 │   120 │  0.728 │ 0.431 │ 0.542 │
+│                  │  150  │ 0.94… │     44 │   106 │   1245 │   105 │  0.707 │ 0.502 │ 0.587 │
+│                  │       │       │        │       │        │       │        │       │       │
+│ Entropy Weighted │  50   │ 0.99… │     18 │    32 │   1271 │   179 │  0.640 │ 0.152 │ 0.245 │
+│                  │  75   │ 0.94… │     21 │    54 │   1268 │   157 │  0.720 │ 0.256 │ 0.378 │
+│                  │  100  │ 0.92… │     36 │    64 │   1253 │   147 │  0.640 │ 0.303 │ 0.412 │
+│                  │  125  │ 0.83… │     46 │    79 │   1243 │   132 │  0.632 │ 0.374 │ 0.470 │
+│                  │  150  │ 0.81… │     59 │    91 │   1230 │   120 │  0.607 │ 0.431 │ 0.504 │
+│                  │       │       │        │       │        │       │        │       │       │
+│ Prm Max          │  50   │ 0.99… │     13 │    37 │   1276 │   174 │  0.740 │ 0.175 │ 0.284 │
+│                  │  75   │ 1.00… │     26 │    49 │   1263 │   162 │  0.653 │ 0.232 │ 0.343 │
+│                  │  100  │ 1.00… │     51 │    49 │   1238 │   162 │  0.490 │ 0.232 │ 0.315 │
+│                  │  125  │ 1.00… │     76 │    49 │   1213 │   162 │  0.392 │ 0.232 │ 0.292 │
+│                  │  150  │ 1.00… │    101 │    49 │   1188 │   162 │  0.327 │ 0.232 │ 0.271 │
+│                  │       │       │        │       │        │       │        │       │       │
+│ Prm Std          │  50   │ 0.42… │     21 │    29 │   1268 │   182 │  0.580 │ 0.137 │ 0.222 │
+│                  │  75   │ 0.42… │     40 │    35 │   1249 │   176 │  0.467 │ 0.166 │ 0.245 │
+│                  │  100  │ 0.42… │     62 │    38 │   1227 │   173 │  0.380 │ 0.180 │ 0.244 │
+│                  │  125  │ 0.41… │     74 │    51 │   1215 │   160 │  0.408 │ 0.242 │ 0.304 │
+│                  │  150  │ 0.40… │     83 │    67 │   1206 │   144 │  0.447 │ 0.318 │ 0.371 │
+└──────────────────┴───────┴───────┴────────┴───────┴────────┴───────┴────────┴───────┴───────┘
+
+Legend:
+• Count: Fixed number of questions selected as 'uncertain'
+• Corr.Sel: Correct answers selected as uncertain (False Positives)
+• Incor.Sel: Incorrect answers selected as uncertain (True Positives)
+• Corr.NotSel: Correct answers not selected (True Negatives)
+• Incor.NotSel: Incorrect answers not selected (False Negatives)
+• Precision: TP/(TP+FP) = Incor.Sel/(Incor.Sel+Corr.Sel)
+• Recall: TP/(TP+FN) = Incor.Sel/(Incor.Sel+Incor.NotSel)
+• F1: Harmonic mean of precision and recall
+• F1 Color coding: ≥0.5 (Good), ≥0.3 (Fair), <0.3 (Poor)
+
+ENSEMBLE ANALYSIS - TOP 3 METRICS
+Analyzing overlap between top 3 performing metrics:
+
+1. Agreement Ratio (F1: 0.707)
+2. Entropy Freq (F1: 0.707)
+3. Group Top Frac (F1: 0.609)
+
+═══ 10% Selection Rate Analysis ═══
+                            Pairwise Overlap at 10% Selection                            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Metric Pair                 ┃ Overlap Count ┃ Overlap % ┃ Union Count ┃ Jaccard Index ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Agreement Ra × Entropy Freq │           233 │    155.3% │         233 │         1.000 │
+│ Agreement Ra × Group Top Fr │           148 │     98.7% │         235 │         0.630 │
+│ Entropy Freq × Group Top Fr │           148 │     98.7% │         235 │         0.630 │
+└─────────────────────────────┴───────────────┴───────────┴─────────────┴───────────────┘
+
+Three-way Analysis:
+• Questions selected by ALL 3 metrics: 148
+• Questions selected by ANY metric: 235
+• Three-way overlap rate: 98.7%
+• In 3-way overlap: 108 incorrect, 40 correct
+• 3-way overlap precision: 73.0%
+
+═══ 15% Selection Rate Analysis ═══
+                            Pairwise Overlap at 15% Selection                            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Metric Pair                 ┃ Overlap Count ┃ Overlap % ┃ Union Count ┃ Jaccard Index ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Agreement Ra × Entropy Freq │           233 │    103.6% │         233 │         1.000 │
+│ Agreement Ra × Group Top Fr │           200 │     88.9% │         300 │         0.667 │
+│ Entropy Freq × Group Top Fr │           200 │     88.9% │         300 │         0.667 │
+└─────────────────────────────┴───────────────┴───────────┴─────────────┴───────────────┘
+
+Three-way Analysis:
+• Questions selected by ALL 3 metrics: 200
+• Questions selected by ANY metric: 300
+• Three-way overlap rate: 88.9%
+• In 3-way overlap: 138 incorrect, 62 correct
+• 3-way overlap precision: 69.0%
+
+═══ ENSEMBLE RECOMMENDATION ═══
+Average Jaccard Index: 0.765
+Ensemble Recommendation: NOT RECOMMENDED
+Reasoning: High overlap suggests metrics are redundant
+
+Note: Jaccard Index measures overlap (intersection/union). Lower values indicate better 
+ensemble potential.
+
+═══ ENSEMBLE vs INDIVIDUAL COMPARISON ═══
+Comparing individual metrics with ensemble (OR logic) at 10% selection rate
+
+
+DEBUG: Individual metric selections at 10%:
+• agreement_ratio: 233 questions
+• entropy_freq: 233 questions
+• group_top_frac: 150 questions
+• Ensemble (OR): 235 questions
+• Overlap agreemen & entropy_: 233
+• Overlap agreemen & group_to: 148
+• Overlap entropy_ & group_to: 148
+• Three-way overlap: 148
+WARNING: agreement_ratio and entropy_freq select IDENTICAL questions!
+• Unique to agreemen: 0
+• Unique to entropy_: 0
+• Unique to group_to: 2
+              Individual vs Ensemble Performance Comparison (10% Selection Rate)               
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
+┃ Method          ┃ Selected ┃ Corr.Sel ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Improveme… ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
+│ Agreement Ratio │      233 │       76 │       157 │     0.674 │  0.744 │ 0.707 │   baseline │
+│ Entropy Freq    │      233 │       76 │       157 │     0.674 │  0.744 │ 0.707 │      +0.0% │
+│ Group Top Frac  │      150 │       40 │       110 │     0.733 │  0.521 │ 0.609 │     -13.8% │
+│ Ensemble (OR)   │      235 │       76 │       159 │     0.677 │  0.754 │ 0.713 │      +0.8% │
+└─────────────────┴──────────┴──────────┴───────────┴───────────┴────────┴───────┴────────────┘
+
+Ensemble Analysis Summary:
+• Ensemble selects 235 total questions (15.7% of dataset)
+• Individual metrics select ~233 questions each (~10% of dataset)
+• Ensemble precision: 0.677 vs best individual: 0.733
+• Ensemble recall: 0.754 vs best individual: 0.744
+• Ensemble F1: 0.713 vs best individual: 0.707
+
+Final Recommendation: MARGINAL BENEFIT
+Reasoning: Small F1 change: +0.006
+
+FIXED COUNT ENSEMBLE ANALYSIS - TOP 3 METRICS (N=75)
+Analyzing overlap between top 3 performing metrics with fixed count selection:
+
+1. Group Top Frac (F1: 0.476)
+2. Agreement Ratio (F1: 0.434)
+3. Prm Margin (F1: 0.406)
+
+═══ Fixed Count 75 Analysis ═══
+                              Pairwise Overlap at Count 75                               
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Metric Pair                 ┃ Overlap Count ┃ Overlap % ┃ Union Count ┃ Jaccard Index ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Group Top Fr × Agreement Ra │            46 │     61.3% │         104 │         0.442 │
+│ Group Top Fr × Prm Margin   │            11 │     14.7% │         139 │         0.079 │
+│ Agreement Ra × Prm Margin   │            34 │     45.3% │         116 │         0.293 │
+└─────────────────────────────┴───────────────┴───────────┴─────────────┴───────────────┘
+
+Three-way Analysis:
+• Questions selected by ALL 3 metrics: 8
+• Questions selected by ANY metric: 142
+• Three-way overlap rate: 10.7% of 75
+• In 3-way overlap: 7 incorrect, 1 correct
+• 3-way overlap precision: 87.5%
+
+═══ VENN DIAGRAM DATA EXPORT (N=75) ═══
+Detailed breakdown for True/False prediction overlaps:
+
+Metrics: A=group_top_frac, B=agreement_ratio, C=prm_margin
+Selection Count: 75 each
+
+                            Venn Diagram Regions Breakdown (N=75)                            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+│ Three-way (ABC)                       │     8 │         7 │          1 │  87.5% │   12.5% │
+│ group_top_frac ∩ agreement_ratio only │    38 │        33 │          5 │  86.8% │   13.2% │
+│ group_top_frac ∩ prm_margin only      │     3 │         3 │          0 │ 100.0% │    0.0% │
+│ agreement_ratio ∩ prm_margin only     │    26 │        21 │          5 │  80.8% │   19.2% │
+│ group_top_frac only                   │    26 │        25 │          1 │  96.2% │    3.8% │
+│ agreement_ratio only                  │     3 │         1 │          2 │  33.3% │   66.7% │
+│ prm_margin only                       │    38 │        27 │         11 │  71.1% │   28.9% │
+└───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
+
+Summary for N=75:
+• Total True Predictions: 117
+• Total False Predictions: 25
+• True/False Ratio: 4.68
+
+Three-way Overlap Analysis:
+• Total questions: 8
+• True predictions: 7 (87.5%)
+• False predictions: 1 (12.5%)
+• Three-way True/False ratio: 7.00
+
+RAW DATA FOR VENN DIAGRAM (N=75):
+# Copy this data into your visualization script
+# Count: 75
+# Metrics: group_top_frac, agreement_ratio, prm_margin
+
+# True predictions (correctly identified uncertain)
+true_ABC = 7  # All three methods
+true_AB_only = 33  # group_top_frac ∩ agreement_ratio only
+true_AC_only = 3  # group_top_frac ∩ prm_margin only
+true_BC_only = 21  # agreement_ratio ∩ prm_margin only
+true_A_only = 25  # group_top_frac only
+true_B_only = 1  # agreement_ratio only
+true_C_only = 27  # prm_margin only
+
+# False predictions (incorrectly identified uncertain)
+false_ABC = 1  # All three methods
+false_AB_only = 5  # group_top_frac ∩ agreement_ratio only
+false_AC_only = 0  # group_top_frac ∩ prm_margin only
+false_BC_only = 5  # agreement_ratio ∩ prm_margin only
+false_A_only = 1  # group_top_frac only
+false_B_only = 2  # agreement_ratio only
+false_C_only = 11  # prm_margin only
+
+═══ Fixed Count 100 Analysis ═══
+                              Pairwise Overlap at Count 100                              
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Metric Pair                 ┃ Overlap Count ┃ Overlap % ┃ Union Count ┃ Jaccard Index ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Group Top Fr × Agreement Ra │            71 │     71.0% │         129 │         0.550 │
+│ Group Top Fr × Prm Margin   │            22 │     22.0% │         178 │         0.124 │
+│ Agreement Ra × Prm Margin   │            48 │     48.0% │         152 │         0.316 │
+└─────────────────────────────┴───────────────┴───────────┴─────────────┴───────────────┘
+
+Three-way Analysis:
+• Questions selected by ALL 3 metrics: 19
+• Questions selected by ANY metric: 178
+• Three-way overlap rate: 19.0% of 100
+• In 3-way overlap: 18 incorrect, 1 correct
+• 3-way overlap precision: 94.7%
+
+═══ VENN DIAGRAM DATA EXPORT (N=100) ═══
+Detailed breakdown for True/False prediction overlaps:
+
+Metrics: A=group_top_frac, B=agreement_ratio, C=prm_margin
+Selection Count: 100 each
+
+                           Venn Diagram Regions Breakdown (N=100)                            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+│ Three-way (ABC)                       │    19 │        18 │          1 │  94.7% │    5.3% │
+│ group_top_frac ∩ agreement_ratio only │    52 │        45 │          7 │  86.5% │   13.5% │
+│ group_top_frac ∩ prm_margin only      │     3 │         2 │          1 │  66.7% │   33.3% │
+│ agreement_ratio ∩ prm_margin only     │    29 │        24 │          5 │  82.8% │   17.2% │
+│ group_top_frac only                   │    26 │        14 │         12 │  53.8% │   46.2% │
+│ agreement_ratio only                  │     0 │         0 │          0 │   0.0% │    0.0% │
+│ prm_margin only                       │    49 │        26 │         23 │  53.1% │   46.9% │
+└───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
+
+Summary for N=100:
+• Total True Predictions: 129
+• Total False Predictions: 49
+• True/False Ratio: 2.63
+
+Three-way Overlap Analysis:
+• Total questions: 19
+• True predictions: 18 (94.7%)
+• False predictions: 1 (5.3%)
+• Three-way True/False ratio: 18.00
+
+RAW DATA FOR VENN DIAGRAM (N=100):
+# Copy this data into your visualization script
+# Count: 100
+# Metrics: group_top_frac, agreement_ratio, prm_margin
+
+# True predictions (correctly identified uncertain)
+true_ABC = 18  # All three methods
+true_AB_only = 45  # group_top_frac ∩ agreement_ratio only
+true_AC_only = 2  # group_top_frac ∩ prm_margin only
+true_BC_only = 24  # agreement_ratio ∩ prm_margin only
+true_A_only = 14  # group_top_frac only
+true_B_only = 0  # agreement_ratio only
+true_C_only = 26  # prm_margin only
+
+# False predictions (incorrectly identified uncertain)
+false_ABC = 1  # All three methods
+false_AB_only = 7  # group_top_frac ∩ agreement_ratio only
+false_AC_only = 1  # group_top_frac ∩ prm_margin only
+false_BC_only = 5  # agreement_ratio ∩ prm_margin only
+false_A_only = 12  # group_top_frac only
+false_B_only = 0  # agreement_ratio only
+false_C_only = 23  # prm_margin only
+
+═══ Fixed Count 125 Analysis ═══
+                              Pairwise Overlap at Count 125                              
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Metric Pair                 ┃ Overlap Count ┃ Overlap % ┃ Union Count ┃ Jaccard Index ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Group Top Fr × Agreement Ra │            84 │     67.2% │         166 │         0.506 │
+│ Group Top Fr × Prm Margin   │            33 │     26.4% │         217 │         0.152 │
+│ Agreement Ra × Prm Margin   │            62 │     49.6% │         188 │         0.330 │
+└─────────────────────────────┴───────────────┴───────────┴─────────────┴───────────────┘
+
+Three-way Analysis:
+• Questions selected by ALL 3 metrics: 29
+• Questions selected by ANY metric: 225
+• Three-way overlap rate: 23.2% of 125
+• In 3-way overlap: 25 incorrect, 4 correct
+• 3-way overlap precision: 86.2%
+
+═══ VENN DIAGRAM DATA EXPORT (N=125) ═══
+Detailed breakdown for True/False prediction overlaps:
+
+Metrics: A=group_top_frac, B=agreement_ratio, C=prm_margin
+Selection Count: 125 each
+
+                           Venn Diagram Regions Breakdown (N=125)                            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+│ Three-way (ABC)                       │    29 │        25 │          4 │  86.2% │   13.8% │
+│ group_top_frac ∩ agreement_ratio only │    55 │        42 │         13 │  76.4% │   23.6% │
+│ group_top_frac ∩ prm_margin only      │     4 │         3 │          1 │  75.0% │   25.0% │
+│ agreement_ratio ∩ prm_margin only     │    33 │        25 │          8 │  75.8% │   24.2% │
+│ group_top_frac only                   │    37 │        25 │         12 │  67.6% │   32.4% │
+│ agreement_ratio only                  │     8 │         0 │          8 │   0.0% │  100.0% │
+│ prm_margin only                       │    59 │        26 │         33 │  44.1% │   55.9% │
+└───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
+
+Summary for N=125:
+• Total True Predictions: 146
+• Total False Predictions: 79
+• True/False Ratio: 1.85
+
+Three-way Overlap Analysis:
+• Total questions: 29
+• True predictions: 25 (86.2%)
+• False predictions: 4 (13.8%)
+• Three-way True/False ratio: 6.25
+
+RAW DATA FOR VENN DIAGRAM (N=125):
+# Copy this data into your visualization script
+# Count: 125
+# Metrics: group_top_frac, agreement_ratio, prm_margin
+
+# True predictions (correctly identified uncertain)
+true_ABC = 25  # All three methods
+true_AB_only = 42  # group_top_frac ∩ agreement_ratio only
+true_AC_only = 3  # group_top_frac ∩ prm_margin only
+true_BC_only = 25  # agreement_ratio ∩ prm_margin only
+true_A_only = 25  # group_top_frac only
+true_B_only = 0  # agreement_ratio only
+true_C_only = 26  # prm_margin only
+
+# False predictions (incorrectly identified uncertain)
+false_ABC = 4  # All three methods
+false_AB_only = 13  # group_top_frac ∩ agreement_ratio only
+false_AC_only = 1  # group_top_frac ∩ prm_margin only
+false_BC_only = 8  # agreement_ratio ∩ prm_margin only
+false_A_only = 12  # group_top_frac only
+false_B_only = 8  # agreement_ratio only
+false_C_only = 33  # prm_margin only
+
+═══ FIXED COUNT ENSEMBLE vs INDIVIDUAL COMPARISON (N=75) ═══
+Comparing individual metrics with ensemble (OR logic) using fixed count selection
+
+
+DEBUG: Individual metric selections at count 75:
+• group_top_frac: 75 questions
+• agreement_ratio: 75 questions
+• prm_margin: 75 questions
+• Ensemble (OR): 142 questions
+• Overlap group_to & agreemen: 46
+• Overlap group_to & prm_marg: 11
+• Overlap agreemen & prm_marg: 34
+• Three-way overlap: 8
+• Unique to group_to: 26
+• Unique to agreemen: 3
+• Unique to prm_marg: 38
+                Individual vs Ensemble Performance Comparison (Fixed Count 75)                 
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
+┃ Method          ┃ Selected ┃ Corr.Sel ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Improveme… ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
+│ Group Top Frac  │       75 │        7 │        68 │     0.907 │  0.322 │ 0.476 │   baseline │
+│ Agreement Ratio │       75 │       13 │        62 │     0.827 │  0.294 │ 0.434 │      -8.8% │
+│ Prm Margin      │       75 │       17 │        58 │     0.773 │  0.275 │ 0.406 │     -14.7% │
+│ Ensemble (OR)   │      142 │       25 │       117 │     0.824 │  0.555 │ 0.663 │     +39.4% │
+└─────────────────┴──────────┴──────────┴───────────┴───────────┴────────┴───────┴────────────┘
+
+Fixed Count Ensemble Analysis Summary:
+• Ensemble selects 142 total questions (9.5% of dataset)
+• Individual metrics each select exactly 75 questions
+• Ensemble precision: 0.824 vs best individual: 0.907
+• Ensemble recall: 0.555 vs best individual: 0.322
+• Ensemble F1: 0.663 vs best individual: 0.476
+
+Final Recommendation: ENSEMBLE RECOMMENDED
+Reasoning: Significant F1 improvement: +0.187
+
+Ensemble Expansion Analysis:
+• Expected if no overlap: 225 questions
+• Actual ensemble size: 142 questions
+• Expansion ratio: 1.89x (lower = more overlap)
+• Moderate overlap - some complementarity
+
+FIXED COUNT ENSEMBLE ANALYSIS - TOP 3 METRICS (N=100)
+Analyzing overlap between top 3 performing metrics with fixed count selection:
+
+1. Agreement Ratio (F1: 0.559)
+2. Group Top Frac (F1: 0.508)
+3. Prm Margin (F1: 0.450)
+
+═══ Fixed Count 75 Analysis ═══
+                              Pairwise Overlap at Count 75                               
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Metric Pair                 ┃ Overlap Count ┃ Overlap % ┃ Union Count ┃ Jaccard Index ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Agreement Ra × Group Top Fr │            46 │     61.3% │         104 │         0.442 │
+│ Agreement Ra × Prm Margin   │            34 │     45.3% │         116 │         0.293 │
+│ Group Top Fr × Prm Margin   │            11 │     14.7% │         139 │         0.079 │
+└─────────────────────────────┴───────────────┴───────────┴─────────────┴───────────────┘
+
+Three-way Analysis:
+• Questions selected by ALL 3 metrics: 8
+• Questions selected by ANY metric: 142
+• Three-way overlap rate: 10.7% of 75
+• In 3-way overlap: 7 incorrect, 1 correct
+• 3-way overlap precision: 87.5%
+
+═══ VENN DIAGRAM DATA EXPORT (N=75) ═══
+Detailed breakdown for True/False prediction overlaps:
+
+Metrics: A=agreement_ratio, B=group_top_frac, C=prm_margin
+Selection Count: 75 each
+
+                            Venn Diagram Regions Breakdown (N=75)                            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+│ Three-way (ABC)                       │     8 │         7 │          1 │  87.5% │   12.5% │
+│ agreement_ratio ∩ group_top_frac only │    38 │        33 │          5 │  86.8% │   13.2% │
+│ agreement_ratio ∩ prm_margin only     │    26 │        21 │          5 │  80.8% │   19.2% │
+│ group_top_frac ∩ prm_margin only      │     3 │         3 │          0 │ 100.0% │    0.0% │
+│ agreement_ratio only                  │     3 │         1 │          2 │  33.3% │   66.7% │
+│ group_top_frac only                   │    26 │        25 │          1 │  96.2% │    3.8% │
+│ prm_margin only                       │    38 │        27 │         11 │  71.1% │   28.9% │
+└───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
+
+Summary for N=75:
+• Total True Predictions: 117
+• Total False Predictions: 25
+• True/False Ratio: 4.68
+
+Three-way Overlap Analysis:
+• Total questions: 8
+• True predictions: 7 (87.5%)
+• False predictions: 1 (12.5%)
+• Three-way True/False ratio: 7.00
+
+RAW DATA FOR VENN DIAGRAM (N=75):
+# Copy this data into your visualization script
+# Count: 75
+# Metrics: agreement_ratio, group_top_frac, prm_margin
+
+# True predictions (correctly identified uncertain)
+true_ABC = 7  # All three methods
+true_AB_only = 33  # agreement_ratio ∩ group_top_frac only
+true_AC_only = 21  # agreement_ratio ∩ prm_margin only
+true_BC_only = 3  # group_top_frac ∩ prm_margin only
+true_A_only = 1  # agreement_ratio only
+true_B_only = 25  # group_top_frac only
+true_C_only = 27  # prm_margin only
+
+# False predictions (incorrectly identified uncertain)
+false_ABC = 1  # All three methods
+false_AB_only = 5  # agreement_ratio ∩ group_top_frac only
+false_AC_only = 5  # agreement_ratio ∩ prm_margin only
+false_BC_only = 0  # group_top_frac ∩ prm_margin only
+false_A_only = 2  # agreement_ratio only
+false_B_only = 1  # group_top_frac only
+false_C_only = 11  # prm_margin only
+
+═══ Fixed Count 100 Analysis ═══
+                              Pairwise Overlap at Count 100                              
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Metric Pair                 ┃ Overlap Count ┃ Overlap % ┃ Union Count ┃ Jaccard Index ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Agreement Ra × Group Top Fr │            71 │     71.0% │         129 │         0.550 │
+│ Agreement Ra × Prm Margin   │            48 │     48.0% │         152 │         0.316 │
+│ Group Top Fr × Prm Margin   │            22 │     22.0% │         178 │         0.124 │
+└─────────────────────────────┴───────────────┴───────────┴─────────────┴───────────────┘
+
+Three-way Analysis:
+• Questions selected by ALL 3 metrics: 19
+• Questions selected by ANY metric: 178
+• Three-way overlap rate: 19.0% of 100
+• In 3-way overlap: 18 incorrect, 1 correct
+• 3-way overlap precision: 94.7%
+
+═══ VENN DIAGRAM DATA EXPORT (N=100) ═══
+Detailed breakdown for True/False prediction overlaps:
+
+Metrics: A=agreement_ratio, B=group_top_frac, C=prm_margin
+Selection Count: 100 each
+
+                           Venn Diagram Regions Breakdown (N=100)                            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+│ Three-way (ABC)                       │    19 │        18 │          1 │  94.7% │    5.3% │
+│ agreement_ratio ∩ group_top_frac only │    52 │        45 │          7 │  86.5% │   13.5% │
+│ agreement_ratio ∩ prm_margin only     │    29 │        24 │          5 │  82.8% │   17.2% │
+│ group_top_frac ∩ prm_margin only      │     3 │         2 │          1 │  66.7% │   33.3% │
+│ agreement_ratio only                  │     0 │         0 │          0 │   0.0% │    0.0% │
+│ group_top_frac only                   │    26 │        14 │         12 │  53.8% │   46.2% │
+│ prm_margin only                       │    49 │        26 │         23 │  53.1% │   46.9% │
+└───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
+
+Summary for N=100:
+• Total True Predictions: 129
+• Total False Predictions: 49
+• True/False Ratio: 2.63
+
+Three-way Overlap Analysis:
+• Total questions: 19
+• True predictions: 18 (94.7%)
+• False predictions: 1 (5.3%)
+• Three-way True/False ratio: 18.00
+
+RAW DATA FOR VENN DIAGRAM (N=100):
+# Copy this data into your visualization script
+# Count: 100
+# Metrics: agreement_ratio, group_top_frac, prm_margin
+
+# True predictions (correctly identified uncertain)
+true_ABC = 18  # All three methods
+true_AB_only = 45  # agreement_ratio ∩ group_top_frac only
+true_AC_only = 24  # agreement_ratio ∩ prm_margin only
+true_BC_only = 2  # group_top_frac ∩ prm_margin only
+true_A_only = 0  # agreement_ratio only
+true_B_only = 14  # group_top_frac only
+true_C_only = 26  # prm_margin only
+
+# False predictions (incorrectly identified uncertain)
+false_ABC = 1  # All three methods
+false_AB_only = 7  # agreement_ratio ∩ group_top_frac only
+false_AC_only = 5  # agreement_ratio ∩ prm_margin only
+false_BC_only = 1  # group_top_frac ∩ prm_margin only
+false_A_only = 0  # agreement_ratio only
+false_B_only = 12  # group_top_frac only
+false_C_only = 23  # prm_margin only
+
+═══ Fixed Count 125 Analysis ═══
+                              Pairwise Overlap at Count 125                              
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Metric Pair                 ┃ Overlap Count ┃ Overlap % ┃ Union Count ┃ Jaccard Index ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Agreement Ra × Group Top Fr │            84 │     67.2% │         166 │         0.506 │
+│ Agreement Ra × Prm Margin   │            62 │     49.6% │         188 │         0.330 │
+│ Group Top Fr × Prm Margin   │            33 │     26.4% │         217 │         0.152 │
+└─────────────────────────────┴───────────────┴───────────┴─────────────┴───────────────┘
+
+Three-way Analysis:
+• Questions selected by ALL 3 metrics: 29
+• Questions selected by ANY metric: 225
+• Three-way overlap rate: 23.2% of 125
+• In 3-way overlap: 25 incorrect, 4 correct
+• 3-way overlap precision: 86.2%
+
+═══ VENN DIAGRAM DATA EXPORT (N=125) ═══
+Detailed breakdown for True/False prediction overlaps:
+
+Metrics: A=agreement_ratio, B=group_top_frac, C=prm_margin
+Selection Count: 125 each
+
+                           Venn Diagram Regions Breakdown (N=125)                            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+│ Three-way (ABC)                       │    29 │        25 │          4 │  86.2% │   13.8% │
+│ agreement_ratio ∩ group_top_frac only │    55 │        42 │         13 │  76.4% │   23.6% │
+│ agreement_ratio ∩ prm_margin only     │    33 │        25 │          8 │  75.8% │   24.2% │
+│ group_top_frac ∩ prm_margin only      │     4 │         3 │          1 │  75.0% │   25.0% │
+│ agreement_ratio only                  │     8 │         0 │          8 │   0.0% │  100.0% │
+│ group_top_frac only                   │    37 │        25 │         12 │  67.6% │   32.4% │
+│ prm_margin only                       │    59 │        26 │         33 │  44.1% │   55.9% │
+└───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
+
+Summary for N=125:
+• Total True Predictions: 146
+• Total False Predictions: 79
+• True/False Ratio: 1.85
+
+Three-way Overlap Analysis:
+• Total questions: 29
+• True predictions: 25 (86.2%)
+• False predictions: 4 (13.8%)
+• Three-way True/False ratio: 6.25
+
+RAW DATA FOR VENN DIAGRAM (N=125):
+# Copy this data into your visualization script
+# Count: 125
+# Metrics: agreement_ratio, group_top_frac, prm_margin
+
+# True predictions (correctly identified uncertain)
+true_ABC = 25  # All three methods
+true_AB_only = 42  # agreement_ratio ∩ group_top_frac only
+true_AC_only = 25  # agreement_ratio ∩ prm_margin only
+true_BC_only = 3  # group_top_frac ∩ prm_margin only
+true_A_only = 0  # agreement_ratio only
+true_B_only = 25  # group_top_frac only
+true_C_only = 26  # prm_margin only
+
+# False predictions (incorrectly identified uncertain)
+false_ABC = 4  # All three methods
+false_AB_only = 13  # agreement_ratio ∩ group_top_frac only
+false_AC_only = 8  # agreement_ratio ∩ prm_margin only
+false_BC_only = 1  # group_top_frac ∩ prm_margin only
+false_A_only = 8  # agreement_ratio only
+false_B_only = 12  # group_top_frac only
+false_C_only = 33  # prm_margin only
+
+═══ FIXED COUNT ENSEMBLE vs INDIVIDUAL COMPARISON (N=100) ═══
+Comparing individual metrics with ensemble (OR logic) using fixed count selection
+
+
+DEBUG: Individual metric selections at count 100:
+• agreement_ratio: 100 questions
+• group_top_frac: 100 questions
+• prm_margin: 100 questions
+• Ensemble (OR): 178 questions
+• Overlap agreemen & group_to: 71
+• Overlap agreemen & prm_marg: 48
+• Overlap group_to & prm_marg: 22
+• Three-way overlap: 19
+• Unique to agreemen: 0
+• Unique to group_to: 26
+• Unique to prm_marg: 49
+                Individual vs Ensemble Performance Comparison (Fixed Count 100)                
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
+┃ Method          ┃ Selected ┃ Corr.Sel ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Improveme… ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
+│ Agreement Ratio │      100 │       13 │        87 │     0.870 │  0.412 │ 0.559 │   baseline │
+│ Group Top Frac  │      100 │       21 │        79 │     0.790 │  0.374 │ 0.508 │      -9.2% │
+│ Prm Margin      │      100 │       30 │        70 │     0.700 │  0.332 │ 0.450 │     -19.5% │
+│ Ensemble (OR)   │      178 │       49 │       129 │     0.725 │  0.611 │ 0.663 │     +18.5% │
+└─────────────────┴──────────┴──────────┴───────────┴───────────┴────────┴───────┴────────────┘
+
+Fixed Count Ensemble Analysis Summary:
+• Ensemble selects 178 total questions (11.9% of dataset)
+• Individual metrics each select exactly 100 questions
+• Ensemble precision: 0.725 vs best individual: 0.870
+• Ensemble recall: 0.611 vs best individual: 0.412
+• Ensemble F1: 0.663 vs best individual: 0.559
+
+Final Recommendation: ENSEMBLE RECOMMENDED
+Reasoning: Significant F1 improvement: +0.104
+
+Ensemble Expansion Analysis:
+• Expected if no overlap: 300 questions
+• Actual ensemble size: 178 questions
+• Expansion ratio: 1.78x (lower = more overlap)
+• Moderate overlap - some complementarity
+
+FIXED COUNT ENSEMBLE ANALYSIS - TOP 3 METRICS (N=125)
+Analyzing overlap between top 3 performing metrics with fixed count selection:
+
+1. Group Top Frac (F1: 0.565)
+2. Agreement Ratio (F1: 0.548)
+3. Entropy Freq (F1: 0.542)
+
+═══ Fixed Count 75 Analysis ═══
+                              Pairwise Overlap at Count 75                               
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Metric Pair                 ┃ Overlap Count ┃ Overlap % ┃ Union Count ┃ Jaccard Index ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Group Top Fr × Agreement Ra │            46 │     61.3% │         104 │         0.442 │
+│ Group Top Fr × Entropy Freq │            30 │     40.0% │         120 │         0.250 │
+│ Agreement Ra × Entropy Freq │            51 │     68.0% │          99 │         0.515 │
+└─────────────────────────────┴───────────────┴───────────┴─────────────┴───────────────┘
+
+Three-way Analysis:
+• Questions selected by ALL 3 metrics: 30
+• Questions selected by ANY metric: 128
+• Three-way overlap rate: 40.0% of 75
+• In 3-way overlap: 24 incorrect, 6 correct
+• 3-way overlap precision: 80.0%
+
+═══ VENN DIAGRAM DATA EXPORT (N=75) ═══
+Detailed breakdown for True/False prediction overlaps:
+
+Metrics: A=group_top_frac, B=agreement_ratio, C=entropy_freq
+Selection Count: 75 each
+
+                            Venn Diagram Regions Breakdown (N=75)                            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+│ Three-way (ABC)                       │    30 │        24 │          6 │  80.0% │   20.0% │
+│ group_top_frac ∩ agreement_ratio only │    16 │        16 │          0 │ 100.0% │    0.0% │
+│ group_top_frac ∩ entropy_freq only    │     0 │         0 │          0 │   0.0% │    0.0% │
+│ agreement_ratio ∩ entropy_freq only   │    21 │        14 │          7 │  66.7% │   33.3% │
+│ group_top_frac only                   │    29 │        28 │          1 │  96.6% │    3.4% │
+│ agreement_ratio only                  │     8 │         8 │          0 │ 100.0% │    0.0% │
+│ entropy_freq only                     │    24 │         3 │         21 │  12.5% │   87.5% │
+└───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
+
+Summary for N=75:
+• Total True Predictions: 93
+• Total False Predictions: 35
+• True/False Ratio: 2.66
+
+Three-way Overlap Analysis:
+• Total questions: 30
+• True predictions: 24 (80.0%)
+• False predictions: 6 (20.0%)
+• Three-way True/False ratio: 4.00
+
+RAW DATA FOR VENN DIAGRAM (N=75):
+# Copy this data into your visualization script
+# Count: 75
+# Metrics: group_top_frac, agreement_ratio, entropy_freq
+
+# True predictions (correctly identified uncertain)
+true_ABC = 24  # All three methods
+true_AB_only = 16  # group_top_frac ∩ agreement_ratio only
+true_AC_only = 0  # group_top_frac ∩ entropy_freq only
+true_BC_only = 14  # agreement_ratio ∩ entropy_freq only
+true_A_only = 28  # group_top_frac only
+true_B_only = 8  # agreement_ratio only
+true_C_only = 3  # entropy_freq only
+
+# False predictions (incorrectly identified uncertain)
+false_ABC = 6  # All three methods
+false_AB_only = 0  # group_top_frac ∩ agreement_ratio only
+false_AC_only = 0  # group_top_frac ∩ entropy_freq only
+false_BC_only = 7  # agreement_ratio ∩ entropy_freq only
+false_A_only = 1  # group_top_frac only
+false_B_only = 0  # agreement_ratio only
+false_C_only = 21  # entropy_freq only
+
+═══ Fixed Count 100 Analysis ═══
+                              Pairwise Overlap at Count 100                              
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Metric Pair                 ┃ Overlap Count ┃ Overlap % ┃ Union Count ┃ Jaccard Index ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Group Top Fr × Agreement Ra │            71 │     71.0% │         129 │         0.550 │
+│ Group Top Fr × Entropy Freq │            52 │     52.0% │         148 │         0.351 │
+│ Agreement Ra × Entropy Freq │            68 │     68.0% │         132 │         0.515 │
+└─────────────────────────────┴───────────────┴───────────┴─────────────┴───────────────┘
+
+Three-way Analysis:
+• Questions selected by ALL 3 metrics: 47
+• Questions selected by ANY metric: 156
+• Three-way overlap rate: 47.0% of 100
+• In 3-way overlap: 39 incorrect, 8 correct
+• 3-way overlap precision: 83.0%
+
+═══ VENN DIAGRAM DATA EXPORT (N=100) ═══
+Detailed breakdown for True/False prediction overlaps:
+
+Metrics: A=group_top_frac, B=agreement_ratio, C=entropy_freq
+Selection Count: 100 each
+
+                           Venn Diagram Regions Breakdown (N=100)                            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+│ Three-way (ABC)                       │    47 │        39 │          8 │  83.0% │   17.0% │
+│ group_top_frac ∩ agreement_ratio only │    24 │        24 │          0 │ 100.0% │    0.0% │
+│ group_top_frac ∩ entropy_freq only    │     5 │         0 │          5 │   0.0% │  100.0% │
+│ agreement_ratio ∩ entropy_freq only   │    21 │        16 │          5 │  76.2% │   23.8% │
+│ group_top_frac only                   │    24 │        16 │          8 │  66.7% │   33.3% │
+│ agreement_ratio only                  │     8 │         8 │          0 │ 100.0% │    0.0% │
+│ entropy_freq only                     │    27 │        11 │         16 │  40.7% │   59.3% │
+└───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
+
+Summary for N=100:
+• Total True Predictions: 114
+• Total False Predictions: 42
+• True/False Ratio: 2.71
+
+Three-way Overlap Analysis:
+• Total questions: 47
+• True predictions: 39 (83.0%)
+• False predictions: 8 (17.0%)
+• Three-way True/False ratio: 4.88
+
+RAW DATA FOR VENN DIAGRAM (N=100):
+# Copy this data into your visualization script
+# Count: 100
+# Metrics: group_top_frac, agreement_ratio, entropy_freq
+
+# True predictions (correctly identified uncertain)
+true_ABC = 39  # All three methods
+true_AB_only = 24  # group_top_frac ∩ agreement_ratio only
+true_AC_only = 0  # group_top_frac ∩ entropy_freq only
+true_BC_only = 16  # agreement_ratio ∩ entropy_freq only
+true_A_only = 16  # group_top_frac only
+true_B_only = 8  # agreement_ratio only
+true_C_only = 11  # entropy_freq only
+
+# False predictions (incorrectly identified uncertain)
+false_ABC = 8  # All three methods
+false_AB_only = 0  # group_top_frac ∩ agreement_ratio only
+false_AC_only = 5  # group_top_frac ∩ entropy_freq only
+false_BC_only = 5  # agreement_ratio ∩ entropy_freq only
+false_A_only = 8  # group_top_frac only
+false_B_only = 0  # agreement_ratio only
+false_C_only = 16  # entropy_freq only
+
+═══ Fixed Count 125 Analysis ═══
+                              Pairwise Overlap at Count 125                              
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Metric Pair                 ┃ Overlap Count ┃ Overlap % ┃ Union Count ┃ Jaccard Index ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Group Top Fr × Agreement Ra │            84 │     67.2% │         166 │         0.506 │
+│ Group Top Fr × Entropy Freq │            84 │     67.2% │         166 │         0.506 │
+│ Agreement Ra × Entropy Freq │            98 │     78.4% │         152 │         0.645 │
+└─────────────────────────────┴───────────────┴───────────┴─────────────┴───────────────┘
+
+Three-way Analysis:
+• Questions selected by ALL 3 metrics: 69
+• Questions selected by ANY metric: 178
+• Three-way overlap rate: 55.2% of 125
+• In 3-way overlap: 58 incorrect, 11 correct
+• 3-way overlap precision: 84.1%
+
+═══ VENN DIAGRAM DATA EXPORT (N=125) ═══
+Detailed breakdown for True/False prediction overlaps:
+
+Metrics: A=group_top_frac, B=agreement_ratio, C=entropy_freq
+Selection Count: 125 each
+
+                           Venn Diagram Regions Breakdown (N=125)                            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+│ Three-way (ABC)                       │    69 │        58 │         11 │  84.1% │   15.9% │
+│ group_top_frac ∩ agreement_ratio only │    15 │         9 │          6 │  60.0% │   40.0% │
+│ group_top_frac ∩ entropy_freq only    │    15 │         7 │          8 │  46.7% │   53.3% │
+│ agreement_ratio ∩ entropy_freq only   │    29 │        20 │          9 │  69.0% │   31.0% │
+│ group_top_frac only                   │    26 │        21 │          5 │  80.8% │   19.2% │
+│ agreement_ratio only                  │    12 │         5 │          7 │  41.7% │   58.3% │
+│ entropy_freq only                     │    12 │         6 │          6 │  50.0% │   50.0% │
+└───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
+
+Summary for N=125:
+• Total True Predictions: 126
+• Total False Predictions: 52
+• True/False Ratio: 2.42
+
+Three-way Overlap Analysis:
+• Total questions: 69
+• True predictions: 58 (84.1%)
+• False predictions: 11 (15.9%)
+• Three-way True/False ratio: 5.27
+
+RAW DATA FOR VENN DIAGRAM (N=125):
+# Copy this data into your visualization script
+# Count: 125
+# Metrics: group_top_frac, agreement_ratio, entropy_freq
+
+# True predictions (correctly identified uncertain)
+true_ABC = 58  # All three methods
+true_AB_only = 9  # group_top_frac ∩ agreement_ratio only
+true_AC_only = 7  # group_top_frac ∩ entropy_freq only
+true_BC_only = 20  # agreement_ratio ∩ entropy_freq only
+true_A_only = 21  # group_top_frac only
+true_B_only = 5  # agreement_ratio only
+true_C_only = 6  # entropy_freq only
+
+# False predictions (incorrectly identified uncertain)
+false_ABC = 11  # All three methods
+false_AB_only = 6  # group_top_frac ∩ agreement_ratio only
+false_AC_only = 8  # group_top_frac ∩ entropy_freq only
+false_BC_only = 9  # agreement_ratio ∩ entropy_freq only
+false_A_only = 5  # group_top_frac only
+false_B_only = 7  # agreement_ratio only
+false_C_only = 6  # entropy_freq only
+
+═══ FIXED COUNT ENSEMBLE vs INDIVIDUAL COMPARISON (N=125) ═══
+Comparing individual metrics with ensemble (OR logic) using fixed count selection
+
+
+DEBUG: Individual metric selections at count 125:
+• group_top_frac: 125 questions
+• agreement_ratio: 125 questions
+• entropy_freq: 125 questions
+• Ensemble (OR): 178 questions
+• Overlap group_to & agreemen: 84
+• Overlap group_to & entropy_: 84
+• Overlap agreemen & entropy_: 98
+• Three-way overlap: 69
+• Unique to group_to: 26
+• Unique to agreemen: 12
+• Unique to entropy_: 12
+                Individual vs Ensemble Performance Comparison (Fixed Count 125)                
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
+┃ Method          ┃ Selected ┃ Corr.Sel ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Improveme… ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
+│ Group Top Frac  │      125 │       30 │        95 │     0.760 │  0.450 │ 0.565 │   baseline │
+│ Agreement Ratio │      125 │       33 │        92 │     0.736 │  0.436 │ 0.548 │      -3.2% │
+│ Entropy Freq    │      125 │       34 │        91 │     0.728 │  0.431 │ 0.542 │      -4.2% │
+│ Ensemble (OR)   │      178 │       52 │       126 │     0.708 │  0.597 │ 0.648 │     +14.6% │
+└─────────────────┴──────────┴──────────┴───────────┴───────────┴────────┴───────┴────────────┘
+
+Fixed Count Ensemble Analysis Summary:
+• Ensemble selects 178 total questions (11.9% of dataset)
+• Individual metrics each select exactly 125 questions
+• Ensemble precision: 0.708 vs best individual: 0.760
+• Ensemble recall: 0.597 vs best individual: 0.450
+• Ensemble F1: 0.648 vs best individual: 0.565
+
+Final Recommendation: ENSEMBLE RECOMMENDED
+Reasoning: Significant F1 improvement: +0.082
+
+Ensemble Expansion Analysis:
+• Expected if no overlap: 375 questions
+• Actual ensemble size: 178 questions
+• Expansion ratio: 1.42x (lower = more overlap)
+• High overlap detected - metrics are complementary
+
+═══ ENSEMBLE PERFORMANCE ACROSS SELECTION COUNTS ═══
+Comparing ensemble vs individual performance across different selection counts
+
+Top 3 metrics (based on F1 at count=100):
+1. Agreement Ratio (F1: 0.559)
+2. Group Top Frac (F1: 0.508)
+3. Prm Margin (F1: 0.450)
+                  Ensemble vs Individual Performance Comparison Across Counts                  
+┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━┓
+┃ Count ┃ Method            ┃ Selected ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Improvement ┃
+┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━┩
+│  75   │ Best Individual   │       75 │        68 │     0.907 │  0.322 │ 0.476 │    baseline │
+│       │ (Group Top Frac)  │          │           │           │        │       │             │
+│       │ Ensemble (OR)     │      142 │       117 │     0.824 │  0.555 │ 0.663 │      +39.4% │
+│       │                   │          │           │           │        │       │             │
+│  100  │ Best Individual   │      100 │        87 │     0.870 │  0.412 │ 0.559 │    baseline │
+│       │ (Agreement Ratio) │          │           │           │        │       │             │
+│       │ Ensemble (OR)     │      178 │       129 │     0.725 │  0.611 │ 0.663 │      +18.5% │
+│       │                   │          │           │           │        │       │             │
+│  125  │ Best Individual   │      125 │        95 │     0.760 │  0.450 │ 0.565 │    baseline │
+│       │ (Group Top Frac)  │          │           │           │        │       │             │
+│       │ Ensemble (OR)     │      225 │       146 │     0.649 │  0.692 │ 0.670 │      +18.4% │
+└───────┴───────────────────┴──────────┴───────────┴───────────┴────────┴───────┴─────────────┘
+
+Summary Analysis Across Counts:
+• Best ensemble F1: 0.670 at count 125
+• Best individual F1: 0.565 at count 125
+
+Ensemble Size Analysis:
+• Count 75: Ensemble selects 142 questions (1.89x expansion)
+• Count 100: Ensemble selects 178 questions (1.78x expansion)
+• Count 125: Ensemble selects 225 questions (1.80x expansion)
+
+Recommendation: Use ensemble at count 125
+Reasoning: Best overall F1 score (0.670)
+
+═══ LINEAR MODEL UNCERTAINTY PREDICTION ═══
+Training logistic regression using top 3 metrics to predict incorrect answers
+
+Using metrics:
+1. Agreement Ratio
+2. Group Top Frac
+3. Prm Margin
+
+Model Coefficients:
+• Agreement Ratio: -4.0913 ↓
+• Group Top Frac: -2.9985 ↓
+• Prm Margin: 1.3050 ↑
+• Intercept: 3.8030
+
+Linear Model Performance at Different Selection Counts:
+                       Linear Model vs Top Individual Metric Performance                       
+┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━┓
+┃ Count ┃ Method            ┃ Selected ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Improvement ┃
+┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━┩
+│  75   │ Best Individual   │       75 │        68 │     0.907 │  0.322 │ 0.476 │    baseline │
+│       │ (Group Top Frac)  │          │           │           │        │       │             │
+│       │ Linear Model      │       75 │        68 │     0.907 │  0.322 │ 0.476 │       +0.0% │
+│       │                   │          │           │           │        │       │             │
+│  100  │ Best Individual   │      100 │        87 │     0.870 │  0.412 │ 0.559 │    baseline │
+│       │ (Agreement Ratio) │          │           │           │        │       │             │
+│       │ Linear Model      │      100 │        87 │     0.870 │  0.412 │ 0.559 │       +0.0% │
+│       │                   │          │           │           │        │       │             │
+│  125  │ Best Individual   │      125 │        95 │     0.760 │  0.450 │ 0.565 │    baseline │
+│       │ (Group Top Frac)  │          │           │           │        │       │             │
+│       │ Linear Model      │      125 │       110 │     0.880 │  0.521 │ 0.655 │      +15.8% │
+└───────┴───────────────────┴──────────┴───────────┴───────────┴────────┴───────┴─────────────┘
+
+Feature Importance Analysis:
+1. Agreement Ratio: importance 4.0913 (lower values → uncertain)
+2. Group Top Frac: importance 2.9985 (lower values → uncertain)
+3. Prm Margin: importance 1.3050 (higher values → uncertain)
+
+Model Validation (30% holdout):
+• Validation Precision: 0.667
+• Validation Recall: 0.635
+• Validation F1: 0.650
+
+═══ COMPREHENSIVE METHOD COMPARISON ═══
+Comparing all uncertainty detection methods across selection counts
+
+                              All Methods Performance Comparison                               
+┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━┓
+┃ Count ┃ Method                      ┃ Selected ┃ Incor.S… ┃ Precis… ┃ Recall ┃    F1 ┃ Rank ┃
+┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━┩
+│  75   │ Ensemble (OR)               │      142 │      117 │   0.824 │  0.555 │ 0.663 │  🥇  │
+│       │ Individual: Group Top Frac  │       75 │       68 │   0.907 │  0.322 │ 0.476 │  🥈  │
+│       │ Linear Model                │       75 │       68 │   0.907 │  0.322 │ 0.476 │  🥉  │
+│       │ Individual: Agreement Ratio │       75 │       62 │   0.827 │  0.294 │ 0.434 │  4   │
+│       │ Individual: Prm Margin      │       75 │       58 │   0.773 │  0.275 │ 0.406 │  5   │
+│       │                             │          │          │         │        │       │      │
+│  100  │ Ensemble (OR)               │      178 │      129 │   0.725 │  0.611 │ 0.663 │  🥇  │
+│       │ Individual: Agreement Ratio │      100 │       87 │   0.870 │  0.412 │ 0.559 │  🥈  │
+│       │ Linear Model                │      100 │       87 │   0.870 │  0.412 │ 0.559 │  🥉  │
+│       │ Individual: Group Top Frac  │      100 │       79 │   0.790 │  0.374 │ 0.508 │  4   │
+│       │ Individual: Prm Margin      │      100 │       70 │   0.700 │  0.332 │ 0.450 │  5   │
+│       │                             │          │          │         │        │       │      │
+│  125  │ Ensemble (OR)               │      225 │      146 │   0.649 │  0.692 │ 0.670 │  🥇  │
+│       │ Linear Model                │      125 │      110 │   0.880 │  0.521 │ 0.655 │  🥈  │
+│       │ Individual: Group Top Frac  │      125 │       95 │   0.760 │  0.450 │ 0.565 │  🥉  │
+│       │ Individual: Agreement Ratio │      125 │       92 │   0.736 │  0.436 │ 0.548 │  4   │
+│       │ Individual: Prm Margin      │      125 │       79 │   0.632 │  0.374 │ 0.470 │  5   │
+└───────┴─────────────────────────────┴──────────┴──────────┴─────────┴────────┴───────┴──────┘
+
+Overall Performance Summary:
+• Count 75: Ensemble (OR) wins with F1 = 0.663
+• Count 100: Ensemble (OR) wins with F1 = 0.663
+• Count 125: Ensemble (OR) wins with F1 = 0.670
+
+Method Type Performance:
+• Individual metrics won: 0 times
+• Ensemble won: 3 times
+• Linear model won: 0 times
+
+🏆 Overall Best Method:
+Ensemble (OR) at count 125
+F1 Score: 0.670
+Precision: 0.649, Recall: 0.692
+
+Key Insights:
+• Individual methods average F1: 0.491
+• Ensemble methods average F1: 0.665
+• Model methods average F1: 0.563
+
+Linear Model Feature Weights:
+• Agreement Ratio: -4.0913 ↓
+• Group Top Frac: -2.9985 ↓
+• Prm Margin: 1.3050 ↑

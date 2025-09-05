@@ -1,0 +1,10 @@
+# refer to src/sal/config.py for more options
+
+model_path: Qwen/Qwen2.5-Math-7B
+filter_duplicates: true
+approach: beam_search
+n: 4
+search_batch_size: 1  # DO NOT CHANGE!
+# num_samples: 10       # REMOVE THIS LINE TO RUN ON THE WHOLE DATASET
+num_samples: 100
+seed: 0

@@ -1,0 +1,78 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Pull Data",
+            "type": "shell",
+            "command": "rsync",
+            "args": [
+                "-r",
+                "gpu20:/vol/bitbucket/km1124/search-and-learn/data",
+                "."
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Submit latest commit as job",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "scripts/submit_job.sh"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+            },
+            "icon": {
+                "color": "terminal.ansiBlue",
+                "id": "cloud-upload",
+            }
+        },
+        {
+            "label": "Cancel Job",
+            "type": "shell",
+            "command": "${command:python.interpreterPath}",
+            "args": [
+                "scripts/deploy.py",
+                "--action",
+                "cancel"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+            },
+            "icon": {
+                "color": "terminal.ansiRed",
+                "id": "x-two",
+            }
+        },
+        {
+            "label": "Push",
+            "type": "shell",
+            "command": "${command:python.interpreterPath}",
+            "args": [
+                "scripts/deploy.py",
+                "--action",
+                "push_files"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+            },
+            "icon": {
+                "color": "terminal.ansiCyan",
+                "id": "repo-push",
+            }
+        },
+    ]
+}

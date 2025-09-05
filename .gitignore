@@ -162,3 +162,11 @@ cython_debug/
 #.idea/
 
 data/
+data-organised/
+models/
+wandb/
+job.sh
+trace/
+output/
+nohup.out
+src/red
