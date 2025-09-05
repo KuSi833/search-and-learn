@@ -574,6 +574,8 @@ def hyperparameter_scaling_report():
             accuracies=[0.858, 0.86, 0.868],
             runtimes=[
                 timedelta(hours=1, minutes=54, seconds=58),
+                timedelta(hours=1, minutes=56, seconds=15),
+                timedelta(hours=1, minutes=53, seconds=42),
             ],
         ),
         ExperimentResult(
