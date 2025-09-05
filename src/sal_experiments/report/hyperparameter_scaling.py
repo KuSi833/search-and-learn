@@ -153,19 +153,17 @@ def _rich_color_to_hex(color: Color) -> str:
 
 
 def _parse_n_to_numeric(n_value: str) -> int:
-    """Parse the numeric position for an n label like "4", "8", or "4→8".
+    """Parse the numeric position for an n label like "2", "3", "4", or "2→3".
 
-    We use the last number present so that "4→8" maps to 8.
+    We use the last number present so that "2→3" maps to 3.
     """
     numbers = re.findall(r"\d+", n_value)
     return int(numbers[-1]) if numbers else 0
 
 
-def _numeric_to_n(numeric_generations: int) -> int:
-    """Convert total generations (e.g., 4, 8, 16) to n where generations=2^n."""
-    if numeric_generations <= 0:
-        return 0
-    return int(np.log2(numeric_generations))
+def _numeric_to_n(n_value: int) -> int:
+    """Return n value directly since it's already stored as n, not generations."""
+    return n_value
 
 
 def plot_hyperparameter_scaling(
@@ -201,11 +199,10 @@ def plot_hyperparameter_scaling(
 
     plt.figure(figsize=(9, 5.5), dpi=150)  # Increased from (7, 4.2) to (9, 5.5)
 
-    # Collect all unique n positions (n = log2(generations))
+    # Collect all unique n positions (already stored as n values)
     x_ticks: List[int] = []
     for res in results:
-        numeric = _parse_n_to_numeric(res.n)
-        n_val = _numeric_to_n(numeric)
+        n_val = _parse_n_to_numeric(res.n)
         x_ticks.append(n_val)
     x_ticks = sorted(set(x_ticks))
     x_ticklabels: List[str] = [str(x) for x in x_ticks]
@@ -219,7 +216,7 @@ def plot_hyperparameter_scaling(
         means: List[float] = []
         stds: List[float] = []
         for item in items:
-            xs.append(_numeric_to_n(_parse_n_to_numeric(item.n)))
+            xs.append(_parse_n_to_numeric(item.n))
             if item.method == "CGAI":
                 accs = item.accuracies  # already in %
             else:
@@ -299,7 +296,7 @@ def plot_accuracy_vs_latency(
     ]
 
     # Assign distinct markers for different n values
-    marker_map = {2: "o", 3: "s", 4: "^"}  # n=2 (4 gens), n=3 (8 gens), n=4 (16 gens)
+    marker_map = {2: "o", 3: "s", 4: "^"}  # n=2, n=3, n=4
 
     # Group results by method
     grouped: Dict[str, List[ExperimentResult]] = {}
@@ -336,7 +333,7 @@ def plot_accuracy_vs_latency(
             ]
             latency = np.mean(latencies_per_problem)
 
-            n_value = _numeric_to_n(_parse_n_to_numeric(item.n))
+            n_value = _parse_n_to_numeric(item.n)
             marker = marker_map.get(n_value, "D")
 
             # Create legend label - special case for CGAI to show arrow
@@ -364,7 +361,7 @@ def plot_accuracy_vs_latency(
             all_points.append((latency, acc, method, n_value))
 
             # Check if this point should be annotated (n=4 or CGAI)
-            if n_value == 4 or method == "CGAI":  # n=2 corresponds to 4 generations
+            if n_value == 4 or method == "CGAI":
                 annotate_points.append((latency, acc, method, n_value))
 
         # Connect points of the same method with lines
@@ -424,11 +421,9 @@ def plot_accuracy_vs_latency(
     cgai_point = None
 
     for latency, acc, method, n_value in all_points:
-        if method == "WBoN" and n_value == 3:  # n=3 corresponds to 8 generations
+        if method == "WBoN" and n_value == 3:
             wbon_n3_point = (latency, acc)
-        elif (
-            method == "Beam Search" and n_value == 4
-        ):  # n=4 corresponds to 16 generations
+        elif method == "Beam Search" and n_value == 4:
             beam_n4_point = (latency, acc)
         elif method == "CGAI":
             cgai_point = (latency, acc)
@@ -550,7 +545,7 @@ def hyperparameter_scaling_report():
     RESULTS = [
         ExperimentResult(
             method="WBoN",
-            n="4",
+            n="2",
             accuracies=[0.854, 0.856, 0.84],
             runtimes=[
                 timedelta(hours=1, minutes=25, seconds=10),
@@ -560,7 +555,7 @@ def hyperparameter_scaling_report():
         ),
         ExperimentResult(
             method="WBoN",
-            n="8",
+            n="3",
             accuracies=[0.874, 0.828, 0.866],
             runtimes=[
                 timedelta(hours=1, minutes=40, seconds=10),
@@ -570,8 +565,8 @@ def hyperparameter_scaling_report():
         ),
         ExperimentResult(
             method="WBoN",
-            n="16",
-            accuracies=[0.858, 0.86, 0.868],
+            n="4",
+            accuracies=[0.858, 0.860, 0.862],
             runtimes=[
                 timedelta(hours=1, minutes=54, seconds=58),
                 timedelta(hours=1, minutes=56, seconds=15),
@@ -580,7 +575,7 @@ def hyperparameter_scaling_report():
         ),
         ExperimentResult(
             method="DVTS",
-            n="4",
+            n="2",
             accuracies=[0.832, 0.834, 0.828],
             runtimes=[
                 timedelta(hours=1, minutes=27, seconds=58),
@@ -590,7 +585,7 @@ def hyperparameter_scaling_report():
         ),
         ExperimentResult(
             method="DVTS",
-            n="8",
+            n="3",
             accuracies=[0.835, 0.840, 0.838],
             runtimes=[
                 timedelta(hours=1, minutes=32, seconds=50),
@@ -600,7 +595,7 @@ def hyperparameter_scaling_report():
         ),
         ExperimentResult(
             method="DVTS",
-            n="16",
+            n="4",
             accuracies=[0.840, 0.844, 0.842],
             runtimes=[
                 timedelta(hours=1, minutes=58, seconds=55),
@@ -610,7 +605,7 @@ def hyperparameter_scaling_report():
         ),
         ExperimentResult(
             method="Beam Search",
-            n="4",
+            n="2",
             accuracies=[0.826, 0.831, 0.833],
             runtimes=[
                 timedelta(hours=3, minutes=54),
@@ -620,7 +615,7 @@ def hyperparameter_scaling_report():
         ),
         ExperimentResult(
             method="Beam Search",
-            n="8",
+            n="3",
             accuracies=[0.852, 0.856, 0.849],
             runtimes=[
                 timedelta(hours=10, minutes=47),
@@ -630,7 +625,7 @@ def hyperparameter_scaling_report():
         ),
         ExperimentResult(
             method="Beam Search",
-            n="16",
+            n="4",
             accuracies=[0.872, 0.878, 0.864],
             runtimes=[
                 timedelta(hours=15, minutes=41),
@@ -640,7 +635,7 @@ def hyperparameter_scaling_report():
         ),
         ExperimentResult(
             method="CGAI",
-            n="4→8",
+            n="2→3",
             accuracies=[87.40, 87.20, 87.60],
             runtimes=[
                 timedelta(hours=1, minutes=25, seconds=10)
