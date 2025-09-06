@@ -13,7 +13,7 @@
     },
     "always_rerun_when_possible": {
       "description": "Use rerun on 100 samples, base on remaining 400",
-      "accuracy": 79.4,
+      "accuracy": 81.0,
       "vs_base": 9.0,
       "measured": null,
       "conversions": {
@@ -139,7 +139,7 @@
     }
   ],
   "always_base": 72.0,
-  "always_rerun_when_possible": 79.4,
+  "always_rerun_when_possible": 81.0,
   "best_smart_fusion": {
     "accuracy": 80.8,
     "metric": "group_top_frac",

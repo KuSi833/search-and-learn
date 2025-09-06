@@ -4,13 +4,26 @@
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
-from experiments.fusion.fusion import best_accuracy, run_ultraminimal_experiment
+import sys
+from pathlib import Path
+
+from sal_experiments.fusion.fusion import (
+    FusionRunConfig,
+    FusionSetting,
+    _get_base_samples,
+    _is_correct_record_math,
+    best_accuracy,
+    load_jsonl,
+    run_sweep,
+    run_ultraminimal_experiment,
+)
+from src.sal_experiments.report.colors import BLUE, GOLD, GREEN, ORANGE, RED
 
 
 def load_results(json_path: Path) -> List[Dict[str, Any]]:
@@ -30,17 +43,25 @@ def create_comparison_chart(results_summary: Dict[str, Any], output_dir: Path) -
     metrics = [r["metric"] for r in all_smart]
     accuracies = [r["accuracy"] for r in all_smart]
 
-    # Color bars: green for best, blue for others
+    # Color bars: green for best, blue for others (using custom colors)
     bar_colors = [
-        "#2ca02c" if metric == best_metric else "#1f77b4" for metric in metrics
+        GREEN.triplet.hex if metric == best_metric else BLUE.triplet.hex
+        for metric in metrics
     ]
 
     # Create the plot
     plt.style.use("seaborn-v0_8")
     fig, ax = plt.subplots(figsize=(12, 8))
 
-    # Bar chart for smart fusion strategies
-    bars = ax.bar(range(len(metrics)), accuracies, color=bar_colors, alpha=0.8)
+    # Bar chart for smart fusion strategies with black outlines
+    bars = ax.bar(
+        range(len(metrics)),
+        accuracies,
+        color=bar_colors,
+        alpha=0.8,
+        edgecolor="black",
+        linewidth=0.8,
+    )
 
     # Add baseline lines
     always_base = results_summary["always_base"]
@@ -48,7 +69,7 @@ def create_comparison_chart(results_summary: Dict[str, Any], output_dir: Path) -
 
     ax.axhline(
         y=always_base,
-        color="#d62728",
+        color=RED.triplet.hex,
         linestyle="--",
         linewidth=2,
         label=f"Always Base: {always_base:.1f}%",
@@ -56,7 +77,7 @@ def create_comparison_chart(results_summary: Dict[str, Any], output_dir: Path) -
     )
     ax.axhline(
         y=always_rerun,
-        color="#FFA500",
+        color=ORANGE.triplet.hex,
         linestyle="--",
         linewidth=2,
         label=f"Always Override: {always_rerun:.1f}%",
@@ -105,20 +126,123 @@ def create_comparison_chart(results_summary: Dict[str, Any], output_dir: Path) -
     print(f"Saved chart to: {output_dir / 'fusion_strategy_comparison.png'}")
 
 
+def create_averaged_comparison_chart(
+    results_summary: Dict[str, Any], output_dir: Path
+) -> None:
+    """Create a comparison chart showing averaged results across multiple run pairs with error bars."""
+    import numpy as np
+
+    # Get averaged smart fusion results
+    all_smart = results_summary["averaged_results"]
+    best_metric = results_summary["best_metric"]
+
+    # Prepare data for smart fusion bars
+    metrics = [r["metric"] for r in all_smart]
+    accuracies = [r["accuracy"] for r in all_smart]
+    std_devs = [r["std"] for r in all_smart]
+
+    # Color bars: green for best, blue for others (using custom colors)
+    bar_colors = [
+        GREEN.triplet.hex if metric == best_metric else BLUE.triplet.hex
+        for metric in metrics
+    ]
+
+    # Create the plot
+    plt.style.use("seaborn-v0_8")
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    # Bar chart for smart fusion strategies with black outlines and error bars
+    bars = ax.bar(
+        range(len(metrics)),
+        accuracies,
+        color=bar_colors,
+        alpha=0.8,
+        edgecolor="black",
+        linewidth=0.8,
+        yerr=std_devs,
+        capsize=5,
+        error_kw={"color": "black", "linewidth": 1.5},
+    )
+
+    # Add baseline lines
+    always_base = results_summary["always_base"]
+    always_rerun = results_summary["always_rerun_when_possible"]
+
+    ax.axhline(
+        y=always_base,
+        color=RED.triplet.hex,
+        linestyle="--",
+        linewidth=2,
+        label=f"Always Base (avg): {always_base:.1f}%",
+        alpha=0.8,
+    )
+    ax.axhline(
+        y=always_rerun,
+        color=ORANGE.triplet.hex,
+        linestyle="--",
+        linewidth=2,
+        label=f"Always Override (avg): {always_rerun:.1f}%",
+        alpha=0.8,
+    )
+
+    # Add value labels on bars
+    for i, (bar, acc, std, metric) in enumerate(
+        zip(bars, accuracies, std_devs, metrics)
+    ):
+        height = bar.get_height()
+        diff = acc - always_base
+        label = f"{acc:.1f}%±{std:.1f}\n({diff:+.1f}%)"
+
+        fontweight = "bold" if metric == best_metric else "normal"
+        ax.text(
+            bar.get_x() + bar.get_width() / 2.0,
+            height + std + 0.5,  # Account for error bar
+            label,
+            ha="center",
+            va="bottom",
+            fontsize=10,
+            fontweight=fontweight,
+        )
+
+    # Formatting
+    num_pairs = results_summary["experiment_info"]["num_pairs"]
+    ax.set_title(
+        f"Fusion Strategy Comparison: Averaged over {num_pairs} Run Pairs",
+        fontsize=16,
+        pad=20,
+    )
+    ax.set_xlabel("Confidence Metric", fontsize=12)
+    ax.set_ylabel("Accuracy (%)", fontsize=12)
+    ax.set_xticks(range(len(metrics)))
+    ax.set_xticklabels(metrics, rotation=45, ha="right")
+
+    # Set y-limits to accommodate error bars
+    max_with_error = max(acc + std for acc, std in zip(accuracies, std_devs))
+    ax.set_ylim(0, max_with_error * 1.15)
+    ax.grid(axis="y", linestyle=":", alpha=0.6)
+
+    # Legend
+    ax.legend(frameon=False, fontsize=11, loc="upper right")
+
+    plt.tight_layout()
+    plt.savefig(
+        output_dir / "fusion_strategy_comparison_averaged.png",
+        dpi=200,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    print(
+        f"Saved averaged chart to: {output_dir / 'fusion_strategy_comparison_averaged.png'}"
+    )
+
+
 def calculate_always_override_conversions(
     base_run: str, rerun_id: str
 ) -> Dict[str, int]:
     """Calculate T/F conversions for always override strategy by loading the data directly."""
-    import sys
-    from pathlib import Path
 
     # Add parent directories to path for imports
-    sys.path.append(str(Path(__file__).parent.parent.parent))
-    from experiments.fusion.fusion import (
-        _get_base_samples,
-        _is_correct_record_math,
-        load_jsonl,
-    )
 
     # Load the data files
     base_file = Path("./output") / base_run / "inference_output.jsonl"
@@ -368,10 +492,6 @@ def print_results_summary(analysis: Dict[str, Any]) -> None:
 def run_delta_analysis(base_run: str, rerun_id: str) -> None:
     """Focused analysis of delta thresholds for best metrics."""
 
-    # Add parent directories to path for imports
-    sys.path.append(str(Path(__file__).parent.parent.parent))
-    from experiments.fusion.fusion import FusionRunConfig, FusionSetting, run_sweep
-
     print("\n" + "=" * 60)
     print("DELTA THRESHOLD ANALYSIS")
     print("=" * 60)
@@ -485,56 +605,176 @@ def run_delta_analysis(base_run: str, rerun_id: str) -> None:
         )
 
 
-def main():
-    # Configuration
-    base_run = "53vig20u"
-    rerun_id = "9qup1u07"
+def get_fusion_run_pairs() -> List[Tuple[str, str]]:
+    """Get a list of available fusion run pairs."""
+    # These are proven working pairs from fusion_v2.py
+    return [
+        ("53vig20u", "9qup1u07"),  # convert_45 pair
+        ("5lvoti3i", "0oe2xr1b"),  # best_accuracy pair
+        ("77pyab58", "0hermenf"),
+        ("gfw8x07r", "58xqqffr"),
+        ("77pyab58", "8ff83v7m"),
+        ("gfw8x07r", "8yyge5wj"),
+    ]
 
-    print("Running ultraminimal fusion experiment...")
 
-    # Run experiment
-    run_ultraminimal_experiment(base_run, rerun_id)
+def run_multi_pair_analysis() -> Dict[str, Any]:
+    """Run fusion analysis over multiple run pairs and average results."""
+    from collections import defaultdict
 
-    # Load results
-    results_path = (
-        Path("./output/fusion_sweeps/ultraminimal") / f"{base_run}__{rerun_id}.json"
+    import numpy as np
+
+    run_pairs = get_fusion_run_pairs()
+    print(f"Running fusion analysis over {len(run_pairs)} run pairs...")
+
+    # Store results for each pair
+    all_pair_results = []
+    all_smart_results_by_metric = defaultdict(list)
+
+    for i, (base_run, rerun_id) in enumerate(run_pairs):
+        print(f"\n--- Pair {i + 1}/{len(run_pairs)}: {base_run} -> {rerun_id} ---")
+
+        try:
+            # Run experiment for this pair
+            run_ultraminimal_experiment(base_run, rerun_id)
+
+            # Load results
+            results_path = (
+                Path("./output/fusion_sweeps/ultraminimal")
+                / f"{base_run}__{rerun_id}.json"
+            )
+            if not results_path.exists():
+                print(f"Results file not found: {results_path}")
+                continue
+
+            results = load_results(results_path)
+
+            # Analyze strategies for this pair
+            analysis = analyze_strategies(results, base_run, rerun_id)
+            all_pair_results.append(analysis)
+
+            # Store smart results by metric
+            for smart_result in analysis["all_smart_results"]:
+                metric = smart_result["metric"]
+                all_smart_results_by_metric[metric].append(smart_result["accuracy"])
+
+        except Exception as e:
+            print(f"Error processing pair {base_run}->{rerun_id}: {e}")
+            continue
+
+    if not all_pair_results:
+        raise ValueError("No valid results found!")
+
+    # Calculate averages and statistics
+    averaged_results = []
+    for metric in all_smart_results_by_metric:
+        accuracies = all_smart_results_by_metric[metric]
+        if len(accuracies) > 0:
+            averaged_results.append(
+                {
+                    "metric": metric,
+                    "accuracy": np.mean(accuracies),
+                    "std": np.std(accuracies),
+                    "min": np.min(accuracies),
+                    "max": np.max(accuracies),
+                    "count": len(accuracies),
+                    "vs_base": np.mean(accuracies)
+                    - np.mean([r["always_base"] for r in all_pair_results]),
+                }
+            )
+
+    # Sort by average accuracy
+    averaged_results.sort(key=lambda x: x["accuracy"], reverse=True)
+
+    # Calculate baseline averages
+    always_base_avg = np.mean([r["always_base"] for r in all_pair_results])
+    always_rerun_avg = np.mean(
+        [r["always_rerun_when_possible"] for r in all_pair_results]
     )
-    if not results_path.exists():
-        print(f"Results file not found: {results_path}")
-        return
 
-    results = load_results(results_path)
+    return {
+        "experiment_info": {
+            "num_pairs": len(all_pair_results),
+            "pairs_analyzed": [
+                (
+                    r["experiment_info"]["total_samples"],
+                    r["experiment_info"]["rerun_samples"],
+                )
+                for r in all_pair_results
+            ],
+        },
+        "averaged_results": averaged_results,
+        "always_base": always_base_avg,
+        "always_rerun_when_possible": always_rerun_avg,
+        "best_metric": averaged_results[0]["metric"] if averaged_results else None,
+        "individual_pair_results": all_pair_results,
+    }
 
-    # Analyze strategies
-    analysis = analyze_strategies(results, base_run, rerun_id)
+
+def main():
+    print("Running multi-pair fusion analysis (no delta - proven useless)...")
+
+    # Run analysis over multiple pairs
+    multi_analysis = run_multi_pair_analysis()
 
     # Print summary
-    print_results_summary(analysis)
+    print_multi_pair_summary(multi_analysis)
 
     # Create output directory
-    output_dir = Path("./figures/fusion_analysis") / f"{base_run}__{rerun_id}"
+    output_dir = Path("./figures/fusion_analysis/multi_pair_average")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Save JSON results
-    json_path = output_dir / "strategy_comparison.json"
+    json_path = output_dir / "multi_pair_analysis.json"
     with json_path.open("w") as f:
-        json.dump(analysis, f, indent=2)
+        json.dump(multi_analysis, f, indent=2)
     print(f"\nSaved results to: {json_path}")
 
-    # Create chart
-    create_comparison_chart(analysis, output_dir)
+    # Create averaged chart
+    create_averaged_comparison_chart(multi_analysis, output_dir)
 
     print(f"\nAll outputs saved to: {output_dir}")
 
-    # Run focused delta analysis
-    run_delta_analysis(base_run, rerun_id)
+
+def print_multi_pair_summary(analysis: Dict[str, Any]) -> None:
+    """Print summary of multi-pair analysis."""
+    print(f"\n{'=' * 60}")
+    print("MULTI-PAIR FUSION STRATEGY COMPARISON")
+    print(f"{'=' * 60}")
+
+    exp = analysis["experiment_info"]
+    print(f"Analyzed {exp['num_pairs']} run pairs")
+
+    print("\nAVERAGED STRATEGY RESULTS:")
+    print(f"  Always Base (avg): {analysis['always_base']:.2f}%")
+    print(f"  Always Override (avg): {analysis['always_rerun_when_possible']:.2f}%")
+
+    print(f"\nSMART FUSION RESULTS (averaged over {exp['num_pairs']} pairs):")
+    print(
+        f"{'Metric':<20} {'Accuracy':<10} {'Std':<8} {'Min':<8} {'Max':<8} {'vs Base':<10}"
+    )
+    print("-" * 70)
+
+    for result in analysis["averaged_results"]:
+        print(
+            f"{result['metric']:<20} {result['accuracy']:<10.2f} {result['std']:<8.2f} "
+            f"{result['min']:<8.2f} {result['max']:<8.2f} {result['vs_base']:<+10.2f}"
+        )
+
+    best = analysis["averaged_results"][0] if analysis["averaged_results"] else None
+    if best:
+        print(
+            f"\nBEST METRIC: {best['metric']} with {best['accuracy']:.2f}% avg accuracy"
+        )
+        improvement = best["accuracy"] - analysis["always_rerun_when_possible"]
+        print(f"Improvement over always override: {improvement:+.2f}%")
 
 
 if __name__ == "__main__":
     # You can choose which analysis to run:
-    # main()  # Run the full analysis including strategy comparison
+    main()  # Run the full analysis including strategy comparison
 
     # Or run just the delta analysis:
-    BASE_RUN, RERUN_ID = best_accuracy()
-    # BASE_RUN, RERUN_ID = convert_45()
-    run_delta_analysis(BASE_RUN, RERUN_ID)
+    # BASE_RUN, RERUN_ID = best_accuracy()
+    # # BASE_RUN, RERUN_ID = convert_45()
+    # run_delta_analysis(BASE_RUN, RERUN_ID)

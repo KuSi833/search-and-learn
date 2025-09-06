@@ -361,6 +361,10 @@ def run_sweep(cfg: FusionRunConfig) -> List[FusionResult]:
         with out_file.open("w") as f:
             json.dump([res.__dict__ for res in results], f, indent=2)
 
+    # Print analysis to command line
+    print_results_table(results)
+    print_best_delta_analysis(results)
+
     return results
 
 
@@ -399,6 +403,67 @@ def print_results_table(results: List[FusionResult]) -> None:
         )
 
     console.print(table)
+
+
+def print_best_delta_analysis(results: List[FusionResult]) -> None:
+    """Print analysis showing the best delta for each metric's peak accuracy."""
+    from collections import defaultdict
+
+    # Group results by metric
+    by_metric: Dict[str, List[FusionResult]] = defaultdict(list)
+    for r in results:
+        by_metric[r.metric].append(r)
+
+    console.print("\n[bold blue]Best Delta Analysis by Metric[/bold blue]")
+    console.print("=" * 60)
+
+    analysis_table = Table(box=box.SIMPLE)
+    analysis_table.add_column("Metric", style="bold")
+    analysis_table.add_column("Best Accuracy", justify="right")
+    analysis_table.add_column("Best Delta", justify="right")
+    analysis_table.add_column("Min Rerun", justify="right")
+    analysis_table.add_column("Max Base", justify="right")
+    analysis_table.add_column("Overrides", justify="right")
+    analysis_table.add_column("Net Flips", justify="right")
+
+    # For each metric, find the setting that achieved highest accuracy
+    metric_best = []
+    for metric, metric_results in by_metric.items():
+        best = max(metric_results, key=lambda x: x.acc_fused)
+        metric_best.append((metric, best))
+
+        analysis_table.add_row(
+            metric,
+            f"{best.acc_fused:.2f}%",
+            f"{best.delta:.3f}",
+            "-" if best.min_rerun_conf is None else f"{best.min_rerun_conf:.3f}",
+            "-" if best.max_base_conf is None else f"{best.max_base_conf:.3f}",
+            str(best.overrides_used),
+            str(best.flips_pos - best.flips_neg),
+        )
+
+    console.print(analysis_table)
+
+    # Print summary statistics
+    console.print("\n[bold]Summary:[/bold]")
+    overall_best = max(results, key=lambda x: x.acc_fused)
+    console.print(
+        f"Overall best: {overall_best.metric} with delta={overall_best.delta:.3f} → {overall_best.acc_fused:.2f}%"
+    )
+
+    # Delta distribution analysis
+    delta_counts = defaultdict(int)
+    for _, best in metric_best:
+        delta_counts[best.delta] += 1
+
+    console.print("\nDelta preference distribution:")
+    for delta in sorted(delta_counts.keys()):
+        count = delta_counts[delta]
+        console.print(
+            f"  δ={delta:.3f}: {count} metrics ({100 * count / len(metric_best):.1f}%)"
+        )
+
+    console.print("=" * 60)
 
 
 def best_accuracy() -> Tuple[str, str]:
@@ -573,11 +638,11 @@ def run_extensive_experiment(
 if __name__ == "__main__":
     # Define your sweep here.
     # BASE_RUN, RERUN_ID = best_accuracy()
-    # BASE_RUN, RERUN_ID = convert_45()
+    BASE_RUN, RERUN_ID = convert_45()
 
     # BASE_RUN, RERUN_ID = "gfw8x07r", "8yyge5wj"
     # BASE_RUN, RERUN_ID = "77pyab58", "8ff83v7m"
-    BASE_RUN, RERUN_ID = "77pyab58", "0hermenf"
+    # BASE_RUN, RERUN_ID = "77pyab58", "0hermenf"
 
     # Ultra-minimal experiment: 8 metrics × 1 strategy = 8 settings total!
     run_minimal_experiment(BASE_RUN, RERUN_ID)
