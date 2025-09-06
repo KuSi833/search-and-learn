@@ -12,13 +12,13 @@ def model_scaling_report():
     data = {
         # Baselines
         "Q4": {
-            "flops": 0.20,
+            "flops": 0.25,
             "accuracy": 84.4,
             "marker": "o",  # Square
             "color": BLUE.triplet.hex,
         },
         "Q8": {
-            "flops": 0.33,
+            "flops": 0.50,
             "accuracy": 86.9,
             "marker": "s",  # Square
             "color": BLUE.triplet.hex,
@@ -31,25 +31,25 @@ def model_scaling_report():
         },
         # CGAI methods (Blue color, different shapes for variants)
         "CGAI Q4→Inst 10%": {
-            "flops": 0.30,
+            "flops": 0.35,
             "accuracy": 91.1,
             "marker": "o",  # Circle
             "color": GREEN.triplet.hex,
         },
         "CGAI Q4→Inst 20%": {
-            "flops": 0.40,
+            "flops": 0.45,
             "accuracy": 94.4,
             "marker": "s",  # Square
             "color": GREEN.triplet.hex,
         },
         "CGAI Q8→Inst 10%": {
-            "flops": 0.43,
+            "flops": 0.60,
             "accuracy": 91.8,
             "marker": "D",  # Diamond
             "color": GREEN.triplet.hex,
         },
         "CGAI Q8→Inst 20%": {
-            "flops": 0.53,
+            "flops": 0.70,
             "accuracy": 96.7,
             "marker": "^",  # Triangle
             "color": GREEN.triplet.hex,
@@ -75,8 +75,8 @@ def model_scaling_report():
 
     # Add annotation for the headline result
     ax.annotate(
-        "96.7% accuracy at 53% compute",
-        xy=(0.53, 96.7),
+        "96.7% accuracy at 70% compute",
+        xy=(0.70, 96.7),
         xytext=(0.62, 98.5),
         fontsize=10,
         arrowprops=dict(arrowstyle="->", color="black", lw=1.5),
