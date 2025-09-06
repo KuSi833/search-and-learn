@@ -136,22 +136,71 @@ def create_averaged_comparison_chart(
     all_smart = results_summary["averaged_results"]
     best_metric = results_summary["best_metric"]
 
-    # Prepare data for smart fusion bars
-    metrics = [r["metric"] for r in all_smart]
-    accuracies = [r["accuracy"] for r in all_smart]
-    std_devs = [r["std"] for r in all_smart]
-
-    # Color bars: green for best, blue for others (using custom colors)
-    bar_colors = [
-        GREEN.triplet.hex if metric == best_metric else BLUE.triplet.hex
-        for metric in metrics
+    # Calculate always override statistics from individual pairs
+    always_base_values = [
+        r["always_base"] for r in results_summary["individual_pair_results"]
     ]
+    always_override_values = [
+        r["always_rerun_when_possible"]
+        for r in results_summary["individual_pair_results"]
+    ]
+
+    always_base_avg = np.mean(always_base_values)
+    always_base_std = np.std(always_base_values)
+    always_override_avg = np.mean(always_override_values)
+    always_override_std = np.std(always_override_values)
+
+    # Combine all strategies and sort by performance
+    all_strategies = [
+        {
+            "name": "Always Base",
+            "accuracy": always_base_avg,
+            "std": always_base_std,
+            "type": "baseline",
+        },
+        {
+            "name": "Always Override",
+            "accuracy": always_override_avg,
+            "std": always_override_std,
+            "type": "baseline",
+        },
+    ] + [
+        {
+            "name": r["metric"],
+            "accuracy": r["accuracy"],
+            "std": r["std"],
+            "type": "smart",
+        }
+        for r in all_smart
+    ]
+
+    # Sort by accuracy (highest first)
+    all_strategies.sort(key=lambda x: x["accuracy"], reverse=True)
+
+    # Extract sorted data
+    metrics = [s["name"] for s in all_strategies]
+    accuracies = [s["accuracy"] for s in all_strategies]
+    std_devs = [s["std"] for s in all_strategies]
+
+    # Color bars based on strategy type and performance
+    bar_colors = []
+    for s in all_strategies:
+        if s["type"] == "baseline":
+            if s["name"] == "Always Base":
+                bar_colors.append(RED.triplet.hex)
+            else:  # Always Override
+                bar_colors.append(ORANGE.triplet.hex)
+        else:  # Smart fusion
+            if s["name"] == best_metric:
+                bar_colors.append(GREEN.triplet.hex)  # Best smart metric
+            else:
+                bar_colors.append(BLUE.triplet.hex)  # Other smart metrics
 
     # Create the plot
     plt.style.use("seaborn-v0_8")
-    fig, ax = plt.subplots(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(14, 8))  # Slightly wider for more bars
 
-    # Bar chart for smart fusion strategies with black outlines and error bars
+    # Bar chart for all strategies with black outlines and error bars
     bars = ax.bar(
         range(len(metrics)),
         accuracies,
@@ -164,35 +213,20 @@ def create_averaged_comparison_chart(
         error_kw={"color": "black", "linewidth": 1.5},
     )
 
-    # Add baseline lines
-    always_base = results_summary["always_base"]
-    always_rerun = results_summary["always_rerun_when_possible"]
-
-    ax.axhline(
-        y=always_base,
-        color=RED.triplet.hex,
-        linestyle="--",
-        linewidth=2,
-        label=f"Always Base (avg): {always_base:.1f}%",
-        alpha=0.8,
-    )
-    ax.axhline(
-        y=always_rerun,
-        color=ORANGE.triplet.hex,
-        linestyle="--",
-        linewidth=2,
-        label=f"Always Override (avg): {always_rerun:.1f}%",
-        alpha=0.8,
-    )
-
     # Add value labels on bars
     for i, (bar, acc, std, metric) in enumerate(
         zip(bars, accuracies, std_devs, metrics)
     ):
         height = bar.get_height()
-        diff = acc - always_base
-        label = f"{acc:.1f}%±{std:.1f}\n({diff:+.1f}%)"
 
+        # Different label format for baseline vs smart strategies
+        if metric in ["Always Base", "Always Override"]:
+            label = f"{acc:.1f}%±{std:.1f}"
+        else:
+            diff = acc - always_base_avg
+            label = f"{acc:.1f}%±{std:.1f}\n({diff:+.1f}%)"
+
+        # Bold for best smart metric
         fontweight = "bold" if metric == best_metric else "normal"
         ax.text(
             bar.get_x() + bar.get_width() / 2.0,
@@ -207,22 +241,24 @@ def create_averaged_comparison_chart(
     # Formatting
     num_pairs = results_summary["experiment_info"]["num_pairs"]
     ax.set_title(
-        f"Fusion Strategy Comparison: Averaged over {num_pairs} Run Pairs",
+        f"Fusion Strategy Comparison: Ranked by Performance (Averaged over {num_pairs} Run Pairs)",
         fontsize=16,
         pad=20,
     )
-    ax.set_xlabel("Confidence Metric", fontsize=12)
+    ax.set_xlabel("Strategy", fontsize=12)
     ax.set_ylabel("Accuracy (%)", fontsize=12)
     ax.set_xticks(range(len(metrics)))
     ax.set_xticklabels(metrics, rotation=45, ha="right")
 
-    # Set y-limits to accommodate error bars
+    # Set y-limits to focus on relevant range (60% to 100%)
+    min_acc = min(accuracies)
     max_with_error = max(acc + std for acc, std in zip(accuracies, std_devs))
-    ax.set_ylim(0, max_with_error * 1.15)
-    ax.grid(axis="y", linestyle=":", alpha=0.6)
 
-    # Legend
-    ax.legend(frameon=False, fontsize=11, loc="upper right")
+    # Set reasonable y-limits: start from 60% or slightly below minimum, up to max + error bars
+    y_min = min(70, min_acc - 2)
+    y_max = max_with_error + 2
+    ax.set_ylim(y_min, y_max)
+    ax.grid(axis="y", linestyle=":", alpha=0.6)
 
     plt.tight_layout()
     plt.savefig(
