@@ -169,7 +169,7 @@ def _numeric_to_n(n_value: int) -> int:
 def plot_hyperparameter_scaling(
     results: List[ExperimentResult],
     save_path: Path = Path(
-        "./figures/report/hyperparameter_scaling/hyperparameter_scaling.png"
+        "./figures/report/hyperparameter_scaling/hyperparameter_scaling.pdf"
     ),
 ) -> None:
     """Create a line plot with uncertainty (mean ± std) for each method.
@@ -273,7 +273,7 @@ def plot_hyperparameter_scaling(
 def plot_accuracy_vs_latency(
     results: List[ExperimentResult],
     save_path: Path = Path(
-        "./figures/report/hyperparameter_scaling/accuracy_vs_latency.png"
+        "./figures/report/hyperparameter_scaling/accuracy_vs_latency.pdf"
     ),
 ) -> None:
     """Create a scatter plot showing accuracy vs average latency per problem.
@@ -351,7 +351,7 @@ def plot_accuracy_vs_latency(
                 s=104,  # Increased from 80 to ~130% (104)
                 alpha=0.8,
                 label=legend_label,
-                edgecolors="white",
+                edgecolors="black",
                 linewidth=1.3,  # Increased from 1 to 1.3
                 zorder=2,  # Above the lines
             )
