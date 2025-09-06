@@ -29,30 +29,34 @@ def model_scaling_report():
             "marker": "o",  # Circle
             "color": PURPLE.triplet.hex,
         },
-        # CGAI methods (Blue color, different shapes for variants)
+        # CGAI methods (Green color, circles for Q4, squares for Q8, fills for coverage)
         "CGAI Q4→Inst 10%": {
             "flops": 0.35,
             "accuracy": 91.1,
-            "marker": "o",  # Circle
+            "marker": "o",  # Circle for Q4
             "color": GREEN.triplet.hex,
+            "fill": "solid",  # 10% coverage = solid
         },
         "CGAI Q4→Inst 20%": {
             "flops": 0.45,
             "accuracy": 94.4,
-            "marker": "s",  # Square
+            "marker": "o",  # Circle for Q4
             "color": GREEN.triplet.hex,
+            "fill": "striped",  # 20% coverage = striped pattern
         },
         "CGAI Q8→Inst 10%": {
             "flops": 0.60,
             "accuracy": 91.8,
-            "marker": "D",  # Diamond
+            "marker": "s",  # Square for Q8
             "color": GREEN.triplet.hex,
+            "fill": "solid",  # 10% coverage = solid
         },
         "CGAI Q8→Inst 20%": {
             "flops": 0.70,
             "accuracy": 96.7,
-            "marker": "^",  # Triangle
+            "marker": "s",  # Square for Q8
             "color": GREEN.triplet.hex,
+            "fill": "striped",  # 20% coverage = striped pattern
         },
     }
 
@@ -61,15 +65,31 @@ def model_scaling_report():
 
     # Plot each data point
     for label, point in data.items():
+        # Handle different fills for CGAI methods
+        if "fill" in point:
+            if point["fill"] == "striped":
+                # Striped pattern using hatch
+                facecolor = point["color"]
+                hatch = "///"  # Diagonal stripes - very recognizable
+            else:
+                # Solid fill
+                facecolor = point["color"]
+                hatch = None
+        else:
+            # Default for baselines
+            facecolor = point["color"]
+            hatch = None
+
         ax.scatter(
             point["flops"],
             point["accuracy"],
             marker=point["marker"],
-            color=point["color"],
+            facecolor=facecolor,
             s=120,  # Good size for visibility
             label=label,
             edgecolors="black",
             linewidth=0.8,
+            hatch=hatch,
             zorder=3,
         )
 
