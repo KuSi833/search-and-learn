@@ -31,79 +31,81 @@
   "averaged_results": [
     {
       "metric": "group_top_frac",
-      "accuracy": 85.83333333333333,
-      "std": 2.2903177848402536,
-      "min": 80.8,
-      "max": 87.4,
+      "improvement": 2.06666666666667,
+      "std": 3.021405118299907,
+      "min": 0.4000000000000057,
+      "max": 8.799999999999997,
       "count": 6,
-      "vs_base": 2.066666666666663
+      "accuracy": 85.83333333333334
     },
     {
       "metric": "agreement_ratio",
-      "accuracy": 85.76666666666667,
-      "std": 2.541434415618252,
-      "min": 80.2,
-      "max": 87.4,
+      "improvement": 2.000000000000002,
+      "std": 2.8023799409311607,
+      "min": 0.0,
+      "max": 8.200000000000003,
       "count": 6,
-      "vs_base": 2.0
+      "accuracy": 85.76666666666667
     },
     {
       "metric": "prm_mean",
-      "accuracy": 85.3,
-      "std": 2.999444392994588,
-      "min": 78.6,
-      "max": 86.8,
+      "improvement": 1.5333333333333314,
+      "std": 2.28521820013368,
+      "min": 0.0,
+      "max": 6.599999999999994,
       "count": 6,
-      "vs_base": 1.5333333333333314
+      "accuracy": 85.3
     },
     {
       "metric": "prm_std",
-      "accuracy": 84.2,
-      "std": 4.602897638082632,
-      "min": 74.0,
-      "max": 87.0,
+      "improvement": 0.43333333333333474,
+      "std": 0.8673074554171786,
+      "min": -0.7999999999999972,
+      "max": 2.0,
       "count": 6,
-      "vs_base": 0.4333333333333371
+      "accuracy": 84.2
     },
     {
       "metric": "prm_top_frac",
-      "accuracy": 84.10000000000001,
-      "std": 4.531004303683677,
-      "min": 74.0,
-      "max": 86.8,
+      "improvement": 0.3333333333333333,
+      "std": 0.7630348761506403,
+      "min": -0.20000000000000284,
+      "max": 2.0,
       "count": 6,
-      "vs_base": 0.3333333333333428
+      "accuracy": 84.1
     },
     {
       "metric": "prm_margin",
-      "accuracy": 83.9,
-      "std": 5.068530358989676,
-      "min": 72.6,
-      "max": 87.0,
+      "improvement": 0.13333333333333286,
+      "std": 0.29814239699997247,
+      "min": -0.20000000000000284,
+      "max": 0.5999999999999943,
       "count": 6,
-      "vs_base": 0.13333333333333997
+      "accuracy": 83.9
     },
     {
       "metric": "entropy_weighted",
-      "accuracy": 83.7,
-      "std": 5.061949558552843,
-      "min": 72.4,
-      "max": 86.4,
+      "improvement": -0.06666666666666288,
+      "std": 0.5120763831912419,
+      "min": -0.7999999999999972,
+      "max": 0.6000000000000085,
       "count": 6,
-      "vs_base": -0.06666666666666288
+      "accuracy": 83.7
     },
     {
       "metric": "entropy_freq",
-      "accuracy": 83.6,
-      "std": 5.2012818932772085,
-      "min": 72.0,
-      "max": 86.4,
+      "improvement": -0.1666666666666643,
+      "std": 0.3144660377352196,
+      "min": -0.7999999999999972,
+      "max": 0.20000000000000284,
       "count": 6,
-      "vs_base": -0.1666666666666714
+      "accuracy": 83.6
     }
   ],
   "always_base": 83.76666666666667,
   "always_rerun_when_possible": 85.56666666666666,
+  "always_override_improvement": 1.8000000000000018,
+  "always_override_improvement_std": 3.24345494804537,
   "best_metric": "group_top_frac",
   "individual_pair_results": [
     {

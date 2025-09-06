@@ -3,10 +3,12 @@
 
 import json
 import sys
+from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
@@ -102,11 +104,6 @@ def create_comparison_chart(results_summary: Dict[str, Any], output_dir: Path) -
         )
 
     # Formatting
-    ax.set_title(
-        "Fusion Strategy Comparison: Smart Selection vs Naive Baselines",
-        fontsize=16,
-        pad=20,
-    )
     ax.set_xlabel("Confidence Metric", fontsize=12)
     ax.set_ylabel("Accuracy (%)", fontsize=12)
     ax.set_xticks(range(len(metrics)))
@@ -130,57 +127,47 @@ def create_averaged_comparison_chart(
     results_summary: Dict[str, Any], output_dir: Path
 ) -> None:
     """Create a comparison chart showing averaged results across multiple run pairs with error bars."""
-    import numpy as np
 
     # Get averaged smart fusion results
     all_smart = results_summary["averaged_results"]
     best_metric = results_summary["best_metric"]
 
-    # Calculate always override statistics from individual pairs
-    always_base_values = [
-        r["always_base"] for r in results_summary["individual_pair_results"]
-    ]
-    always_override_values = [
-        r["always_rerun_when_possible"]
+    # Combine strategies - EXCLUDE Always Base since it's always 0% improvement
+    # Calculate min/max for Always Override from individual pairs
+    override_improvements = [
+        r["always_rerun_when_possible"] - r["always_base"]
         for r in results_summary["individual_pair_results"]
     ]
 
-    always_base_avg = np.mean(always_base_values)
-    always_base_std = np.std(always_base_values)
-    always_override_avg = np.mean(always_override_values)
-    always_override_std = np.std(always_override_values)
-
-    # Combine all strategies and sort by performance
     all_strategies = [
         {
-            "name": "Always Base",
-            "accuracy": always_base_avg,
-            "std": always_base_std,
-            "type": "baseline",
-        },
-        {
             "name": "Always Override",
-            "accuracy": always_override_avg,
-            "std": always_override_std,
+            "improvement": results_summary["always_override_improvement"],
+            "std": results_summary["always_override_improvement_std"],
+            "min": min(override_improvements),
+            "max": max(override_improvements),
             "type": "baseline",
+            "accuracy": results_summary["always_rerun_when_possible"],
         },
     ] + [
         {
             "name": r["metric"],
-            "accuracy": r["accuracy"],
-            "std": r["std"],
+            "improvement": r["improvement"],  # Already calculated correctly
+            "std": r["std"],  # Standard deviation of improvements across pairs
+            "min": r["min"],  # Already calculated correctly
+            "max": r["max"],  # Already calculated correctly
             "type": "smart",
+            "accuracy": r["accuracy"],
         }
         for r in all_smart
     ]
 
-    # Sort by accuracy (highest first)
-    all_strategies.sort(key=lambda x: x["accuracy"], reverse=True)
+    # Sort by improvement (highest first)
+    all_strategies.sort(key=lambda x: x["improvement"], reverse=True)
 
     # Extract sorted data
     metrics = [s["name"] for s in all_strategies]
-    accuracies = [s["accuracy"] for s in all_strategies]
-    std_devs = [s["std"] for s in all_strategies]
+    improvements = [s["improvement"] for s in all_strategies]
 
     # Color bars based on strategy type and performance
     bar_colors = []
@@ -200,64 +187,82 @@ def create_averaged_comparison_chart(
     plt.style.use("seaborn-v0_8")
     fig, ax = plt.subplots(figsize=(14, 8))  # Slightly wider for more bars
 
-    # Bar chart for all strategies with black outlines and error bars
+    # Calculate asymmetric error bars (min/max range)
+    lower_errors = [
+        imp - strategy["min"] for imp, strategy in zip(improvements, all_strategies)
+    ]
+    upper_errors = [
+        strategy["max"] - imp for imp, strategy in zip(improvements, all_strategies)
+    ]
+
+    # Bar chart for all strategies with black outlines and min/max error bars
     bars = ax.bar(
         range(len(metrics)),
-        accuracies,
+        improvements,
         color=bar_colors,
         alpha=0.8,
         edgecolor="black",
         linewidth=0.8,
-        yerr=std_devs,
+        yerr=[lower_errors, upper_errors],
         capsize=5,
         error_kw={"color": "black", "linewidth": 1.5},
     )
 
     # Add value labels on bars
-    for i, (bar, acc, std, metric) in enumerate(
-        zip(bars, accuracies, std_devs, metrics)
+    for i, (bar, improvement, metric, strategy) in enumerate(
+        zip(bars, improvements, metrics, all_strategies)
     ):
         height = bar.get_height()
 
-        # Different label format for baseline vs smart strategies
-        if metric in ["Always Base", "Always Override"]:
-            label = f"{acc:.1f}%±{std:.1f}"
-        else:
-            diff = acc - always_base_avg
-            label = f"{acc:.1f}%±{std:.1f}\n({diff:+.1f}%)"
+        # Show improvement with accuracy in parentheses
+        min_val = strategy["min"]
+        max_val = strategy["max"]
+        label = f"{improvement:+.1f}% [{min_val:+.1f}, {max_val:+.1f}]\n({strategy['accuracy']:.1f}%)"
 
-        # Bold for best smart metric
-        fontweight = "bold" if metric == best_metric else "normal"
+        # Bold for best performing strategy
+        fontweight = "bold" if i == 0 else "normal"  # First in sorted list is best
+
+        # Position label above error bar
+        upper_error = strategy["max"] - improvement
+        y_pos = height + upper_error + 0.1
+
         ax.text(
             bar.get_x() + bar.get_width() / 2.0,
-            height + std + 0.5,  # Account for error bar
+            y_pos,
             label,
             ha="center",
             va="bottom",
-            fontsize=10,
+            fontsize=9,  # Slightly smaller to fit more text
             fontweight=fontweight,
         )
 
     # Formatting
     num_pairs = results_summary["experiment_info"]["num_pairs"]
     ax.set_title(
-        f"Fusion Strategy Comparison: Ranked by Performance (Averaged over {num_pairs} Run Pairs)",
+        f"Fusion Strategy Improvements over Baseline (Averaged over {num_pairs} Run Pairs)",
         fontsize=16,
         pad=20,
     )
     ax.set_xlabel("Strategy", fontsize=12)
-    ax.set_ylabel("Accuracy (%)", fontsize=12)
+    ax.set_ylabel("Improvement over Always Base (%)", fontsize=12)
     ax.set_xticks(range(len(metrics)))
     ax.set_xticklabels(metrics, rotation=45, ha="right")
 
-    # Set y-limits to focus on relevant range (60% to 100%)
-    min_acc = min(accuracies)
-    max_with_error = max(acc + std for acc, std in zip(accuracies, std_devs))
+    # Set y-limits to focus on improvement range with min/max error bars
+    all_mins = [s["min"] for s in all_strategies]
+    all_maxs = [s["max"] for s in all_strategies]
 
-    # Set reasonable y-limits: start from 60% or slightly below minimum, up to max + error bars
-    y_min = min(70, min_acc - 2)
-    y_max = max_with_error + 2
+    overall_min = min(all_mins + [0])  # Include 0 for reference line
+    overall_max = max(all_maxs)
+
+    # Add some padding and ensure we show the zero line
+    y_padding = max(0.2, (overall_max - overall_min) * 0.1)
+    y_min = overall_min - y_padding
+    y_max = overall_max + y_padding
     ax.set_ylim(y_min, y_max)
+
+    # Add horizontal line at y=0 (no improvement)
+    ax.axhline(y=0, color="gray", linestyle="-", alpha=0.3, linewidth=1)
     ax.grid(axis="y", linestyle=":", alpha=0.6)
 
     plt.tight_layout()
@@ -656,10 +661,8 @@ def get_fusion_run_pairs() -> List[Tuple[str, str]]:
 
 def run_multi_pair_analysis() -> Dict[str, Any]:
     """Run fusion analysis over multiple run pairs and average results."""
-    from collections import defaultdict
 
-    import numpy as np
-
+    # run_pairs = get_fusion_run_pairs()[:2]
     run_pairs = get_fusion_run_pairs()
     print(f"Running fusion analysis over {len(run_pairs)} run pairs...")
 
@@ -689,10 +692,13 @@ def run_multi_pair_analysis() -> Dict[str, Any]:
             analysis = analyze_strategies(results, base_run, rerun_id)
             all_pair_results.append(analysis)
 
-            # Store smart results by metric
+            # Store smart results by metric with their improvements over baseline for this pair
             for smart_result in analysis["all_smart_results"]:
                 metric = smart_result["metric"]
-                all_smart_results_by_metric[metric].append(smart_result["accuracy"])
+                improvement = (
+                    smart_result["accuracy"] - analysis["always_base"]
+                )  # Improvement for THIS pair
+                all_smart_results_by_metric[metric].append(improvement)
 
         except Exception as e:
             print(f"Error processing pair {base_run}->{rerun_id}: {e}")
@@ -701,32 +707,44 @@ def run_multi_pair_analysis() -> Dict[str, Any]:
     if not all_pair_results:
         raise ValueError("No valid results found!")
 
-    # Calculate averages and statistics
+    # Calculate improvement statistics (this is the key fix!)
     averaged_results = []
+    always_base_avg = np.mean([r["always_base"] for r in all_pair_results])
+
     for metric in all_smart_results_by_metric:
-        accuracies = all_smart_results_by_metric[metric]
-        if len(accuracies) > 0:
+        improvements = all_smart_results_by_metric[
+            metric
+        ]  # These are already improvements per pair
+        if len(improvements) > 0:
+            avg_improvement = np.mean(improvements)
+            std_improvement = np.std(improvements)  # Standard deviation of IMPROVEMENTS
             averaged_results.append(
                 {
                     "metric": metric,
-                    "accuracy": np.mean(accuracies),
-                    "std": np.std(accuracies),
-                    "min": np.min(accuracies),
-                    "max": np.max(accuracies),
-                    "count": len(accuracies),
-                    "vs_base": np.mean(accuracies)
-                    - np.mean([r["always_base"] for r in all_pair_results]),
+                    "improvement": avg_improvement,
+                    "std": std_improvement,
+                    "min": np.min(improvements),
+                    "max": np.max(improvements),
+                    "count": len(improvements),
+                    # Calculate average absolute accuracy for display
+                    "accuracy": avg_improvement + always_base_avg,
                 }
             )
 
-    # Sort by average accuracy
-    averaged_results.sort(key=lambda x: x["accuracy"], reverse=True)
+    # Sort by average improvement
+    averaged_results.sort(key=lambda x: x["improvement"], reverse=True)
 
-    # Calculate baseline averages
-    always_base_avg = np.mean([r["always_base"] for r in all_pair_results])
+    # Calculate baseline averages and improvement stats for always override
     always_rerun_avg = np.mean(
         [r["always_rerun_when_possible"] for r in all_pair_results]
     )
+
+    # Calculate improvement of always override over always base for each pair
+    always_override_improvements = [
+        r["always_rerun_when_possible"] - r["always_base"] for r in all_pair_results
+    ]
+    always_override_improvement_avg = np.mean(always_override_improvements)
+    always_override_improvement_std = np.std(always_override_improvements)
 
     return {
         "experiment_info": {
@@ -742,6 +760,8 @@ def run_multi_pair_analysis() -> Dict[str, Any]:
         "averaged_results": averaged_results,
         "always_base": always_base_avg,
         "always_rerun_when_possible": always_rerun_avg,
+        "always_override_improvement": always_override_improvement_avg,
+        "always_override_improvement_std": always_override_improvement_std,
         "best_metric": averaged_results[0]["metric"] if averaged_results else None,
         "individual_pair_results": all_pair_results,
     }
@@ -782,28 +802,31 @@ def print_multi_pair_summary(analysis: Dict[str, Any]) -> None:
     print(f"Analyzed {exp['num_pairs']} run pairs")
 
     print("\nAVERAGED STRATEGY RESULTS:")
-    print(f"  Always Base (avg): {analysis['always_base']:.2f}%")
-    print(f"  Always Override (avg): {analysis['always_rerun_when_possible']:.2f}%")
+    print(f"  Always Base (avg): {analysis['always_base']:.2f}% (baseline)")
+    print(
+        f"  Always Override (avg): {analysis['always_rerun_when_possible']:.2f}% ({analysis['always_override_improvement']:+.2f}%±{analysis['always_override_improvement_std']:.2f})"
+    )
 
     print(f"\nSMART FUSION RESULTS (averaged over {exp['num_pairs']} pairs):")
-    print(
-        f"{'Metric':<20} {'Accuracy':<10} {'Std':<8} {'Min':<8} {'Max':<8} {'vs Base':<10}"
-    )
-    print("-" * 70)
+    print(f"{'Metric':<20} {'Improvement':<12} {'Range':<15} {'Accuracy':<10}")
+    print("-" * 65)
 
     for result in analysis["averaged_results"]:
+        range_str = f"[{result['min']:+.2f}, {result['max']:+.2f}]"
         print(
-            f"{result['metric']:<20} {result['accuracy']:<10.2f} {result['std']:<8.2f} "
-            f"{result['min']:<8.2f} {result['max']:<8.2f} {result['vs_base']:<+10.2f}"
+            f"{result['metric']:<20} {result['improvement']:<+12.2f} {range_str:<15} {result['accuracy']:<10.2f}"
         )
 
     best = analysis["averaged_results"][0] if analysis["averaged_results"] else None
     if best:
         print(
-            f"\nBEST METRIC: {best['metric']} with {best['accuracy']:.2f}% avg accuracy"
+            f"\nBEST METRIC: {best['metric']} with {best['improvement']:+.2f}% avg improvement"
         )
-        improvement = best["accuracy"] - analysis["always_rerun_when_possible"]
-        print(f"Improvement over always override: {improvement:+.2f}%")
+        print(f"Absolute accuracy: {best['accuracy']:.2f}%")
+        improvement_over_override = (
+            best["improvement"] - analysis["always_override_improvement"]
+        )
+        print(f"Improvement over always override: {improvement_over_override:+.2f}%")
 
 
 if __name__ == "__main__":
