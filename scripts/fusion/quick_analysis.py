@@ -214,10 +214,10 @@ def create_averaged_comparison_chart(
     ):
         height = bar.get_height()
 
-        # Show improvement with accuracy in parentheses
+        # Show improvement with min/max range
         min_val = strategy["min"]
         max_val = strategy["max"]
-        label = f"{improvement:+.1f}% [{min_val:+.1f}, {max_val:+.1f}]\n({strategy['accuracy']:.1f}%)"
+        label = f"{improvement:+.1f}% [{min_val:+.1f}, {max_val:+.1f}]"
 
         # Bold for best performing strategy
         fontweight = "bold" if i == 0 else "normal"  # First in sorted list is best
