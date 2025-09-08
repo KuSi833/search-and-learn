@@ -81,7 +81,7 @@ def _compute_core_metrics(sample: Dict[str, Any]) -> Dict[str, Any]:
             "n": 0,
             "agreement_ratio": 0.0,
             "entropy_freq": 0.0,
-            "group_top_frac": 0.0,
+            "consensus_support": 0.0,
         }
 
     # Group by extracted answer
@@ -104,15 +104,15 @@ def _compute_core_metrics(sample: Dict[str, Any]) -> Dict[str, Any]:
     sum_scores = float(sum(agg_scores)) if agg_scores else 0.0
     if sum_scores > 0 and len(scores_grouped) > 0:
         weighted_probs = [max(0.0, s) / sum_scores for s in scores_grouped]
-        group_top_frac = max(weighted_probs)
+        consensus_support = max(weighted_probs)
     else:
-        group_top_frac = 0.0
+        consensus_support = 0.0
 
     return {
         "n": n,
         "agreement_ratio": float(agreement_ratio),
         "entropy_freq": float(entropy_freq),
-        "group_top_frac": float(group_top_frac),
+        "consensus_support": float(consensus_support),
     }
 
 
@@ -193,7 +193,7 @@ def overlap(run_id: str, coverages: str) -> None:
     # Build oriented rankings
     order_agree = _order_indices_by_metric(mlist, labels, "agreement_ratio")
     order_entr = _order_indices_by_metric(mlist, labels, "entropy_freq")
-    order_group = _order_indices_by_metric(mlist, labels, "group_top_frac")
+    order_group = _order_indices_by_metric(mlist, labels, "consensus_support")
 
     coverage_pcts = [int(x) for x in coverages.split(",") if x.strip()]
 
@@ -260,7 +260,7 @@ def _precision_recall_f1(flags: Set[int], labels: List[bool]) -> tuple:
 @cli.command(
     name="boolean-combos",
     help=(
-        "Evaluate OR/AND combinations of agreement_ratio, entropy_freq, group_top_frac. "
+        "Evaluate OR/AND combinations of agreement_ratio, entropy_freq, consensus_support. "
         "At each coverage p, each metric flags its top-K most uncertain; OR=union, AND=intersection."
     ),
 )
@@ -290,7 +290,7 @@ def boolean_combos(run_id: str, coverages: str) -> None:
     # Rankings per metric
     order_agree = _order_indices_by_metric(mlist, labels, "agreement_ratio")
     order_entr = _order_indices_by_metric(mlist, labels, "entropy_freq")
-    order_group = _order_indices_by_metric(mlist, labels, "group_top_frac")
+    order_group = _order_indices_by_metric(mlist, labels, "consensus_support")
 
     combos = [
         ("agree+entropy", (order_agree, order_entr)),
@@ -316,7 +316,7 @@ def boolean_combos(run_id: str, coverages: str) -> None:
     for metric_name, order in [
         ("agreement_ratio", order_agree),
         ("entropy_freq", order_entr),
-        ("group_top_frac", order_group),
+        ("consensus_support", order_group),
     ]:
         cells: List[str] = []
         for p in coverage_pcts:
@@ -385,12 +385,15 @@ def boolean_combos_experiment() -> None:
     coverage_pcts = coverages
 
     # Aggregators for averages across runs
-    metric_names = ["agreement_ratio", "entropy_freq", "group_top_frac"]
+    metric_names = ["agreement_ratio", "entropy_freq", "consensus_support"]
     combo_defs = [
         ("agree+entropy", ("agreement_ratio", "entropy_freq")),
-        ("agree+group", ("agreement_ratio", "group_top_frac")),
-        ("entropy+group", ("entropy_freq", "group_top_frac")),
-        ("agree+entropy+group", ("agreement_ratio", "entropy_freq", "group_top_frac")),
+        ("agree+group", ("agreement_ratio", "consensus_support")),
+        ("entropy+group", ("entropy_freq", "consensus_support")),
+        (
+            "agree+entropy+group",
+            ("agreement_ratio", "entropy_freq", "consensus_support"),
+        ),
     ]
 
     def _blank_cell():
@@ -443,7 +446,9 @@ def boolean_combos_experiment() -> None:
                 mlist, labels, "agreement_ratio"
             ),
             "entropy_freq": _order_indices_by_metric(mlist, labels, "entropy_freq"),
-            "group_top_frac": _order_indices_by_metric(mlist, labels, "group_top_frac"),
+            "consensus_support": _order_indices_by_metric(
+                mlist, labels, "consensus_support"
+            ),
         }
 
         # Accumulate single metric baselines

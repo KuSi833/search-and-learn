@@ -30,7 +30,7 @@
   },
   "averaged_results": [
     {
-      "metric": "group_top_frac",
+      "metric": "consensus_support",
       "improvement": 2.06666666666667,
       "std": 3.021405118299907,
       "min": 0.4000000000000057,
@@ -106,7 +106,7 @@
   "always_rerun_when_possible": 85.56666666666666,
   "always_override_improvement": 1.8000000000000018,
   "always_override_improvement_std": 3.24345494804537,
-  "best_metric": "group_top_frac",
+  "best_metric": "consensus_support",
   "individual_pair_results": [
     {
       "experiment_info": {
@@ -134,10 +134,10 @@
           }
         },
         "smart_fusion_best": {
-          "description": "Use group_top_frac confidence to decide",
+          "description": "Use consensus_support confidence to decide",
           "accuracy": 80.8,
           "vs_base": 8.799999999999997,
-          "metric": "group_top_frac",
+          "metric": "consensus_support",
           "overrides_used": 94,
           "flips_positive": 45,
           "flips_negative": 1,
@@ -152,7 +152,7 @@
       },
       "all_smart_results": [
         {
-          "metric": "group_top_frac",
+          "metric": "consensus_support",
           "accuracy": 80.8,
           "vs_base": 8.799999999999997,
           "overrides_used": 94,
@@ -252,7 +252,7 @@
       "always_rerun_when_possible": 81.0,
       "best_smart_fusion": {
         "accuracy": 80.8,
-        "metric": "group_top_frac",
+        "metric": "consensus_support",
         "improvement_over_base": 8.799999999999997,
         "improvement_over_always_rerun": -0.20000000000000284
       }
@@ -313,7 +313,7 @@
           }
         },
         {
-          "metric": "group_top_frac",
+          "metric": "consensus_support",
           "accuracy": 87.2,
           "vs_base": 0.6000000000000085,
           "overrides_used": 30,
@@ -432,10 +432,10 @@
           }
         },
         "smart_fusion_best": {
-          "description": "Use group_top_frac confidence to decide",
+          "description": "Use consensus_support confidence to decide",
           "accuracy": 87.4,
           "vs_base": 1.2000000000000028,
-          "metric": "group_top_frac",
+          "metric": "consensus_support",
           "overrides_used": 36,
           "flips_positive": 6,
           "flips_negative": 0,
@@ -450,7 +450,7 @@
       },
       "all_smart_results": [
         {
-          "metric": "group_top_frac",
+          "metric": "consensus_support",
           "accuracy": 87.4,
           "vs_base": 1.2000000000000028,
           "overrides_used": 36,
@@ -550,7 +550,7 @@
       "always_rerun_when_possible": 86.0,
       "best_smart_fusion": {
         "accuracy": 87.4,
-        "metric": "group_top_frac",
+        "metric": "consensus_support",
         "improvement_over_base": 1.2000000000000028,
         "improvement_over_always_rerun": 1.4000000000000057
       }
@@ -623,7 +623,7 @@
           }
         },
         {
-          "metric": "group_top_frac",
+          "metric": "consensus_support",
           "accuracy": 86.2,
           "vs_base": 0.4000000000000057,
           "overrides_used": 48,
@@ -760,7 +760,7 @@
           }
         },
         {
-          "metric": "group_top_frac",
+          "metric": "consensus_support",
           "accuracy": 87.0,
           "vs_base": 0.7999999999999972,
           "overrides_used": 20,
@@ -921,7 +921,7 @@
           }
         },
         {
-          "metric": "group_top_frac",
+          "metric": "consensus_support",
           "accuracy": 86.4,
           "vs_base": 0.6000000000000085,
           "overrides_used": 18,

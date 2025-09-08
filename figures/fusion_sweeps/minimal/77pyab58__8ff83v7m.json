@@ -1,6 +1,6 @@
 [
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.0,
     "min_rerun_conf": null,
     "max_base_conf": null,
@@ -18,7 +18,7 @@
     "conversions_ft": 6
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.0,
     "min_rerun_conf": null,
     "max_base_conf": 0.8,
@@ -36,7 +36,7 @@
     "conversions_ft": 6
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.0,
     "min_rerun_conf": 0.5,
     "max_base_conf": null,
@@ -54,7 +54,7 @@
     "conversions_ft": 5
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.0,
     "min_rerun_conf": 0.5,
     "max_base_conf": 0.8,
@@ -72,7 +72,7 @@
     "conversions_ft": 5
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.0,
     "min_rerun_conf": 0.6,
     "max_base_conf": null,
@@ -90,7 +90,7 @@
     "conversions_ft": 5
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.0,
     "min_rerun_conf": 0.6,
     "max_base_conf": 0.8,
@@ -108,7 +108,7 @@
     "conversions_ft": 5
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.02,
     "min_rerun_conf": null,
     "max_base_conf": null,
@@ -126,7 +126,7 @@
     "conversions_ft": 6
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.02,
     "min_rerun_conf": null,
     "max_base_conf": 0.8,
@@ -144,7 +144,7 @@
     "conversions_ft": 6
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.02,
     "min_rerun_conf": 0.5,
     "max_base_conf": null,
@@ -162,7 +162,7 @@
     "conversions_ft": 5
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.02,
     "min_rerun_conf": 0.5,
     "max_base_conf": 0.8,
@@ -180,7 +180,7 @@
     "conversions_ft": 5
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.02,
     "min_rerun_conf": 0.6,
     "max_base_conf": null,
@@ -198,7 +198,7 @@
     "conversions_ft": 5
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.02,
     "min_rerun_conf": 0.6,
     "max_base_conf": 0.8,
@@ -216,7 +216,7 @@
     "conversions_ft": 5
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.05,
     "min_rerun_conf": null,
     "max_base_conf": null,
@@ -234,7 +234,7 @@
     "conversions_ft": 6
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.05,
     "min_rerun_conf": null,
     "max_base_conf": 0.8,
@@ -252,7 +252,7 @@
     "conversions_ft": 6
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.05,
     "min_rerun_conf": 0.5,
     "max_base_conf": null,
@@ -270,7 +270,7 @@
     "conversions_ft": 5
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.05,
     "min_rerun_conf": 0.5,
     "max_base_conf": 0.8,
@@ -288,7 +288,7 @@
     "conversions_ft": 5
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.05,
     "min_rerun_conf": 0.6,
     "max_base_conf": null,
@@ -306,7 +306,7 @@
     "conversions_ft": 5
   },
   {
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "delta": 0.05,
     "min_rerun_conf": 0.6,
     "max_base_conf": 0.8,

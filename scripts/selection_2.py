@@ -210,7 +210,7 @@ def calculate_f1_score_for_fixed_count(
 
     for metric in all_data.keys():
         # Get selected questions using fixed count
-        selected_questions = get_selected_questions_fixed_count(
+        selected_questions, threshold_used = get_selected_questions_fixed_count(
             metric, correct_data, incorrect_data, all_data, selection_count
         )
 
@@ -222,25 +222,8 @@ def calculate_f1_score_for_fixed_count(
             [q for q in selected_questions if q.startswith("incorrect_")]
         )
 
-        # Find threshold value (the worst value that was still selected)
-        all_values_with_indices = []
-        for idx, val in enumerate(correct_data[metric]):
-            all_values_with_indices.append((val, f"correct_{idx}", True))
-        for idx, val in enumerate(incorrect_data[metric]):
-            all_values_with_indices.append((val, f"incorrect_{idx}", False))
-
-        if is_low_uncertainty_metric(metric, correct_data, incorrect_data):
-            all_values_with_indices.sort(key=lambda x: x[0])
-        else:
-            all_values_with_indices.sort(key=lambda x: x[0], reverse=True)
-
-        # Threshold is the value of the last selected item
-        actual_selected = min(selection_count, len(all_values_with_indices))
-        threshold = (
-            all_values_with_indices[actual_selected - 1][0]
-            if actual_selected > 0
-            else 0.0
-        )
+        # Use the actual threshold returned by the function
+        threshold = threshold_used
 
         # Calculate confusion matrix values
         tp = (
@@ -322,6 +305,7 @@ def print_coverage_analysis_table(
     # Add columns
     table.add_column("Metric", style="cyan", no_wrap=True)
     table.add_column("Select%", justify="center", style="yellow")
+    table.add_column("Direction", justify="center", style="white")
     table.add_column("Threshold", justify="right", style="white")
     table.add_column("Corr.Sel", justify="right", style="red")
     table.add_column("Incor.Sel", justify="right", style="green")
@@ -351,6 +335,9 @@ def print_coverage_analysis_table(
             correct_not_selected = result["tn"]  # TN = correct answers not flagged
             incorrect_not_selected = result["fn"]  # FN = incorrect answers not flagged
 
+            # Get direction for this metric
+            direction = get_metric_direction(metric, correct_data, incorrect_data)
+
             # Color-code F1 scores
             f1_value = result["f1"]
             if f1_value >= 0.5:
@@ -363,6 +350,7 @@ def print_coverage_analysis_table(
             table.add_row(
                 metric_name,
                 f"{coverage}%",
+                direction if i == 0 else "",
                 f"{result['threshold']:.4f}",
                 str(correct_selected),
                 str(incorrect_selected),
@@ -446,6 +434,7 @@ def print_fixed_count_analysis_table(
     # Add columns
     table.add_column("Metric", style="cyan", no_wrap=True)
     table.add_column("Count", justify="center", style="yellow")
+    table.add_column("Direction", justify="center", style="white")
     table.add_column("Threshold", justify="right", style="white")
     table.add_column("Corr.Sel", justify="right", style="red")
     table.add_column("Incor.Sel", justify="right", style="green")
@@ -540,11 +529,16 @@ def get_selected_questions(
     incorrect_data: Dict[str, List[float]],
     all_data: Dict[str, List[float]],
     selection_rate: float,
-) -> set:
-    """Get the set of question indices selected by a metric at a given selection rate."""
+) -> tuple[set, float]:
+    """Get the set of question indices selected by a metric at a given selection rate.
+
+    Returns:
+        tuple: (selected_indices, threshold_used)
+    """
     # Calculate threshold for this selection rate
     if is_low_uncertainty_metric(metric, correct_data, incorrect_data):
         threshold = np.percentile(all_data[metric], selection_rate)
+        direction = "<="
         # Select values <= threshold (uncertain)
         selected_indices = set()
         idx = 0
@@ -559,6 +553,7 @@ def get_selected_questions(
             idx += 1
     else:
         threshold = np.percentile(all_data[metric], 100 - selection_rate)
+        direction = ">="
         # Select values >= threshold (uncertain)
         selected_indices = set()
         idx = 0
@@ -572,7 +567,10 @@ def get_selected_questions(
                 selected_indices.add(f"incorrect_{idx}")
             idx += 1
 
-    return selected_indices
+    print(
+        f"    {metric}: {direction} {threshold:.4f} → {len(selected_indices)} questions selected"
+    )
+    return selected_indices, threshold
 
 
 def get_selected_questions_fixed_count(
@@ -581,8 +579,12 @@ def get_selected_questions_fixed_count(
     incorrect_data: Dict[str, List[float]],
     all_data: Dict[str, List[float]],
     selection_count: int,
-) -> set:
-    """Get the set of question indices selected by a metric with fixed count selection."""
+) -> tuple[set, float]:
+    """Get the set of question indices selected by a metric with fixed count selection.
+
+    Returns:
+        tuple: (selected_indices, threshold_used)
+    """
     # Create list of (value, index, is_correct) tuples
     all_values_with_indices = []
 
@@ -598,9 +600,11 @@ def get_selected_questions_fixed_count(
     if is_low_uncertainty_metric(metric, correct_data, incorrect_data):
         # For these metrics, low values indicate high uncertainty - sort ascending
         all_values_with_indices.sort(key=lambda x: x[0])
+        direction = "<="
     else:
         # For high uncertainty metrics, high values indicate high uncertainty - sort descending
         all_values_with_indices.sort(key=lambda x: x[0], reverse=True)
+        direction = ">="
 
     # Select top N most uncertain questions
     selected_count = min(selection_count, len(all_values_with_indices))
@@ -610,7 +614,15 @@ def get_selected_questions_fixed_count(
         _, question_id, _ = all_values_with_indices[i]
         selected_indices.add(question_id)
 
-    return selected_indices
+    # The threshold is the value of the last selected item
+    threshold = (
+        all_values_with_indices[selected_count - 1][0] if selected_count > 0 else 0.0
+    )
+
+    print(
+        f"    {metric}: {direction} {threshold:.4f} (rank {selected_count}) → {len(selected_indices)} questions selected"
+    )
+    return selected_indices, threshold
 
 
 def export_venn_diagram_data(
@@ -821,9 +833,13 @@ def analyze_ensemble_potential(
 
         # Get selected questions for each metric
         selected_by_metric = {}
+        thresholds_used = {}
+        print(f"\n  Thresholds used for {rate}% selection:")
         for metric, _ in top_3_metrics:
-            selected_by_metric[metric] = get_selected_questions(
-                metric, correct_data, incorrect_data, all_data, rate
+            selected_by_metric[metric], thresholds_used[metric] = (
+                get_selected_questions(
+                    metric, correct_data, incorrect_data, all_data, rate
+                )
             )
 
         # Calculate pairwise overlaps
@@ -934,7 +950,7 @@ def analyze_ensemble_potential(
     for rate in [10, 15]:
         selected_by_metric = {}
         for metric, _ in top_3_metrics:
-            selected_by_metric[metric] = get_selected_questions(
+            selected_by_metric[metric], _ = get_selected_questions(
                 metric, correct_data, incorrect_data, all_data, rate
             )
 
@@ -1016,9 +1032,13 @@ def analyze_ensemble_potential_fixed_count(
 
         # Get selected questions for each metric
         selected_by_metric = {}
+        thresholds_used = {}
+        print(f"\n  Thresholds used for count {count} selection:")
         for metric, _ in top_3_metrics:
-            selected_by_metric[metric] = get_selected_questions_fixed_count(
-                metric, correct_data, incorrect_data, all_data, count
+            selected_by_metric[metric], thresholds_used[metric] = (
+                get_selected_questions_fixed_count(
+                    metric, correct_data, incorrect_data, all_data, count
+                )
             )
 
         # Calculate pairwise overlaps
@@ -1150,7 +1170,7 @@ def compare_ensemble_vs_individual(
         )[metric]
 
         # Get selected questions for this metric
-        selected_sets[metric] = get_selected_questions(
+        selected_sets[metric], _ = get_selected_questions(
             metric, correct_data, incorrect_data, all_data, selection_rate
         )
 
@@ -1411,7 +1431,7 @@ def compare_ensemble_vs_individual_fixed_count(
         )[metric]
 
         # Get selected questions for this metric
-        selected_sets[metric] = get_selected_questions_fixed_count(
+        selected_sets[metric], _ = get_selected_questions_fixed_count(
             metric, correct_data, incorrect_data, all_data, selection_count
         )
 
@@ -1720,7 +1740,7 @@ def compare_ensemble_across_counts(
         # Get selected sets for ensemble calculation
         selected_sets = {}
         for metric, _ in top_3_metrics:
-            selected_sets[metric] = get_selected_questions_fixed_count(
+            selected_sets[metric], _ = get_selected_questions_fixed_count(
                 metric, correct_data, incorrect_data, all_data, count
             )
 
@@ -2158,7 +2178,7 @@ def create_final_method_comparison(
         # 2. Get ensemble results
         selected_sets = {}
         for metric, _ in top_3_metrics:
-            selected_sets[metric] = get_selected_questions_fixed_count(
+            selected_sets[metric], _ = get_selected_questions_fixed_count(
                 metric, correct_data, incorrect_data, all_data, count
             )
 
@@ -2522,7 +2542,7 @@ def analyze_and_plot(run_ids: List[str]) -> None:
     metrics_list = [
         "agreement_ratio",
         "entropy_freq",
-        "group_top_frac",
+        "consensus_support",
         "entropy_weighted",
         "prm_max",
         "prm_mean",

@@ -25,7 +25,7 @@
       "mean_incorrect": 0.29714128657038563,
       "direction": "\u2193"
     },
-    "group_top_frac": {
+    "consensus_support": {
       "mean_correct": 0.874184815095305,
       "mean_incorrect": 0.46050176329880455,
       "direction": "\u2191"
@@ -96,7 +96,7 @@
       72.14285714285714,
       85.0
     ],
-    "group_top_frac": [
+    "consensus_support": [
       28.571428571428573,
       58.57142857142857,
       75.0,
@@ -154,7 +154,7 @@
       50.5,
       47.6
     ],
-    "group_top_frac": [
+    "consensus_support": [
       80.0,
       82.0,
       70.0,
@@ -287,7 +287,7 @@
         131
       ]
     ],
-    "group_top_frac": [
+    "consensus_support": [
       [
         40,
         10

@@ -287,10 +287,10 @@ def run_delta_analysis(base_run: str, rerun_id: str) -> None:
     print("\n" + "=" * 60)
     print("DELTA THRESHOLD ANALYSIS")
     print("=" * 60)
-    print("Analyzing delta impact on group_top_frac and agreement_ratio")
+    print("Analyzing delta impact on consensus_support and agreement_ratio")
 
     # Test key metrics with different delta values
-    metrics = ["group_top_frac", "agreement_ratio"]
+    metrics = ["consensus_support", "agreement_ratio"]
     delta_values = [n / 100 for n in range(10, 20, 1)]
 
     # Create all settings for the sweep

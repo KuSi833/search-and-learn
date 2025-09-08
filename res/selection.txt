@@ -22,7 +22,7 @@ Threshold Analysis (targeting 10% of 1500 data points):
     Correct: 76 (32.6% of selected)
     Incorrect: 157 (67.4% of selected)
 
-  Group Top Frac: <= 0.5343
+  Support Consensus: <= 0.5343
     Means: Correct=0.962, Incorrect=0.605
     Selected: 150 (10.0%)
     Correct: 40 (26.7% of selected)
@@ -88,7 +88,7 @@ Dataset: 1289 correct, 211 incorrect, 1500 total answers
 │                  │   25%   │    0.0000 │     1289 │       211 │           0 │            0 │     0.141 │  1.000 │ 0.247 │
 │                  │   30%   │    0.0000 │     1289 │       211 │           0 │            0 │     0.141 │  1.000 │ 0.247 │
 │                  │         │           │          │           │             │              │           │        │       │
-│ Group Top Frac   │   10%   │    0.5343 │       40 │       110 │        1249 │          101 │     0.733 │  0.521 │ 0.609 │
+│ Support Consensus   │   10%   │    0.5343 │       40 │       110 │        1249 │          101 │     0.733 │  0.521 │ 0.609 │
 │                  │   15%   │    0.7500 │      111 │       156 │        1178 │           55 │     0.584 │  0.739 │ 0.653 │
 │                  │   20%   │    0.8697 │      135 │       165 │        1154 │           46 │     0.550 │  0.782 │ 0.646 │
 │                  │   25%   │    1.0000 │     1289 │       211 │           0 │            0 │     0.141 │  1.000 │ 0.247 │
@@ -155,7 +155,7 @@ Dataset: 1289 correct, 211 incorrect, 1500 total answers
 │                  │  125  │    0.5000 │       33 │        92 │        1256 │          119 │     0.736 │  0.436 │ 0.548 │
 │                  │  150  │    0.5000 │       58 │        92 │        1231 │          119 │     0.613 │  0.436 │ 0.510 │
 │                  │       │           │          │           │             │              │           │        │       │
-│ Group Top Frac   │  50   │    0.3709 │        6 │        44 │        1283 │          167 │     0.880 │  0.209 │ 0.337 │
+│ Support Consensus   │  50   │    0.3709 │        6 │        44 │        1283 │          167 │     0.880 │  0.209 │ 0.337 │
 │                  │  75   │    0.4879 │        7 │        68 │        1282 │          143 │     0.907 │  0.322 │ 0.476 │
 │                  │  100  │    0.5000 │       21 │        79 │        1268 │          132 │     0.790 │  0.374 │ 0.508 │
 │                  │  125  │    0.5006 │       30 │        95 │        1259 │          116 │     0.760 │  0.450 │ 0.565 │
@@ -220,7 +220,7 @@ Analyzing overlap between top 3 performing metrics:
 
 1. Agreement Ratio (F1: 0.707)
 2. Entropy Freq (F1: 0.707)
-3. Group Top Frac (F1: 0.609)
+3. Support Consensus (F1: 0.609)
 
 ═══ 10% Selection Rate Analysis ═══
                             Pairwise Overlap at 10% Selection                            
@@ -270,7 +270,7 @@ Comparing individual metrics with ensemble (OR logic) at 10% selection rate
 DEBUG: Individual metric selections at 10%:
 • agreement_ratio: 233 questions
 • entropy_freq: 233 questions
-• group_top_frac: 150 questions
+• consensus_support: 150 questions
 • Ensemble (OR): 235 questions
 • Overlap agreemen & entropy_: 233
 • Overlap agreemen & group_to: 148
@@ -286,7 +286,7 @@ WARNING: agreement_ratio and entropy_freq select IDENTICAL questions!
 ┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━┩
 │ Agreement Ratio │      233 │       76 │       157 │     0.674 │  0.744 │ 0.707 │    baseline │
 │ Entropy Freq    │      233 │       76 │       157 │     0.674 │  0.744 │ 0.707 │       +0.0% │
-│ Group Top Frac  │      150 │       40 │       110 │     0.733 │  0.521 │ 0.609 │      -13.8% │
+│ Support Consensus  │      150 │       40 │       110 │     0.733 │  0.521 │ 0.609 │      -13.8% │
 │ Ensemble (OR)   │      235 │       76 │       159 │     0.677 │  0.754 │ 0.713 │       +0.8% │
 └─────────────────┴──────────┴──────────┴───────────┴───────────┴────────┴───────┴─────────────┘
 
@@ -303,7 +303,7 @@ Reasoning: Small F1 change: +0.006
 FIXED COUNT ENSEMBLE ANALYSIS - TOP 3 METRICS (N=75)
 Analyzing overlap between top 3 performing metrics with fixed count selection:
 
-1. Group Top Frac (F1: 0.476)
+1. Support Consensus (F1: 0.476)
 2. Agreement Ratio (F1: 0.434)
 3. Prm Margin (F1: 0.406)
 
@@ -363,7 +363,7 @@ Comparing individual metrics with ensemble (OR logic) using fixed count selectio
 
 
 DEBUG: Individual metric selections at count 75:
-• group_top_frac: 75 questions
+• consensus_support: 75 questions
 • agreement_ratio: 75 questions
 • prm_margin: 75 questions
 • Ensemble (OR): 142 questions
@@ -378,7 +378,7 @@ DEBUG: Individual metric selections at count 75:
 ┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━┓
 ┃ Method          ┃ Selected ┃ Corr.Sel ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Improvement ┃
 ┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━┩
-│ Group Top Frac  │       75 │        7 │        68 │     0.907 │  0.322 │ 0.476 │    baseline │
+│ Support Consensus  │       75 │        7 │        68 │     0.907 │  0.322 │ 0.476 │    baseline │
 │ Agreement Ratio │       75 │       13 │        62 │     0.827 │  0.294 │ 0.434 │       -8.8% │
 │ Prm Margin      │       75 │       17 │        58 │     0.773 │  0.275 │ 0.406 │      -14.7% │
 │ Ensemble (OR)   │      142 │       25 │       117 │     0.824 │  0.555 │ 0.663 │      +39.4% │
@@ -404,7 +404,7 @@ FIXED COUNT ENSEMBLE ANALYSIS - TOP 3 METRICS (N=100)
 Analyzing overlap between top 3 performing metrics with fixed count selection:
 
 1. Agreement Ratio (F1: 0.559)
-2. Group Top Frac (F1: 0.508)
+2. Support Consensus (F1: 0.508)
 3. Prm Margin (F1: 0.450)
 
 ═══ Fixed Count 75 Analysis ═══
@@ -464,7 +464,7 @@ Comparing individual metrics with ensemble (OR logic) using fixed count selectio
 
 DEBUG: Individual metric selections at count 100:
 • agreement_ratio: 100 questions
-• group_top_frac: 100 questions
+• consensus_support: 100 questions
 • prm_margin: 100 questions
 • Ensemble (OR): 178 questions
 • Overlap agreemen & group_to: 71
@@ -479,7 +479,7 @@ DEBUG: Individual metric selections at count 100:
 ┃ Method          ┃ Selected ┃ Corr.Sel ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Improvement ┃
 ┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━┩
 │ Agreement Ratio │      100 │       13 │        87 │     0.870 │  0.412 │ 0.559 │    baseline │
-│ Group Top Frac  │      100 │       21 │        79 │     0.790 │  0.374 │ 0.508 │       -9.2% │
+│ Support Consensus  │      100 │       21 │        79 │     0.790 │  0.374 │ 0.508 │       -9.2% │
 │ Prm Margin      │      100 │       30 │        70 │     0.700 │  0.332 │ 0.450 │      -19.5% │
 │ Ensemble (OR)   │      178 │       49 │       129 │     0.725 │  0.611 │ 0.663 │      +18.5% │
 └─────────────────┴──────────┴──────────┴───────────┴───────────┴────────┴───────┴─────────────┘
@@ -503,7 +503,7 @@ Ensemble Expansion Analysis:
 FIXED COUNT ENSEMBLE ANALYSIS - TOP 3 METRICS (N=125)
 Analyzing overlap between top 3 performing metrics with fixed count selection:
 
-1. Group Top Frac (F1: 0.565)
+1. Support Consensus (F1: 0.565)
 2. Agreement Ratio (F1: 0.548)
 3. Entropy Freq (F1: 0.542)
 
@@ -563,7 +563,7 @@ Comparing individual metrics with ensemble (OR logic) using fixed count selectio
 
 
 DEBUG: Individual metric selections at count 125:
-• group_top_frac: 125 questions
+• consensus_support: 125 questions
 • agreement_ratio: 125 questions
 • entropy_freq: 125 questions
 • Ensemble (OR): 178 questions
@@ -578,7 +578,7 @@ DEBUG: Individual metric selections at count 125:
 ┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━┓
 ┃ Method          ┃ Selected ┃ Corr.Sel ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Improvement ┃
 ┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━┩
-│ Group Top Frac  │      125 │       30 │        95 │     0.760 │  0.450 │ 0.565 │    baseline │
+│ Support Consensus  │      125 │       30 │        95 │     0.760 │  0.450 │ 0.565 │    baseline │
 │ Agreement Ratio │      125 │       33 │        92 │     0.736 │  0.436 │ 0.548 │       -3.2% │
 │ Entropy Freq    │      125 │       34 │        91 │     0.728 │  0.431 │ 0.542 │       -4.2% │
 │ Ensemble (OR)   │      178 │       52 │       126 │     0.708 │  0.597 │ 0.648 │      +14.6% │
@@ -605,14 +605,14 @@ Comparing ensemble vs individual performance across different selection counts
 
 Top 3 metrics (based on F1 at count=100):
 1. Agreement Ratio (F1: 0.559)
-2. Group Top Frac (F1: 0.508)
+2. Support Consensus (F1: 0.508)
 3. Prm Margin (F1: 0.450)
                   Ensemble vs Individual Performance Comparison Across Counts                  
 ┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━┓
 ┃ Count ┃ Method            ┃ Selected ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Improvement ┃
 ┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━┩
 │  75   │ Best Individual   │       75 │        68 │     0.907 │  0.322 │ 0.476 │    baseline │
-│       │ (Group Top Frac)  │          │           │           │        │       │             │
+│       │ (Support Consensus)  │          │           │           │        │       │             │
 │       │ Ensemble (OR)     │      142 │       117 │     0.824 │  0.555 │ 0.663 │      +39.4% │
 │       │                   │          │           │           │        │       │             │
 │  100  │ Best Individual   │      100 │        87 │     0.870 │  0.412 │ 0.559 │    baseline │
@@ -620,7 +620,7 @@ Top 3 metrics (based on F1 at count=100):
 │       │ Ensemble (OR)     │      178 │       129 │     0.725 │  0.611 │ 0.663 │      +18.5% │
 │       │                   │          │           │           │        │       │             │
 │  125  │ Best Individual   │      125 │        95 │     0.760 │  0.450 │ 0.565 │    baseline │
-│       │ (Group Top Frac)  │          │           │           │        │       │             │
+│       │ (Support Consensus)  │          │           │           │        │       │             │
 │       │ Ensemble (OR)     │      225 │       146 │     0.649 │  0.692 │ 0.670 │      +18.4% │
 └───────┴───────────────────┴──────────┴───────────┴───────────┴────────┴───────┴─────────────┘
 
@@ -641,12 +641,12 @@ Training logistic regression using top 3 metrics to predict incorrect answers
 
 Using metrics:
 1. Agreement Ratio
-2. Group Top Frac
+2. Support Consensus
 3. Prm Margin
 
 Model Coefficients:
 • Agreement Ratio: -4.0913 ↓
-• Group Top Frac: -2.9985 ↓
+• Support Consensus: -2.9985 ↓
 • Prm Margin: 1.3050 ↑
 • Intercept: 3.8030
 
@@ -656,7 +656,7 @@ Linear Model Performance at Different Selection Counts:
 ┃ Count ┃ Method            ┃ Selected ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Improvement ┃
 ┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━┩
 │  75   │ Best Individual   │       75 │        68 │     0.907 │  0.322 │ 0.476 │    baseline │
-│       │ (Group Top Frac)  │          │           │           │        │       │             │
+│       │ (Support Consensus)  │          │           │           │        │       │             │
 │       │ Linear Model      │       75 │        68 │     0.907 │  0.322 │ 0.476 │       +0.0% │
 │       │                   │          │           │           │        │       │             │
 │  100  │ Best Individual   │      100 │        87 │     0.870 │  0.412 │ 0.559 │    baseline │
@@ -664,13 +664,13 @@ Linear Model Performance at Different Selection Counts:
 │       │ Linear Model      │      100 │        87 │     0.870 │  0.412 │ 0.559 │       +0.0% │
 │       │                   │          │           │           │        │       │             │
 │  125  │ Best Individual   │      125 │        95 │     0.760 │  0.450 │ 0.565 │    baseline │
-│       │ (Group Top Frac)  │          │           │           │        │       │             │
+│       │ (Support Consensus)  │          │           │           │        │       │             │
 │       │ Linear Model      │      125 │       110 │     0.880 │  0.521 │ 0.655 │      +15.8% │
 └───────┴───────────────────┴──────────┴───────────┴───────────┴────────┴───────┴─────────────┘
 
 Feature Importance Analysis:
 1. Agreement Ratio: importance 4.0913 (lower values → uncertain)
-2. Group Top Frac: importance 2.9985 (lower values → uncertain)
+2. Support Consensus: importance 2.9985 (lower values → uncertain)
 3. Prm Margin: importance 1.3050 (higher values → uncertain)
 
 Model Validation (30% holdout):
@@ -686,7 +686,7 @@ Comparing all uncertainty detection methods across selection counts
 ┃ Count ┃ Method                      ┃ Selected ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Rank ┃
 ┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━┩
 │  75   │ Ensemble (OR)               │      142 │       117 │     0.824 │  0.555 │ 0.663 │  🥇  │
-│       │ Individual: Group Top Frac  │       75 │        68 │     0.907 │  0.322 │ 0.476 │  🥈  │
+│       │ Individual: Support Consensus  │       75 │        68 │     0.907 │  0.322 │ 0.476 │  🥈  │
 │       │ Linear Model                │       75 │        68 │     0.907 │  0.322 │ 0.476 │  🥉  │
 │       │ Individual: Agreement Ratio │       75 │        62 │     0.827 │  0.294 │ 0.434 │  4   │
 │       │ Individual: Prm Margin      │       75 │        58 │     0.773 │  0.275 │ 0.406 │  5   │
@@ -694,12 +694,12 @@ Comparing all uncertainty detection methods across selection counts
 │  100  │ Ensemble (OR)               │      178 │       129 │     0.725 │  0.611 │ 0.663 │  🥇  │
 │       │ Individual: Agreement Ratio │      100 │        87 │     0.870 │  0.412 │ 0.559 │  🥈  │
 │       │ Linear Model                │      100 │        87 │     0.870 │  0.412 │ 0.559 │  🥉  │
-│       │ Individual: Group Top Frac  │      100 │        79 │     0.790 │  0.374 │ 0.508 │  4   │
+│       │ Individual: Support Consensus  │      100 │        79 │     0.790 │  0.374 │ 0.508 │  4   │
 │       │ Individual: Prm Margin      │      100 │        70 │     0.700 │  0.332 │ 0.450 │  5   │
 │       │                             │          │           │           │        │       │      │
 │  125  │ Ensemble (OR)               │      225 │       146 │     0.649 │  0.692 │ 0.670 │  🥇  │
 │       │ Linear Model                │      125 │       110 │     0.880 │  0.521 │ 0.655 │  🥈  │
-│       │ Individual: Group Top Frac  │      125 │        95 │     0.760 │  0.450 │ 0.565 │  🥉  │
+│       │ Individual: Support Consensus  │      125 │        95 │     0.760 │  0.450 │ 0.565 │  🥉  │
 │       │ Individual: Agreement Ratio │      125 │        92 │     0.736 │  0.436 │ 0.548 │  4   │
 │       │ Individual: Prm Margin      │      125 │        79 │     0.632 │  0.374 │ 0.470 │  5   │
 └───────┴─────────────────────────────┴──────────┴───────────┴───────────┴────────┴───────┴──────┘
@@ -726,5 +726,5 @@ Key Insights:
 
 Linear Model Feature Weights:
 • Agreement Ratio: -4.0913 ↓
-• Group Top Frac: -2.9985 ↓
+• Support Consensus: -2.9985 ↓
 • Prm Margin: 1.3050 ↑

@@ -22,7 +22,7 @@ Threshold Analysis (targeting 10% of 1500 data points):
     Correct: 76 (32.6% of selected)
     Incorrect: 157 (67.4% of selected)
 
-  Group Top Frac: <= 0.5343
+  Support Consensus: <= 0.5343
     Means: Correct=0.962, Incorrect=0.605
     Selected: 150 (10.0%)
     Correct: 40 (26.7% of selected)
@@ -88,7 +88,7 @@ Dataset: 1289 correct, 211 incorrect, 1500 total answers
 │                  │  25%  │ 0.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
 │                  │  30%  │ 0.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
 │                  │       │       │        │       │        │       │        │       │       │
-│ Group Top Frac   │  10%  │ 0.53… │     40 │   110 │   1249 │   101 │  0.733 │ 0.521 │ 0.609 │
+│ Support Consensus   │  10%  │ 0.53… │     40 │   110 │   1249 │   101 │  0.733 │ 0.521 │ 0.609 │
 │                  │  15%  │ 0.75… │    111 │   156 │   1178 │    55 │  0.584 │ 0.739 │ 0.653 │
 │                  │  20%  │ 0.86… │    135 │   165 │   1154 │    46 │  0.550 │ 0.782 │ 0.646 │
 │                  │  25%  │ 1.00… │   1289 │   211 │      0 │     0 │  0.141 │ 1.000 │ 0.247 │
@@ -155,7 +155,7 @@ Dataset: 1289 correct, 211 incorrect, 1500 total answers
 │                  │  125  │ 0.50… │     33 │    92 │   1256 │   119 │  0.736 │ 0.436 │ 0.548 │
 │                  │  150  │ 0.50… │     58 │    92 │   1231 │   119 │  0.613 │ 0.436 │ 0.510 │
 │                  │       │       │        │       │        │       │        │       │       │
-│ Group Top Frac   │  50   │ 0.37… │      6 │    44 │   1283 │   167 │  0.880 │ 0.209 │ 0.337 │
+│ Support Consensus   │  50   │ 0.37… │      6 │    44 │   1283 │   167 │  0.880 │ 0.209 │ 0.337 │
 │                  │  75   │ 0.48… │      7 │    68 │   1282 │   143 │  0.907 │ 0.322 │ 0.476 │
 │                  │  100  │ 0.50… │     21 │    79 │   1268 │   132 │  0.790 │ 0.374 │ 0.508 │
 │                  │  125  │ 0.50… │     30 │    95 │   1259 │   116 │  0.760 │ 0.450 │ 0.565 │
@@ -220,7 +220,7 @@ Analyzing overlap between top 3 performing metrics:
 
 1. Agreement Ratio (F1: 0.707)
 2. Entropy Freq (F1: 0.707)
-3. Group Top Frac (F1: 0.609)
+3. Support Consensus (F1: 0.609)
 
 ═══ 10% Selection Rate Analysis ═══
                             Pairwise Overlap at 10% Selection                            
@@ -271,7 +271,7 @@ Comparing individual metrics with ensemble (OR logic) at 10% selection rate
 DEBUG: Individual metric selections at 10%:
 • agreement_ratio: 233 questions
 • entropy_freq: 233 questions
-• group_top_frac: 150 questions
+• consensus_support: 150 questions
 • Ensemble (OR): 235 questions
 • Overlap agreemen & entropy_: 233
 • Overlap agreemen & group_to: 148
@@ -287,7 +287,7 @@ WARNING: agreement_ratio and entropy_freq select IDENTICAL questions!
 ┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
 │ Agreement Ratio │      233 │       76 │       157 │     0.674 │  0.744 │ 0.707 │   baseline │
 │ Entropy Freq    │      233 │       76 │       157 │     0.674 │  0.744 │ 0.707 │      +0.0% │
-│ Group Top Frac  │      150 │       40 │       110 │     0.733 │  0.521 │ 0.609 │     -13.8% │
+│ Support Consensus  │      150 │       40 │       110 │     0.733 │  0.521 │ 0.609 │     -13.8% │
 │ Ensemble (OR)   │      235 │       76 │       159 │     0.677 │  0.754 │ 0.713 │      +0.8% │
 └─────────────────┴──────────┴──────────┴───────────┴───────────┴────────┴───────┴────────────┘
 
@@ -304,7 +304,7 @@ Reasoning: Small F1 change: +0.006
 FIXED COUNT ENSEMBLE ANALYSIS - TOP 3 METRICS (N=75)
 Analyzing overlap between top 3 performing metrics with fixed count selection:
 
-1. Group Top Frac (F1: 0.476)
+1. Support Consensus (F1: 0.476)
 2. Agreement Ratio (F1: 0.434)
 3. Prm Margin (F1: 0.406)
 
@@ -328,7 +328,7 @@ Three-way Analysis:
 ═══ VENN DIAGRAM DATA EXPORT (N=75) ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=group_top_frac, B=agreement_ratio, C=prm_margin
+Metrics: A=consensus_support, B=agreement_ratio, C=prm_margin
 Selection Count: 75 each
 
                             Venn Diagram Regions Breakdown (N=75)                            
@@ -336,10 +336,10 @@ Selection Count: 75 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │     8 │         7 │          1 │  87.5% │   12.5% │
-│ group_top_frac ∩ agreement_ratio only │    38 │        33 │          5 │  86.8% │   13.2% │
-│ group_top_frac ∩ prm_margin only      │     3 │         3 │          0 │ 100.0% │    0.0% │
+│ consensus_support ∩ agreement_ratio only │    38 │        33 │          5 │  86.8% │   13.2% │
+│ consensus_support ∩ prm_margin only      │     3 │         3 │          0 │ 100.0% │    0.0% │
 │ agreement_ratio ∩ prm_margin only     │    26 │        21 │          5 │  80.8% │   19.2% │
-│ group_top_frac only                   │    26 │        25 │          1 │  96.2% │    3.8% │
+│ consensus_support only                   │    26 │        25 │          1 │  96.2% │    3.8% │
 │ agreement_ratio only                  │     3 │         1 │          2 │  33.3% │   66.7% │
 │ prm_margin only                       │    38 │        27 │         11 │  71.1% │   28.9% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
@@ -358,23 +358,23 @@ Three-way Overlap Analysis:
 RAW DATA FOR VENN DIAGRAM (N=75):
 # Copy this data into your visualization script
 # Count: 75
-# Metrics: group_top_frac, agreement_ratio, prm_margin
+# Metrics: consensus_support, agreement_ratio, prm_margin
 
 # True predictions (correctly identified uncertain)
 true_ABC = 7  # All three methods
-true_AB_only = 33  # group_top_frac ∩ agreement_ratio only
-true_AC_only = 3  # group_top_frac ∩ prm_margin only
+true_AB_only = 33  # consensus_support ∩ agreement_ratio only
+true_AC_only = 3  # consensus_support ∩ prm_margin only
 true_BC_only = 21  # agreement_ratio ∩ prm_margin only
-true_A_only = 25  # group_top_frac only
+true_A_only = 25  # consensus_support only
 true_B_only = 1  # agreement_ratio only
 true_C_only = 27  # prm_margin only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 1  # All three methods
-false_AB_only = 5  # group_top_frac ∩ agreement_ratio only
-false_AC_only = 0  # group_top_frac ∩ prm_margin only
+false_AB_only = 5  # consensus_support ∩ agreement_ratio only
+false_AC_only = 0  # consensus_support ∩ prm_margin only
 false_BC_only = 5  # agreement_ratio ∩ prm_margin only
-false_A_only = 1  # group_top_frac only
+false_A_only = 1  # consensus_support only
 false_B_only = 2  # agreement_ratio only
 false_C_only = 11  # prm_margin only
 
@@ -398,7 +398,7 @@ Three-way Analysis:
 ═══ VENN DIAGRAM DATA EXPORT (N=100) ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=group_top_frac, B=agreement_ratio, C=prm_margin
+Metrics: A=consensus_support, B=agreement_ratio, C=prm_margin
 Selection Count: 100 each
 
                            Venn Diagram Regions Breakdown (N=100)                            
@@ -406,10 +406,10 @@ Selection Count: 100 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │    19 │        18 │          1 │  94.7% │    5.3% │
-│ group_top_frac ∩ agreement_ratio only │    52 │        45 │          7 │  86.5% │   13.5% │
-│ group_top_frac ∩ prm_margin only      │     3 │         2 │          1 │  66.7% │   33.3% │
+│ consensus_support ∩ agreement_ratio only │    52 │        45 │          7 │  86.5% │   13.5% │
+│ consensus_support ∩ prm_margin only      │     3 │         2 │          1 │  66.7% │   33.3% │
 │ agreement_ratio ∩ prm_margin only     │    29 │        24 │          5 │  82.8% │   17.2% │
-│ group_top_frac only                   │    26 │        14 │         12 │  53.8% │   46.2% │
+│ consensus_support only                   │    26 │        14 │         12 │  53.8% │   46.2% │
 │ agreement_ratio only                  │     0 │         0 │          0 │   0.0% │    0.0% │
 │ prm_margin only                       │    49 │        26 │         23 │  53.1% │   46.9% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
@@ -428,23 +428,23 @@ Three-way Overlap Analysis:
 RAW DATA FOR VENN DIAGRAM (N=100):
 # Copy this data into your visualization script
 # Count: 100
-# Metrics: group_top_frac, agreement_ratio, prm_margin
+# Metrics: consensus_support, agreement_ratio, prm_margin
 
 # True predictions (correctly identified uncertain)
 true_ABC = 18  # All three methods
-true_AB_only = 45  # group_top_frac ∩ agreement_ratio only
-true_AC_only = 2  # group_top_frac ∩ prm_margin only
+true_AB_only = 45  # consensus_support ∩ agreement_ratio only
+true_AC_only = 2  # consensus_support ∩ prm_margin only
 true_BC_only = 24  # agreement_ratio ∩ prm_margin only
-true_A_only = 14  # group_top_frac only
+true_A_only = 14  # consensus_support only
 true_B_only = 0  # agreement_ratio only
 true_C_only = 26  # prm_margin only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 1  # All three methods
-false_AB_only = 7  # group_top_frac ∩ agreement_ratio only
-false_AC_only = 1  # group_top_frac ∩ prm_margin only
+false_AB_only = 7  # consensus_support ∩ agreement_ratio only
+false_AC_only = 1  # consensus_support ∩ prm_margin only
 false_BC_only = 5  # agreement_ratio ∩ prm_margin only
-false_A_only = 12  # group_top_frac only
+false_A_only = 12  # consensus_support only
 false_B_only = 0  # agreement_ratio only
 false_C_only = 23  # prm_margin only
 
@@ -468,7 +468,7 @@ Three-way Analysis:
 ═══ VENN DIAGRAM DATA EXPORT (N=125) ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=group_top_frac, B=agreement_ratio, C=prm_margin
+Metrics: A=consensus_support, B=agreement_ratio, C=prm_margin
 Selection Count: 125 each
 
                            Venn Diagram Regions Breakdown (N=125)                            
@@ -476,10 +476,10 @@ Selection Count: 125 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │    29 │        25 │          4 │  86.2% │   13.8% │
-│ group_top_frac ∩ agreement_ratio only │    55 │        42 │         13 │  76.4% │   23.6% │
-│ group_top_frac ∩ prm_margin only      │     4 │         3 │          1 │  75.0% │   25.0% │
+│ consensus_support ∩ agreement_ratio only │    55 │        42 │         13 │  76.4% │   23.6% │
+│ consensus_support ∩ prm_margin only      │     4 │         3 │          1 │  75.0% │   25.0% │
 │ agreement_ratio ∩ prm_margin only     │    33 │        25 │          8 │  75.8% │   24.2% │
-│ group_top_frac only                   │    37 │        25 │         12 │  67.6% │   32.4% │
+│ consensus_support only                   │    37 │        25 │         12 │  67.6% │   32.4% │
 │ agreement_ratio only                  │     8 │         0 │          8 │   0.0% │  100.0% │
 │ prm_margin only                       │    59 │        26 │         33 │  44.1% │   55.9% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
@@ -498,23 +498,23 @@ Three-way Overlap Analysis:
 RAW DATA FOR VENN DIAGRAM (N=125):
 # Copy this data into your visualization script
 # Count: 125
-# Metrics: group_top_frac, agreement_ratio, prm_margin
+# Metrics: consensus_support, agreement_ratio, prm_margin
 
 # True predictions (correctly identified uncertain)
 true_ABC = 25  # All three methods
-true_AB_only = 42  # group_top_frac ∩ agreement_ratio only
-true_AC_only = 3  # group_top_frac ∩ prm_margin only
+true_AB_only = 42  # consensus_support ∩ agreement_ratio only
+true_AC_only = 3  # consensus_support ∩ prm_margin only
 true_BC_only = 25  # agreement_ratio ∩ prm_margin only
-true_A_only = 25  # group_top_frac only
+true_A_only = 25  # consensus_support only
 true_B_only = 0  # agreement_ratio only
 true_C_only = 26  # prm_margin only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 4  # All three methods
-false_AB_only = 13  # group_top_frac ∩ agreement_ratio only
-false_AC_only = 1  # group_top_frac ∩ prm_margin only
+false_AB_only = 13  # consensus_support ∩ agreement_ratio only
+false_AC_only = 1  # consensus_support ∩ prm_margin only
 false_BC_only = 8  # agreement_ratio ∩ prm_margin only
-false_A_only = 12  # group_top_frac only
+false_A_only = 12  # consensus_support only
 false_B_only = 8  # agreement_ratio only
 false_C_only = 33  # prm_margin only
 
@@ -523,7 +523,7 @@ Comparing individual metrics with ensemble (OR logic) using fixed count selectio
 
 
 DEBUG: Individual metric selections at count 75:
-• group_top_frac: 75 questions
+• consensus_support: 75 questions
 • agreement_ratio: 75 questions
 • prm_margin: 75 questions
 • Ensemble (OR): 142 questions
@@ -538,7 +538,7 @@ DEBUG: Individual metric selections at count 75:
 ┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Method          ┃ Selected ┃ Corr.Sel ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Improveme… ┃
 ┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
-│ Group Top Frac  │       75 │        7 │        68 │     0.907 │  0.322 │ 0.476 │   baseline │
+│ Support Consensus  │       75 │        7 │        68 │     0.907 │  0.322 │ 0.476 │   baseline │
 │ Agreement Ratio │       75 │       13 │        62 │     0.827 │  0.294 │ 0.434 │      -8.8% │
 │ Prm Margin      │       75 │       17 │        58 │     0.773 │  0.275 │ 0.406 │     -14.7% │
 │ Ensemble (OR)   │      142 │       25 │       117 │     0.824 │  0.555 │ 0.663 │     +39.4% │
@@ -564,7 +564,7 @@ FIXED COUNT ENSEMBLE ANALYSIS - TOP 3 METRICS (N=100)
 Analyzing overlap between top 3 performing metrics with fixed count selection:
 
 1. Agreement Ratio (F1: 0.559)
-2. Group Top Frac (F1: 0.508)
+2. Support Consensus (F1: 0.508)
 3. Prm Margin (F1: 0.450)
 
 ═══ Fixed Count 75 Analysis ═══
@@ -587,7 +587,7 @@ Three-way Analysis:
 ═══ VENN DIAGRAM DATA EXPORT (N=75) ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=agreement_ratio, B=group_top_frac, C=prm_margin
+Metrics: A=agreement_ratio, B=consensus_support, C=prm_margin
 Selection Count: 75 each
 
                             Venn Diagram Regions Breakdown (N=75)                            
@@ -595,11 +595,11 @@ Selection Count: 75 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │     8 │         7 │          1 │  87.5% │   12.5% │
-│ agreement_ratio ∩ group_top_frac only │    38 │        33 │          5 │  86.8% │   13.2% │
+│ agreement_ratio ∩ consensus_support only │    38 │        33 │          5 │  86.8% │   13.2% │
 │ agreement_ratio ∩ prm_margin only     │    26 │        21 │          5 │  80.8% │   19.2% │
-│ group_top_frac ∩ prm_margin only      │     3 │         3 │          0 │ 100.0% │    0.0% │
+│ consensus_support ∩ prm_margin only      │     3 │         3 │          0 │ 100.0% │    0.0% │
 │ agreement_ratio only                  │     3 │         1 │          2 │  33.3% │   66.7% │
-│ group_top_frac only                   │    26 │        25 │          1 │  96.2% │    3.8% │
+│ consensus_support only                   │    26 │        25 │          1 │  96.2% │    3.8% │
 │ prm_margin only                       │    38 │        27 │         11 │  71.1% │   28.9% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
 
@@ -617,24 +617,24 @@ Three-way Overlap Analysis:
 RAW DATA FOR VENN DIAGRAM (N=75):
 # Copy this data into your visualization script
 # Count: 75
-# Metrics: agreement_ratio, group_top_frac, prm_margin
+# Metrics: agreement_ratio, consensus_support, prm_margin
 
 # True predictions (correctly identified uncertain)
 true_ABC = 7  # All three methods
-true_AB_only = 33  # agreement_ratio ∩ group_top_frac only
+true_AB_only = 33  # agreement_ratio ∩ consensus_support only
 true_AC_only = 21  # agreement_ratio ∩ prm_margin only
-true_BC_only = 3  # group_top_frac ∩ prm_margin only
+true_BC_only = 3  # consensus_support ∩ prm_margin only
 true_A_only = 1  # agreement_ratio only
-true_B_only = 25  # group_top_frac only
+true_B_only = 25  # consensus_support only
 true_C_only = 27  # prm_margin only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 1  # All three methods
-false_AB_only = 5  # agreement_ratio ∩ group_top_frac only
+false_AB_only = 5  # agreement_ratio ∩ consensus_support only
 false_AC_only = 5  # agreement_ratio ∩ prm_margin only
-false_BC_only = 0  # group_top_frac ∩ prm_margin only
+false_BC_only = 0  # consensus_support ∩ prm_margin only
 false_A_only = 2  # agreement_ratio only
-false_B_only = 1  # group_top_frac only
+false_B_only = 1  # consensus_support only
 false_C_only = 11  # prm_margin only
 
 ═══ Fixed Count 100 Analysis ═══
@@ -657,7 +657,7 @@ Three-way Analysis:
 ═══ VENN DIAGRAM DATA EXPORT (N=100) ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=agreement_ratio, B=group_top_frac, C=prm_margin
+Metrics: A=agreement_ratio, B=consensus_support, C=prm_margin
 Selection Count: 100 each
 
                            Venn Diagram Regions Breakdown (N=100)                            
@@ -665,11 +665,11 @@ Selection Count: 100 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │    19 │        18 │          1 │  94.7% │    5.3% │
-│ agreement_ratio ∩ group_top_frac only │    52 │        45 │          7 │  86.5% │   13.5% │
+│ agreement_ratio ∩ consensus_support only │    52 │        45 │          7 │  86.5% │   13.5% │
 │ agreement_ratio ∩ prm_margin only     │    29 │        24 │          5 │  82.8% │   17.2% │
-│ group_top_frac ∩ prm_margin only      │     3 │         2 │          1 │  66.7% │   33.3% │
+│ consensus_support ∩ prm_margin only      │     3 │         2 │          1 │  66.7% │   33.3% │
 │ agreement_ratio only                  │     0 │         0 │          0 │   0.0% │    0.0% │
-│ group_top_frac only                   │    26 │        14 │         12 │  53.8% │   46.2% │
+│ consensus_support only                   │    26 │        14 │         12 │  53.8% │   46.2% │
 │ prm_margin only                       │    49 │        26 │         23 │  53.1% │   46.9% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
 
@@ -687,24 +687,24 @@ Three-way Overlap Analysis:
 RAW DATA FOR VENN DIAGRAM (N=100):
 # Copy this data into your visualization script
 # Count: 100
-# Metrics: agreement_ratio, group_top_frac, prm_margin
+# Metrics: agreement_ratio, consensus_support, prm_margin
 
 # True predictions (correctly identified uncertain)
 true_ABC = 18  # All three methods
-true_AB_only = 45  # agreement_ratio ∩ group_top_frac only
+true_AB_only = 45  # agreement_ratio ∩ consensus_support only
 true_AC_only = 24  # agreement_ratio ∩ prm_margin only
-true_BC_only = 2  # group_top_frac ∩ prm_margin only
+true_BC_only = 2  # consensus_support ∩ prm_margin only
 true_A_only = 0  # agreement_ratio only
-true_B_only = 14  # group_top_frac only
+true_B_only = 14  # consensus_support only
 true_C_only = 26  # prm_margin only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 1  # All three methods
-false_AB_only = 7  # agreement_ratio ∩ group_top_frac only
+false_AB_only = 7  # agreement_ratio ∩ consensus_support only
 false_AC_only = 5  # agreement_ratio ∩ prm_margin only
-false_BC_only = 1  # group_top_frac ∩ prm_margin only
+false_BC_only = 1  # consensus_support ∩ prm_margin only
 false_A_only = 0  # agreement_ratio only
-false_B_only = 12  # group_top_frac only
+false_B_only = 12  # consensus_support only
 false_C_only = 23  # prm_margin only
 
 ═══ Fixed Count 125 Analysis ═══
@@ -727,7 +727,7 @@ Three-way Analysis:
 ═══ VENN DIAGRAM DATA EXPORT (N=125) ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=agreement_ratio, B=group_top_frac, C=prm_margin
+Metrics: A=agreement_ratio, B=consensus_support, C=prm_margin
 Selection Count: 125 each
 
                            Venn Diagram Regions Breakdown (N=125)                            
@@ -735,11 +735,11 @@ Selection Count: 125 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │    29 │        25 │          4 │  86.2% │   13.8% │
-│ agreement_ratio ∩ group_top_frac only │    55 │        42 │         13 │  76.4% │   23.6% │
+│ agreement_ratio ∩ consensus_support only │    55 │        42 │         13 │  76.4% │   23.6% │
 │ agreement_ratio ∩ prm_margin only     │    33 │        25 │          8 │  75.8% │   24.2% │
-│ group_top_frac ∩ prm_margin only      │     4 │         3 │          1 │  75.0% │   25.0% │
+│ consensus_support ∩ prm_margin only      │     4 │         3 │          1 │  75.0% │   25.0% │
 │ agreement_ratio only                  │     8 │         0 │          8 │   0.0% │  100.0% │
-│ group_top_frac only                   │    37 │        25 │         12 │  67.6% │   32.4% │
+│ consensus_support only                   │    37 │        25 │         12 │  67.6% │   32.4% │
 │ prm_margin only                       │    59 │        26 │         33 │  44.1% │   55.9% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
 
@@ -757,24 +757,24 @@ Three-way Overlap Analysis:
 RAW DATA FOR VENN DIAGRAM (N=125):
 # Copy this data into your visualization script
 # Count: 125
-# Metrics: agreement_ratio, group_top_frac, prm_margin
+# Metrics: agreement_ratio, consensus_support, prm_margin
 
 # True predictions (correctly identified uncertain)
 true_ABC = 25  # All three methods
-true_AB_only = 42  # agreement_ratio ∩ group_top_frac only
+true_AB_only = 42  # agreement_ratio ∩ consensus_support only
 true_AC_only = 25  # agreement_ratio ∩ prm_margin only
-true_BC_only = 3  # group_top_frac ∩ prm_margin only
+true_BC_only = 3  # consensus_support ∩ prm_margin only
 true_A_only = 0  # agreement_ratio only
-true_B_only = 25  # group_top_frac only
+true_B_only = 25  # consensus_support only
 true_C_only = 26  # prm_margin only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 4  # All three methods
-false_AB_only = 13  # agreement_ratio ∩ group_top_frac only
+false_AB_only = 13  # agreement_ratio ∩ consensus_support only
 false_AC_only = 8  # agreement_ratio ∩ prm_margin only
-false_BC_only = 1  # group_top_frac ∩ prm_margin only
+false_BC_only = 1  # consensus_support ∩ prm_margin only
 false_A_only = 8  # agreement_ratio only
-false_B_only = 12  # group_top_frac only
+false_B_only = 12  # consensus_support only
 false_C_only = 33  # prm_margin only
 
 ═══ FIXED COUNT ENSEMBLE vs INDIVIDUAL COMPARISON (N=100) ═══
@@ -783,7 +783,7 @@ Comparing individual metrics with ensemble (OR logic) using fixed count selectio
 
 DEBUG: Individual metric selections at count 100:
 • agreement_ratio: 100 questions
-• group_top_frac: 100 questions
+• consensus_support: 100 questions
 • prm_margin: 100 questions
 • Ensemble (OR): 178 questions
 • Overlap agreemen & group_to: 71
@@ -798,7 +798,7 @@ DEBUG: Individual metric selections at count 100:
 ┃ Method          ┃ Selected ┃ Corr.Sel ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Improveme… ┃
 ┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
 │ Agreement Ratio │      100 │       13 │        87 │     0.870 │  0.412 │ 0.559 │   baseline │
-│ Group Top Frac  │      100 │       21 │        79 │     0.790 │  0.374 │ 0.508 │      -9.2% │
+│ Support Consensus  │      100 │       21 │        79 │     0.790 │  0.374 │ 0.508 │      -9.2% │
 │ Prm Margin      │      100 │       30 │        70 │     0.700 │  0.332 │ 0.450 │     -19.5% │
 │ Ensemble (OR)   │      178 │       49 │       129 │     0.725 │  0.611 │ 0.663 │     +18.5% │
 └─────────────────┴──────────┴──────────┴───────────┴───────────┴────────┴───────┴────────────┘
@@ -822,7 +822,7 @@ Ensemble Expansion Analysis:
 FIXED COUNT ENSEMBLE ANALYSIS - TOP 3 METRICS (N=125)
 Analyzing overlap between top 3 performing metrics with fixed count selection:
 
-1. Group Top Frac (F1: 0.565)
+1. Support Consensus (F1: 0.565)
 2. Agreement Ratio (F1: 0.548)
 3. Entropy Freq (F1: 0.542)
 
@@ -846,7 +846,7 @@ Three-way Analysis:
 ═══ VENN DIAGRAM DATA EXPORT (N=75) ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=group_top_frac, B=agreement_ratio, C=entropy_freq
+Metrics: A=consensus_support, B=agreement_ratio, C=entropy_freq
 Selection Count: 75 each
 
                             Venn Diagram Regions Breakdown (N=75)                            
@@ -854,10 +854,10 @@ Selection Count: 75 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │    30 │        24 │          6 │  80.0% │   20.0% │
-│ group_top_frac ∩ agreement_ratio only │    16 │        16 │          0 │ 100.0% │    0.0% │
-│ group_top_frac ∩ entropy_freq only    │     0 │         0 │          0 │   0.0% │    0.0% │
+│ consensus_support ∩ agreement_ratio only │    16 │        16 │          0 │ 100.0% │    0.0% │
+│ consensus_support ∩ entropy_freq only    │     0 │         0 │          0 │   0.0% │    0.0% │
 │ agreement_ratio ∩ entropy_freq only   │    21 │        14 │          7 │  66.7% │   33.3% │
-│ group_top_frac only                   │    29 │        28 │          1 │  96.6% │    3.4% │
+│ consensus_support only                   │    29 │        28 │          1 │  96.6% │    3.4% │
 │ agreement_ratio only                  │     8 │         8 │          0 │ 100.0% │    0.0% │
 │ entropy_freq only                     │    24 │         3 │         21 │  12.5% │   87.5% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
@@ -876,23 +876,23 @@ Three-way Overlap Analysis:
 RAW DATA FOR VENN DIAGRAM (N=75):
 # Copy this data into your visualization script
 # Count: 75
-# Metrics: group_top_frac, agreement_ratio, entropy_freq
+# Metrics: consensus_support, agreement_ratio, entropy_freq
 
 # True predictions (correctly identified uncertain)
 true_ABC = 24  # All three methods
-true_AB_only = 16  # group_top_frac ∩ agreement_ratio only
-true_AC_only = 0  # group_top_frac ∩ entropy_freq only
+true_AB_only = 16  # consensus_support ∩ agreement_ratio only
+true_AC_only = 0  # consensus_support ∩ entropy_freq only
 true_BC_only = 14  # agreement_ratio ∩ entropy_freq only
-true_A_only = 28  # group_top_frac only
+true_A_only = 28  # consensus_support only
 true_B_only = 8  # agreement_ratio only
 true_C_only = 3  # entropy_freq only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 6  # All three methods
-false_AB_only = 0  # group_top_frac ∩ agreement_ratio only
-false_AC_only = 0  # group_top_frac ∩ entropy_freq only
+false_AB_only = 0  # consensus_support ∩ agreement_ratio only
+false_AC_only = 0  # consensus_support ∩ entropy_freq only
 false_BC_only = 7  # agreement_ratio ∩ entropy_freq only
-false_A_only = 1  # group_top_frac only
+false_A_only = 1  # consensus_support only
 false_B_only = 0  # agreement_ratio only
 false_C_only = 21  # entropy_freq only
 
@@ -916,7 +916,7 @@ Three-way Analysis:
 ═══ VENN DIAGRAM DATA EXPORT (N=100) ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=group_top_frac, B=agreement_ratio, C=entropy_freq
+Metrics: A=consensus_support, B=agreement_ratio, C=entropy_freq
 Selection Count: 100 each
 
                            Venn Diagram Regions Breakdown (N=100)                            
@@ -924,10 +924,10 @@ Selection Count: 100 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │    47 │        39 │          8 │  83.0% │   17.0% │
-│ group_top_frac ∩ agreement_ratio only │    24 │        24 │          0 │ 100.0% │    0.0% │
-│ group_top_frac ∩ entropy_freq only    │     5 │         0 │          5 │   0.0% │  100.0% │
+│ consensus_support ∩ agreement_ratio only │    24 │        24 │          0 │ 100.0% │    0.0% │
+│ consensus_support ∩ entropy_freq only    │     5 │         0 │          5 │   0.0% │  100.0% │
 │ agreement_ratio ∩ entropy_freq only   │    21 │        16 │          5 │  76.2% │   23.8% │
-│ group_top_frac only                   │    24 │        16 │          8 │  66.7% │   33.3% │
+│ consensus_support only                   │    24 │        16 │          8 │  66.7% │   33.3% │
 │ agreement_ratio only                  │     8 │         8 │          0 │ 100.0% │    0.0% │
 │ entropy_freq only                     │    27 │        11 │         16 │  40.7% │   59.3% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
@@ -946,23 +946,23 @@ Three-way Overlap Analysis:
 RAW DATA FOR VENN DIAGRAM (N=100):
 # Copy this data into your visualization script
 # Count: 100
-# Metrics: group_top_frac, agreement_ratio, entropy_freq
+# Metrics: consensus_support, agreement_ratio, entropy_freq
 
 # True predictions (correctly identified uncertain)
 true_ABC = 39  # All three methods
-true_AB_only = 24  # group_top_frac ∩ agreement_ratio only
-true_AC_only = 0  # group_top_frac ∩ entropy_freq only
+true_AB_only = 24  # consensus_support ∩ agreement_ratio only
+true_AC_only = 0  # consensus_support ∩ entropy_freq only
 true_BC_only = 16  # agreement_ratio ∩ entropy_freq only
-true_A_only = 16  # group_top_frac only
+true_A_only = 16  # consensus_support only
 true_B_only = 8  # agreement_ratio only
 true_C_only = 11  # entropy_freq only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 8  # All three methods
-false_AB_only = 0  # group_top_frac ∩ agreement_ratio only
-false_AC_only = 5  # group_top_frac ∩ entropy_freq only
+false_AB_only = 0  # consensus_support ∩ agreement_ratio only
+false_AC_only = 5  # consensus_support ∩ entropy_freq only
 false_BC_only = 5  # agreement_ratio ∩ entropy_freq only
-false_A_only = 8  # group_top_frac only
+false_A_only = 8  # consensus_support only
 false_B_only = 0  # agreement_ratio only
 false_C_only = 16  # entropy_freq only
 
@@ -986,7 +986,7 @@ Three-way Analysis:
 ═══ VENN DIAGRAM DATA EXPORT (N=125) ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=group_top_frac, B=agreement_ratio, C=entropy_freq
+Metrics: A=consensus_support, B=agreement_ratio, C=entropy_freq
 Selection Count: 125 each
 
                            Venn Diagram Regions Breakdown (N=125)                            
@@ -994,10 +994,10 @@ Selection Count: 125 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │    69 │        58 │         11 │  84.1% │   15.9% │
-│ group_top_frac ∩ agreement_ratio only │    15 │         9 │          6 │  60.0% │   40.0% │
-│ group_top_frac ∩ entropy_freq only    │    15 │         7 │          8 │  46.7% │   53.3% │
+│ consensus_support ∩ agreement_ratio only │    15 │         9 │          6 │  60.0% │   40.0% │
+│ consensus_support ∩ entropy_freq only    │    15 │         7 │          8 │  46.7% │   53.3% │
 │ agreement_ratio ∩ entropy_freq only   │    29 │        20 │          9 │  69.0% │   31.0% │
-│ group_top_frac only                   │    26 │        21 │          5 │  80.8% │   19.2% │
+│ consensus_support only                   │    26 │        21 │          5 │  80.8% │   19.2% │
 │ agreement_ratio only                  │    12 │         5 │          7 │  41.7% │   58.3% │
 │ entropy_freq only                     │    12 │         6 │          6 │  50.0% │   50.0% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
@@ -1016,23 +1016,23 @@ Three-way Overlap Analysis:
 RAW DATA FOR VENN DIAGRAM (N=125):
 # Copy this data into your visualization script
 # Count: 125
-# Metrics: group_top_frac, agreement_ratio, entropy_freq
+# Metrics: consensus_support, agreement_ratio, entropy_freq
 
 # True predictions (correctly identified uncertain)
 true_ABC = 58  # All three methods
-true_AB_only = 9  # group_top_frac ∩ agreement_ratio only
-true_AC_only = 7  # group_top_frac ∩ entropy_freq only
+true_AB_only = 9  # consensus_support ∩ agreement_ratio only
+true_AC_only = 7  # consensus_support ∩ entropy_freq only
 true_BC_only = 20  # agreement_ratio ∩ entropy_freq only
-true_A_only = 21  # group_top_frac only
+true_A_only = 21  # consensus_support only
 true_B_only = 5  # agreement_ratio only
 true_C_only = 6  # entropy_freq only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 11  # All three methods
-false_AB_only = 6  # group_top_frac ∩ agreement_ratio only
-false_AC_only = 8  # group_top_frac ∩ entropy_freq only
+false_AB_only = 6  # consensus_support ∩ agreement_ratio only
+false_AC_only = 8  # consensus_support ∩ entropy_freq only
 false_BC_only = 9  # agreement_ratio ∩ entropy_freq only
-false_A_only = 5  # group_top_frac only
+false_A_only = 5  # consensus_support only
 false_B_only = 7  # agreement_ratio only
 false_C_only = 6  # entropy_freq only
 
@@ -1041,7 +1041,7 @@ Comparing individual metrics with ensemble (OR logic) using fixed count selectio
 
 
 DEBUG: Individual metric selections at count 125:
-• group_top_frac: 125 questions
+• consensus_support: 125 questions
 • agreement_ratio: 125 questions
 • entropy_freq: 125 questions
 • Ensemble (OR): 178 questions
@@ -1056,7 +1056,7 @@ DEBUG: Individual metric selections at count 125:
 ┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Method          ┃ Selected ┃ Corr.Sel ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Improveme… ┃
 ┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
-│ Group Top Frac  │      125 │       30 │        95 │     0.760 │  0.450 │ 0.565 │   baseline │
+│ Support Consensus  │      125 │       30 │        95 │     0.760 │  0.450 │ 0.565 │   baseline │
 │ Agreement Ratio │      125 │       33 │        92 │     0.736 │  0.436 │ 0.548 │      -3.2% │
 │ Entropy Freq    │      125 │       34 │        91 │     0.728 │  0.431 │ 0.542 │      -4.2% │
 │ Ensemble (OR)   │      178 │       52 │       126 │     0.708 │  0.597 │ 0.648 │     +14.6% │
@@ -1083,14 +1083,14 @@ Comparing ensemble vs individual performance across different selection counts
 
 Top 3 metrics (based on F1 at count=100):
 1. Agreement Ratio (F1: 0.559)
-2. Group Top Frac (F1: 0.508)
+2. Support Consensus (F1: 0.508)
 3. Prm Margin (F1: 0.450)
                   Ensemble vs Individual Performance Comparison Across Counts                  
 ┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━┓
 ┃ Count ┃ Method            ┃ Selected ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Improvement ┃
 ┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━┩
 │  75   │ Best Individual   │       75 │        68 │     0.907 │  0.322 │ 0.476 │    baseline │
-│       │ (Group Top Frac)  │          │           │           │        │       │             │
+│       │ (Support Consensus)  │          │           │           │        │       │             │
 │       │ Ensemble (OR)     │      142 │       117 │     0.824 │  0.555 │ 0.663 │      +39.4% │
 │       │                   │          │           │           │        │       │             │
 │  100  │ Best Individual   │      100 │        87 │     0.870 │  0.412 │ 0.559 │    baseline │
@@ -1098,7 +1098,7 @@ Top 3 metrics (based on F1 at count=100):
 │       │ Ensemble (OR)     │      178 │       129 │     0.725 │  0.611 │ 0.663 │      +18.5% │
 │       │                   │          │           │           │        │       │             │
 │  125  │ Best Individual   │      125 │        95 │     0.760 │  0.450 │ 0.565 │    baseline │
-│       │ (Group Top Frac)  │          │           │           │        │       │             │
+│       │ (Support Consensus)  │          │           │           │        │       │             │
 │       │ Ensemble (OR)     │      225 │       146 │     0.649 │  0.692 │ 0.670 │      +18.4% │
 └───────┴───────────────────┴──────────┴───────────┴───────────┴────────┴───────┴─────────────┘
 
@@ -1119,12 +1119,12 @@ Training logistic regression using top 3 metrics to predict incorrect answers
 
 Using metrics:
 1. Agreement Ratio
-2. Group Top Frac
+2. Support Consensus
 3. Prm Margin
 
 Model Coefficients:
 • Agreement Ratio: -4.0913 ↓
-• Group Top Frac: -2.9985 ↓
+• Support Consensus: -2.9985 ↓
 • Prm Margin: 1.3050 ↑
 • Intercept: 3.8030
 
@@ -1134,7 +1134,7 @@ Linear Model Performance at Different Selection Counts:
 ┃ Count ┃ Method            ┃ Selected ┃ Incor.Sel ┃ Precision ┃ Recall ┃    F1 ┃ Improvement ┃
 ┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━┩
 │  75   │ Best Individual   │       75 │        68 │     0.907 │  0.322 │ 0.476 │    baseline │
-│       │ (Group Top Frac)  │          │           │           │        │       │             │
+│       │ (Support Consensus)  │          │           │           │        │       │             │
 │       │ Linear Model      │       75 │        68 │     0.907 │  0.322 │ 0.476 │       +0.0% │
 │       │                   │          │           │           │        │       │             │
 │  100  │ Best Individual   │      100 │        87 │     0.870 │  0.412 │ 0.559 │    baseline │
@@ -1142,13 +1142,13 @@ Linear Model Performance at Different Selection Counts:
 │       │ Linear Model      │      100 │        87 │     0.870 │  0.412 │ 0.559 │       +0.0% │
 │       │                   │          │           │           │        │       │             │
 │  125  │ Best Individual   │      125 │        95 │     0.760 │  0.450 │ 0.565 │    baseline │
-│       │ (Group Top Frac)  │          │           │           │        │       │             │
+│       │ (Support Consensus)  │          │           │           │        │       │             │
 │       │ Linear Model      │      125 │       110 │     0.880 │  0.521 │ 0.655 │      +15.8% │
 └───────┴───────────────────┴──────────┴───────────┴───────────┴────────┴───────┴─────────────┘
 
 Feature Importance Analysis:
 1. Agreement Ratio: importance 4.0913 (lower values → uncertain)
-2. Group Top Frac: importance 2.9985 (lower values → uncertain)
+2. Support Consensus: importance 2.9985 (lower values → uncertain)
 3. Prm Margin: importance 1.3050 (higher values → uncertain)
 
 Model Validation (30% holdout):
@@ -1164,7 +1164,7 @@ Comparing all uncertainty detection methods across selection counts
 ┃ Count ┃ Method                      ┃ Selected ┃ Incor.S… ┃ Precis… ┃ Recall ┃    F1 ┃ Rank ┃
 ┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━┩
 │  75   │ Ensemble (OR)               │      142 │      117 │   0.824 │  0.555 │ 0.663 │  🥇  │
-│       │ Individual: Group Top Frac  │       75 │       68 │   0.907 │  0.322 │ 0.476 │  🥈  │
+│       │ Individual: Support Consensus  │       75 │       68 │   0.907 │  0.322 │ 0.476 │  🥈  │
 │       │ Linear Model                │       75 │       68 │   0.907 │  0.322 │ 0.476 │  🥉  │
 │       │ Individual: Agreement Ratio │       75 │       62 │   0.827 │  0.294 │ 0.434 │  4   │
 │       │ Individual: Prm Margin      │       75 │       58 │   0.773 │  0.275 │ 0.406 │  5   │
@@ -1172,12 +1172,12 @@ Comparing all uncertainty detection methods across selection counts
 │  100  │ Ensemble (OR)               │      178 │      129 │   0.725 │  0.611 │ 0.663 │  🥇  │
 │       │ Individual: Agreement Ratio │      100 │       87 │   0.870 │  0.412 │ 0.559 │  🥈  │
 │       │ Linear Model                │      100 │       87 │   0.870 │  0.412 │ 0.559 │  🥉  │
-│       │ Individual: Group Top Frac  │      100 │       79 │   0.790 │  0.374 │ 0.508 │  4   │
+│       │ Individual: Support Consensus  │      100 │       79 │   0.790 │  0.374 │ 0.508 │  4   │
 │       │ Individual: Prm Margin      │      100 │       70 │   0.700 │  0.332 │ 0.450 │  5   │
 │       │                             │          │          │         │        │       │      │
 │  125  │ Ensemble (OR)               │      225 │      146 │   0.649 │  0.692 │ 0.670 │  🥇  │
 │       │ Linear Model                │      125 │      110 │   0.880 │  0.521 │ 0.655 │  🥈  │
-│       │ Individual: Group Top Frac  │      125 │       95 │   0.760 │  0.450 │ 0.565 │  🥉  │
+│       │ Individual: Support Consensus  │      125 │       95 │   0.760 │  0.450 │ 0.565 │  🥉  │
 │       │ Individual: Agreement Ratio │      125 │       92 │   0.736 │  0.436 │ 0.548 │  4   │
 │       │ Individual: Prm Margin      │      125 │       79 │   0.632 │  0.374 │ 0.470 │  5   │
 └───────┴─────────────────────────────┴──────────┴──────────┴─────────┴────────┴───────┴──────┘
@@ -1204,5 +1204,5 @@ Key Insights:
 
 Linear Model Feature Weights:
 • Agreement Ratio: -4.0913 ↓
-• Group Top Frac: -2.9985 ↓
+• Support Consensus: -2.9985 ↓
 • Prm Margin: 1.3050 ↑

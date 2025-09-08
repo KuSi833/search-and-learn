@@ -51,13 +51,13 @@ def create_complementarity_analysis():
     # Create clean Venn diagram
     venn = venn3(
         subsets=(A_only, B_only, AB_only, C_only, AC_only, BC_only, ABC),
-        set_labels=("Agreement Ratio", "Group Top Frac", "Prm Margin"),
+        set_labels=("Agreement Ratio", "Support Consensus", "Prm Margin"),
         ax=ax,
     )
 
     # Color individual regions with project colors - edges only, no fill
     individual_colors = {
-        "100": BLUE,  # Group Top Frac only
+        "100": BLUE,  # Support Consensus only
         "010": ORANGE,  # Agreement Ratio only
         "001": PURPLE,  # Entropy Freq only
     }
@@ -92,8 +92,8 @@ def create_complementarity_analysis():
 
     # Two-way overlaps - subtle blend colors that suggest combination
     two_way_overlaps = {
-        "110": (BLUE, ORANGE),  # Group Top Frac × Agreement Ratio
-        "101": (BLUE, PURPLE),  # Group Top Frac × Entropy Freq
+        "110": (BLUE, ORANGE),  # Support Consensus × Agreement Ratio
+        "101": (BLUE, PURPLE),  # Support Consensus × Entropy Freq
         "011": (ORANGE, PURPLE),  # Agreement Ratio × Entropy Freq
     }
 
@@ -126,24 +126,24 @@ def create_true_false_overlap():
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
     # Data from ven.txt - N=75 with original metrics (ALL regions populated!)
-    # Metrics: A=group_top_frac, B=agreement_ratio, C=prm_margin
+    # Metrics: A=consensus_support, B=agreement_ratio, C=prm_margin
     # This dataset has all regions populated with meaningful numbers
 
     # True predictions (correctly identified uncertain)
     true_ABC = 7  # All three methods - 87.5% accuracy
-    true_AB_only = 33  # group_top_frac ∩ agreement_ratio only - 86.8% accuracy
-    true_AC_only = 3  # group_top_frac ∩ prm_margin only - 100.0% accuracy!
+    true_AB_only = 33  # consensus_support ∩ agreement_ratio only - 86.8% accuracy
+    true_AC_only = 3  # consensus_support ∩ prm_margin only - 100.0% accuracy!
     true_BC_only = 21  # agreement_ratio ∩ prm_margin only - 80.8% accuracy
-    true_A_only = 25  # group_top_frac only - 96.2% accuracy
+    true_A_only = 25  # consensus_support only - 96.2% accuracy
     true_B_only = 1  # agreement_ratio only - 33.3% accuracy
     true_C_only = 27  # prm_margin only - 71.1% accuracy
 
     # False predictions (incorrectly identified uncertain)
     false_ABC = 1  # All three methods - Only 1 false positive!
-    false_AB_only = 5  # group_top_frac ∩ agreement_ratio only
-    false_AC_only = 0  # group_top_frac ∩ prm_margin only - Perfect!
+    false_AB_only = 5  # consensus_support ∩ agreement_ratio only
+    false_AC_only = 0  # consensus_support ∩ prm_margin only - Perfect!
     false_BC_only = 5  # agreement_ratio ∩ prm_margin only
-    false_A_only = 4  # group_top_frac only
+    false_A_only = 4  # consensus_support only
     false_B_only = 6  # agreement_ratio only
     false_C_only = 7  # prm_margin only
 
@@ -158,17 +158,17 @@ def create_true_false_overlap():
             true_BC_only,
             true_ABC,
         ),
-        set_labels=("Group Top Frac", "Agreement Ratio", "PRM Margin"),
+        set_labels=("Support Consensus", "Agreement Ratio", "PRM Margin"),
         ax=ax1,
     )
 
     # Color the True predictions Venn diagram with green tones
     true_colors = {
-        "100": GREEN,  # Group Top Frac only
+        "100": GREEN,  # Support Consensus only
         "010": GREEN,  # Agreement Ratio only
         "001": GREEN,  # PRM Margin only
-        "110": GREEN,  # Group Top Frac × Agreement Ratio
-        "101": GREEN,  # Group Top Frac × PRM Margin
+        "110": GREEN,  # Support Consensus × Agreement Ratio
+        "101": GREEN,  # Support Consensus × PRM Margin
         "011": GREEN,  # Agreement Ratio × PRM Margin
         "111": GREEN,  # All three methods
     }
@@ -211,17 +211,17 @@ def create_true_false_overlap():
             false_BC_only,
             false_ABC,
         ),
-        set_labels=("Group Top Frac", "Agreement Ratio", "PRM Margin"),
+        set_labels=("Support Consensus", "Agreement Ratio", "PRM Margin"),
         ax=ax2,
     )
 
     # Color the False predictions Venn diagram with red tones
     false_colors = {
-        "100": RED,  # Group Top Frac only
+        "100": RED,  # Support Consensus only
         "010": RED,  # Agreement Ratio only
         "001": RED,  # PRM Margin only
-        "110": RED,  # Group Top Frac × Agreement Ratio
-        "101": RED,  # Group Top Frac × PRM Margin
+        "110": RED,  # Support Consensus × Agreement Ratio
+        "101": RED,  # Support Consensus × PRM Margin
         "011": RED,  # Agreement Ratio × PRM Margin
         "111": RED,  # All three methods
     }
@@ -269,8 +269,8 @@ def create_ensemble_mechanism():
     Shows how ensemble achieves best F1 performance through balanced precision-recall
     """
     # Use count=100 data - need to get precision/recall for N=100
-    # From selection.txt data at N=100: Agreement Ratio (0.559), Group Top Frac (0.508), Prm Margin (0.450), Ensemble (0.663)
-    methods = ["Agreement Ratio", "Group Top Frac", "Prm Margin", "Ensemble"]
+    # From selection.txt data at N=100: Agreement Ratio (0.559), Support Consensus (0.508), Prm Margin (0.450), Ensemble (0.663)
+    methods = ["Agreement\nRatio", "Support\nConsensus", "Prm Margin", "Ensemble"]
     # Approximate precision/recall values for N=100 (from the data patterns)
     precision = [0.870, 0.790, 0.700, 0.725]  # From count=100 data
     recall = [0.412, 0.374, 0.332, 0.611]  # From count=100 data

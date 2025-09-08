@@ -24,10 +24,10 @@
       }
     },
     "smart_fusion_best": {
-      "description": "Use group_top_frac confidence to decide",
+      "description": "Use consensus_support confidence to decide",
       "accuracy": 80.8,
       "vs_base": 8.799999999999997,
-      "metric": "group_top_frac",
+      "metric": "consensus_support",
       "overrides_used": 94,
       "flips_positive": 45,
       "flips_negative": 1,
@@ -42,7 +42,7 @@
   },
   "all_smart_results": [
     {
-      "metric": "group_top_frac",
+      "metric": "consensus_support",
       "accuracy": 80.8,
       "vs_base": 8.799999999999997,
       "overrides_used": 94,
@@ -142,7 +142,7 @@
   "always_rerun_when_possible": 81.0,
   "best_smart_fusion": {
     "accuracy": 80.8,
-    "metric": "group_top_frac",
+    "metric": "consensus_support",
     "improvement_over_base": 8.799999999999997,
     "improvement_over_always_rerun": -0.20000000000000284
   }

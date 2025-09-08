@@ -42,7 +42,7 @@ console = Console()
 CORE_UNCERTAINTY_SIGNALS = [
     "agreement_ratio",
     "entropy_freq",
-    "group_top_frac",
+    "consensus_support",
 ]
 
 EXTENDED_UNCERTAINTY_SIGNALS = CORE_UNCERTAINTY_SIGNALS + [
@@ -258,12 +258,12 @@ class SelectionAnalyzer:
         ensemble_combinations = [
             (["agreement_ratio"], "Agreement only"),
             (["entropy_freq"], "Entropy only"),
-            (["group_top_frac"], "Group score only"),
+            (["consensus_support"], "Group score only"),
             (["agreement_ratio", "entropy_freq"], "Agreement + Entropy"),
-            (["agreement_ratio", "group_top_frac"], "Agreement + Group score"),
-            (["entropy_freq", "group_top_frac"], "Entropy + Group score"),
+            (["agreement_ratio", "consensus_support"], "Agreement + Group score"),
+            (["entropy_freq", "consensus_support"], "Entropy + Group score"),
             (
-                ["agreement_ratio", "entropy_freq", "group_top_frac"],
+                ["agreement_ratio", "entropy_freq", "consensus_support"],
                 "All three signals",
             ),
         ]

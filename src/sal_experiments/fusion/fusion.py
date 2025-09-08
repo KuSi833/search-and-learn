@@ -86,7 +86,7 @@ def _compute_uncertainty_metrics(sample: Dict[str, Any]) -> Dict[str, Any]:
             "prm_std": 0.0,
             "prm_margin": 0.0,
             "prm_top_frac": 0.0,
-            "group_top_frac": 0.0,
+            "consensus_support": 0.0,
         }
 
     from collections import defaultdict
@@ -111,10 +111,10 @@ def _compute_uncertainty_metrics(sample: Dict[str, Any]) -> Dict[str, Any]:
     if sum_scores > 0 and len(scores_grouped) > 0:
         weighted_probs = [max(0.0, s) / sum_scores for s in scores_grouped]
         entropy_weighted = _safe_entropy(weighted_probs)
-        group_top_frac = max(weighted_probs)
+        consensus_support = max(weighted_probs)
     else:
         entropy_weighted = 0.0
-        group_top_frac = 0.0
+        consensus_support = 0.0
 
     try:
         import math
@@ -149,7 +149,7 @@ def _compute_uncertainty_metrics(sample: Dict[str, Any]) -> Dict[str, Any]:
         "prm_std": float(prm_std),
         "prm_margin": float(prm_margin),
         "prm_top_frac": float(prm_top_frac),
-        "group_top_frac": float(group_top_frac),
+        "consensus_support": float(consensus_support),
     }
 
 
@@ -485,7 +485,7 @@ ALL_METRICS: Sequence[str] = (
     "entropy_weighted",
     "prm_margin",
     "prm_top_frac",
-    "group_top_frac",
+    "consensus_support",
     "prm_std",
     "prm_mean",
 )
@@ -529,12 +529,12 @@ def run_ultraminimal_experiment(base_run: str, rerun_id: str) -> None:
 
 
 def run_minimal_experiment(base_run: str, rerun_id: str) -> None:
-    """Run a compact sweep for a single metric (group_top_frac) and save JSON only.
+    """Run a compact sweep for a single metric (consensus_support) and save JSON only.
 
     Output path: ./output/fusion_sweeps/minimal/<base>__<rerun>.json
     """
     save_dir = Path("./figures/fusion_sweeps/minimal")
-    metrics = ["group_top_frac"]
+    metrics = ["consensus_support"]
     deltas = [0.00, 0.02, 0.05]
     min_rerun_list: List[Optional[float]] = [None, 0.50, 0.60]
     max_base_list: List[Optional[float]] = [None, 0.80]
@@ -569,7 +569,7 @@ def run_simple_experiment(
     save_dir = Path("./output/fusion_sweeps/simple")
 
     # Focus on top metrics from previous analysis
-    key_metrics = ["group_top_frac", "agreement_ratio", "prm_mean", "prm_top_frac"]
+    key_metrics = ["consensus_support", "agreement_ratio", "prm_mean", "prm_top_frac"]
 
     # Delta is always 0 (proven useless)
     delta = 0.0

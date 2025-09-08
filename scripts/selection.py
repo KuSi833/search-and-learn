@@ -158,7 +158,7 @@ Examples:
         "--metric",
         type=str,
         default="agreement_ratio",
-        choices=["agreement_ratio", "entropy_freq", "group_top_frac"],
+        choices=["agreement_ratio", "entropy_freq", "consensus_support"],
         help="Uncertainty metric (default: agreement_ratio)",
     )
 

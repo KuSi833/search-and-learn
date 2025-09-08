@@ -153,7 +153,7 @@ def analyze_pair(pair: FusionRerun) -> Dict[str, Any]:
         "entropy_weighted",
         "prm_margin",
         "prm_top_frac",
-        "group_top_frac",
+        "consensus_support",
         "prm_std",
         "prm_mean",
     )
@@ -1632,7 +1632,7 @@ def experiment():
     # run_greedy_cv_pair_analysis(2, max_features=2)
     # run_greedy_cv_all_pairs(max_features=1, processes=os.cpu_count())
     # run_lopo_metric_eval(processes=os.cpu_count())
-    # run_metric_best_per_pair("group_top_frac", processes=os.cpu_count())
+    # run_metric_best_per_pair("consensus_support", processes=os.cpu_count())
     # run_metric_best_per_pair("prm_top_frac", processes=os.cpu_count())
     analyze_top3_metric_performance(processes=os.cpu_count())
 

@@ -54,7 +54,7 @@
       }
     },
     {
-      "metric": "group_top_frac",
+      "metric": "consensus_support",
       "accuracy": 87.2,
       "vs_base": 0.6000000000000085,
       "overrides_used": 30,

@@ -77,7 +77,7 @@ def _compute_core_metrics(sample: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "agreement_ratio": 0.0,
             "entropy_freq": 0.0,
-            "group_top_frac": 0.0,
+            "consensus_support": 0.0,
         }
 
     count_by_ans: Dict[str, int] = {}
@@ -98,14 +98,14 @@ def _compute_core_metrics(sample: Dict[str, Any]) -> Dict[str, Any]:
     sum_scores = float(sum(agg_scores)) if agg_scores else 0.0
     if sum_scores > 0 and len(scores_grouped) > 0:
         weighted_probs = [max(0.0, s) / sum_scores for s in scores_grouped]
-        group_top_frac = max(weighted_probs)
+        consensus_support = max(weighted_probs)
     else:
-        group_top_frac = 0.0
+        consensus_support = 0.0
 
     return {
         "agreement_ratio": float(agreement_ratio),
         "entropy_freq": float(entropy_freq),
-        "group_top_frac": float(group_top_frac),
+        "consensus_support": float(consensus_support),
     }
 
 
@@ -154,7 +154,7 @@ def _export_subset(
 @click.command(
     help=(
         "Export subsets selected by single metrics or boolean OR/AND combos of"
-        " agreement_ratio, entropy_freq, group_top_frac at a given coverage."
+        " agreement_ratio, entropy_freq, consensus_support at a given coverage."
     )
 )
 @click.option("--run-id", required=True, type=str, help="Run id (./output/<run>/...)")
@@ -202,7 +202,7 @@ def main(
     # Rankings per metric (uncertain-first)
     order_agree = _order_indices_by_metric(metrics_list, labels, "agreement_ratio")
     order_entr = _order_indices_by_metric(metrics_list, labels, "entropy_freq")
-    order_group = _order_indices_by_metric(metrics_list, labels, "group_top_frac")
+    order_group = _order_indices_by_metric(metrics_list, labels, "consensus_support")
 
     idx_to_id = [rec["unique_id"] for rec in records]
 
@@ -210,7 +210,7 @@ def main(
     for metric_name, order in [
         ("agreement_ratio", order_agree),
         ("entropy_freq", order_entr),
-        ("group_top_frac", order_group),
+        ("consensus_support", order_group),
     ]:
         ids = [idx_to_id[i] for i in order[:k]]
         name = f"single__{metric_name}__{coverage}"

@@ -94,7 +94,7 @@
         "separability": "high"
       }
     },
-    "group_top_frac": {
+    "consensus_support": {
       "threshold": {
         "value": 0.5095646873820903,
         "direction": "<=",
@@ -411,7 +411,7 @@
         2.3909719018903663
       ],
       [
-        "group_top_frac",
+        "consensus_support",
         2.0820709287692876
       ]
     ]

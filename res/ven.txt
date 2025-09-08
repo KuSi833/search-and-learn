@@ -3,7 +3,7 @@ VENN DIAGRAM DATA EXTRACTS FROM SELECTION ANALYSIS
 ═══ VENN DIAGRAM DATA EXPORT (N=75) ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=group_top_frac, B=agreement_ratio, C=prm_margin
+Metrics: A=consensus_support, B=agreement_ratio, C=prm_margin
 Selection Count: 75 each
 
                             Venn Diagram Regions Breakdown (N=75)                            
@@ -11,10 +11,10 @@ Selection Count: 75 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │     8 │         7 │          1 │  87.5% │   12.5% │
-│ group_top_frac ∩ agreement_ratio only │    38 │        33 │          5 │  86.8% │   13.2% │
-│ group_top_frac ∩ prm_margin only      │     3 │         3 │          0 │ 100.0% │    0.0% │
+│ consensus_support ∩ agreement_ratio only │    38 │        33 │          5 │  86.8% │   13.2% │
+│ consensus_support ∩ prm_margin only      │     3 │         3 │          0 │ 100.0% │    0.0% │
 │ agreement_ratio ∩ prm_margin only     │    26 │        21 │          5 │  80.8% │   19.2% │
-│ group_top_frac only                   │    26 │        25 │          1 │  96.2% │    3.8% │
+│ consensus_support only                   │    26 │        25 │          1 │  96.2% │    3.8% │
 │ agreement_ratio only                  │     3 │         1 │          2 │  33.3% │   66.7% │
 │ prm_margin only                       │    38 │        27 │         11 │  71.1% │   28.9% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
@@ -22,30 +22,30 @@ Selection Count: 75 each
 RAW DATA FOR VENN DIAGRAM (N=75):
 # Copy this data into your visualization script
 # Count: 75
-# Metrics: group_top_frac, agreement_ratio, prm_margin
+# Metrics: consensus_support, agreement_ratio, prm_margin
 
 # True predictions (correctly identified uncertain)
 true_ABC = 7  # All three methods
-true_AB_only = 33  # group_top_frac ∩ agreement_ratio only
-true_AC_only = 3  # group_top_frac ∩ prm_margin only
+true_AB_only = 33  # consensus_support ∩ agreement_ratio only
+true_AC_only = 3  # consensus_support ∩ prm_margin only
 true_BC_only = 21  # agreement_ratio ∩ prm_margin only
-true_A_only = 25  # group_top_frac only
+true_A_only = 25  # consensus_support only
 true_B_only = 1  # agreement_ratio only
 true_C_only = 27  # prm_margin only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 1  # All three methods
-false_AB_only = 5  # group_top_frac ∩ agreement_ratio only
-false_AC_only = 0  # group_top_frac ∩ prm_margin only
+false_AB_only = 5  # consensus_support ∩ agreement_ratio only
+false_AC_only = 0  # consensus_support ∩ prm_margin only
 false_BC_only = 5  # agreement_ratio ∩ prm_margin only
-false_A_only = 1  # group_top_frac only
+false_A_only = 1  # consensus_support only
 false_B_only = 2  # agreement_ratio only
 false_C_only = 11  # prm_margin only
 
 ═══ VENN DIAGRAM DATA EXPORT (N=100) ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=group_top_frac, B=agreement_ratio, C=prm_margin
+Metrics: A=consensus_support, B=agreement_ratio, C=prm_margin
 Selection Count: 100 each
 
                            Venn Diagram Regions Breakdown (N=100)                            
@@ -53,10 +53,10 @@ Selection Count: 100 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │    19 │        18 │          1 │  94.7% │    5.3% │
-│ group_top_frac ∩ agreement_ratio only │    52 │        45 │          7 │  86.5% │   13.5% │
-│ group_top_frac ∩ prm_margin only      │     3 │         2 │          1 │  66.7% │   33.3% │
+│ consensus_support ∩ agreement_ratio only │    52 │        45 │          7 │  86.5% │   13.5% │
+│ consensus_support ∩ prm_margin only      │     3 │         2 │          1 │  66.7% │   33.3% │
 │ agreement_ratio ∩ prm_margin only     │    29 │        24 │          5 │  82.8% │   17.2% │
-│ group_top_frac only                   │    26 │        14 │         12 │  53.8% │   46.2% │
+│ consensus_support only                   │    26 │        14 │         12 │  53.8% │   46.2% │
 │ agreement_ratio only                  │     0 │         0 │          0 │   0.0% │    0.0% │
 │ prm_margin only                       │    49 │        26 │         23 │  53.1% │   46.9% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
@@ -64,30 +64,30 @@ Selection Count: 100 each
 RAW DATA FOR VENN DIAGRAM (N=100):
 # Copy this data into your visualization script
 # Count: 100
-# Metrics: group_top_frac, agreement_ratio, prm_margin
+# Metrics: consensus_support, agreement_ratio, prm_margin
 
 # True predictions (correctly identified uncertain)
 true_ABC = 18  # All three methods
-true_AB_only = 45  # group_top_frac ∩ agreement_ratio only
-true_AC_only = 2  # group_top_frac ∩ prm_margin only
+true_AB_only = 45  # consensus_support ∩ agreement_ratio only
+true_AC_only = 2  # consensus_support ∩ prm_margin only
 true_BC_only = 24  # agreement_ratio ∩ prm_margin only
-true_A_only = 14  # group_top_frac only
+true_A_only = 14  # consensus_support only
 true_B_only = 0  # agreement_ratio only
 true_C_only = 26  # prm_margin only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 1  # All three methods
-false_AB_only = 7  # group_top_frac ∩ agreement_ratio only
-false_AC_only = 1  # group_top_frac ∩ prm_margin only
+false_AB_only = 7  # consensus_support ∩ agreement_ratio only
+false_AC_only = 1  # consensus_support ∩ prm_margin only
 false_BC_only = 5  # agreement_ratio ∩ prm_margin only
-false_A_only = 12  # group_top_frac only
+false_A_only = 12  # consensus_support only
 false_B_only = 0  # agreement_ratio only
 false_C_only = 23  # prm_margin only
 
 ═══ VENN DIAGRAM DATA EXPORT (N=125) ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=group_top_frac, B=agreement_ratio, C=prm_margin
+Metrics: A=consensus_support, B=agreement_ratio, C=prm_margin
 Selection Count: 125 each
 
                            Venn Diagram Regions Breakdown (N=125)                            
@@ -95,10 +95,10 @@ Selection Count: 125 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │    29 │        25 │          4 │  86.2% │   13.8% │
-│ group_top_frac ∩ agreement_ratio only │    55 │        42 │         13 │  76.4% │   23.6% │
-│ group_top_frac ∩ prm_margin only      │     4 │         3 │          1 │  75.0% │   25.0% │
+│ consensus_support ∩ agreement_ratio only │    55 │        42 │         13 │  76.4% │   23.6% │
+│ consensus_support ∩ prm_margin only      │     4 │         3 │          1 │  75.0% │   25.0% │
 │ agreement_ratio ∩ prm_margin only     │    33 │        25 │          8 │  75.8% │   24.2% │
-│ group_top_frac only                   │    37 │        25 │         12 │  67.6% │   32.4% │
+│ consensus_support only                   │    37 │        25 │         12 │  67.6% │   32.4% │
 │ agreement_ratio only                  │     8 │         0 │          8 │   0.0% │  100.0% │
 │ prm_margin only                       │    59 │        26 │         33 │  44.1% │   55.9% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
@@ -106,30 +106,30 @@ Selection Count: 125 each
 RAW DATA FOR VENN DIAGRAM (N=125):
 # Copy this data into your visualization script
 # Count: 125
-# Metrics: group_top_frac, agreement_ratio, prm_margin
+# Metrics: consensus_support, agreement_ratio, prm_margin
 
 # True predictions (correctly identified uncertain)
 true_ABC = 25  # All three methods
-true_AB_only = 42  # group_top_frac ∩ agreement_ratio only
-true_AC_only = 3  # group_top_frac ∩ prm_margin only
+true_AB_only = 42  # consensus_support ∩ agreement_ratio only
+true_AC_only = 3  # consensus_support ∩ prm_margin only
 true_BC_only = 25  # agreement_ratio ∩ prm_margin only
-true_A_only = 25  # group_top_frac only
+true_A_only = 25  # consensus_support only
 true_B_only = 0  # agreement_ratio only
 true_C_only = 26  # prm_margin only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 4  # All three methods
-false_AB_only = 13  # group_top_frac ∩ agreement_ratio only
-false_AC_only = 1  # group_top_frac ∩ prm_margin only
+false_AB_only = 13  # consensus_support ∩ agreement_ratio only
+false_AC_only = 1  # consensus_support ∩ prm_margin only
 false_BC_only = 8  # agreement_ratio ∩ prm_margin only
-false_A_only = 12  # group_top_frac only
+false_A_only = 12  # consensus_support only
 false_B_only = 8  # agreement_ratio only
 false_C_only = 33  # prm_margin only
 
 ═══ VENN DIAGRAM DATA EXPORT (N=75) - ALTERNATE METRIC SET ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=agreement_ratio, B=group_top_frac, C=prm_margin
+Metrics: A=agreement_ratio, B=consensus_support, C=prm_margin
 Selection Count: 75 each
 
                             Venn Diagram Regions Breakdown (N=75)                            
@@ -137,41 +137,41 @@ Selection Count: 75 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │     8 │         7 │          1 │  87.5% │   12.5% │
-│ agreement_ratio ∩ group_top_frac only │    38 │        33 │          5 │  86.8% │   13.2% │
+│ agreement_ratio ∩ consensus_support only │    38 │        33 │          5 │  86.8% │   13.2% │
 │ agreement_ratio ∩ prm_margin only     │    26 │        21 │          5 │  80.8% │   19.2% │
-│ group_top_frac ∩ prm_margin only      │     3 │         3 │          0 │ 100.0% │    0.0% │
+│ consensus_support ∩ prm_margin only      │     3 │         3 │          0 │ 100.0% │    0.0% │
 │ agreement_ratio only                  │     3 │         1 │          2 │  33.3% │   66.7% │
-│ group_top_frac only                   │    26 │        25 │          1 │  96.2% │    3.8% │
+│ consensus_support only                   │    26 │        25 │          1 │  96.2% │    3.8% │
 │ prm_margin only                       │    38 │        27 │         11 │  71.1% │   28.9% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
 
 RAW DATA FOR VENN DIAGRAM (N=75) - ALTERNATE METRIC SET:
 # Copy this data into your visualization script
 # Count: 75
-# Metrics: agreement_ratio, group_top_frac, prm_margin
+# Metrics: agreement_ratio, consensus_support, prm_margin
 
 # True predictions (correctly identified uncertain)
 true_ABC = 7  # All three methods
-true_AB_only = 33  # agreement_ratio ∩ group_top_frac only
+true_AB_only = 33  # agreement_ratio ∩ consensus_support only
 true_AC_only = 21  # agreement_ratio ∩ prm_margin only
-true_BC_only = 3  # group_top_frac ∩ prm_margin only
+true_BC_only = 3  # consensus_support ∩ prm_margin only
 true_A_only = 1  # agreement_ratio only
-true_B_only = 25  # group_top_frac only
+true_B_only = 25  # consensus_support only
 true_C_only = 27  # prm_margin only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 1  # All three methods
-false_AB_only = 5  # agreement_ratio ∩ group_top_frac only
+false_AB_only = 5  # agreement_ratio ∩ consensus_support only
 false_AC_only = 5  # agreement_ratio ∩ prm_margin only
-false_BC_only = 0  # group_top_frac ∩ prm_margin only
+false_BC_only = 0  # consensus_support ∩ prm_margin only
 false_A_only = 2  # agreement_ratio only
-false_B_only = 1  # group_top_frac only
+false_B_only = 1  # consensus_support only
 false_C_only = 11  # prm_margin only
 
 ═══ VENN DIAGRAM DATA EXPORT (N=100) - ALTERNATE METRIC SET ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=agreement_ratio, B=group_top_frac, C=prm_margin
+Metrics: A=agreement_ratio, B=consensus_support, C=prm_margin
 Selection Count: 100 each
 
                            Venn Diagram Regions Breakdown (N=100)                            
@@ -179,41 +179,41 @@ Selection Count: 100 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │    19 │        18 │          1 │  94.7% │    5.3% │
-│ agreement_ratio ∩ group_top_frac only │    52 │        45 │          7 │  86.5% │   13.5% │
+│ agreement_ratio ∩ consensus_support only │    52 │        45 │          7 │  86.5% │   13.5% │
 │ agreement_ratio ∩ prm_margin only     │    29 │        24 │          5 │  82.8% │   17.2% │
-│ group_top_frac ∩ prm_margin only      │     3 │         2 │          1 │  66.7% │   33.3% │
+│ consensus_support ∩ prm_margin only      │     3 │         2 │          1 │  66.7% │   33.3% │
 │ agreement_ratio only                  │     0 │         0 │          0 │   0.0% │    0.0% │
-│ group_top_frac only                   │    26 │        14 │         12 │  53.8% │   46.2% │
+│ consensus_support only                   │    26 │        14 │         12 │  53.8% │   46.2% │
 │ prm_margin only                       │    49 │        26 │         23 │  53.1% │   46.9% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
 
 RAW DATA FOR VENN DIAGRAM (N=100) - ALTERNATE METRIC SET:
 # Copy this data into your visualization script
 # Count: 100
-# Metrics: agreement_ratio, group_top_frac, prm_margin
+# Metrics: agreement_ratio, consensus_support, prm_margin
 
 # True predictions (correctly identified uncertain)
 true_ABC = 18  # All three methods
-true_AB_only = 45  # agreement_ratio ∩ group_top_frac only
+true_AB_only = 45  # agreement_ratio ∩ consensus_support only
 true_AC_only = 24  # agreement_ratio ∩ prm_margin only
-true_BC_only = 2  # group_top_frac ∩ prm_margin only
+true_BC_only = 2  # consensus_support ∩ prm_margin only
 true_A_only = 0  # agreement_ratio only
-true_B_only = 14  # group_top_frac only
+true_B_only = 14  # consensus_support only
 true_C_only = 26  # prm_margin only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 1  # All three methods
-false_AB_only = 7  # agreement_ratio ∩ group_top_frac only
+false_AB_only = 7  # agreement_ratio ∩ consensus_support only
 false_AC_only = 5  # agreement_ratio ∩ prm_margin only
-false_BC_only = 1  # group_top_frac ∩ prm_margin only
+false_BC_only = 1  # consensus_support ∩ prm_margin only
 false_A_only = 0  # agreement_ratio only
-false_B_only = 12  # group_top_frac only
+false_B_only = 12  # consensus_support only
 false_C_only = 23  # prm_margin only
 
 ═══ VENN DIAGRAM DATA EXPORT (N=125) - ALTERNATE METRIC SET ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=agreement_ratio, B=group_top_frac, C=prm_margin
+Metrics: A=agreement_ratio, B=consensus_support, C=prm_margin
 Selection Count: 125 each
 
                            Venn Diagram Regions Breakdown (N=125)                            
@@ -221,41 +221,41 @@ Selection Count: 125 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │    29 │        25 │          4 │  86.2% │   13.8% │
-│ agreement_ratio ∩ group_top_frac only │    55 │        42 │         13 │  76.4% │   23.6% │
+│ agreement_ratio ∩ consensus_support only │    55 │        42 │         13 │  76.4% │   23.6% │
 │ agreement_ratio ∩ prm_margin only     │    33 │        25 │          8 │  75.8% │   24.2% │
-│ group_top_frac ∩ prm_margin only      │     4 │         3 │          1 │  75.0% │   25.0% │
+│ consensus_support ∩ prm_margin only      │     4 │         3 │          1 │  75.0% │   25.0% │
 │ agreement_ratio only                  │     8 │         0 │          8 │   0.0% │  100.0% │
-│ group_top_frac only                   │    37 │        25 │         12 │  67.6% │   32.4% │
+│ consensus_support only                   │    37 │        25 │         12 │  67.6% │   32.4% │
 │ prm_margin only                       │    59 │        26 │         33 │  44.1% │   55.9% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
 
 RAW DATA FOR VENN DIAGRAM (N=125) - ALTERNATE METRIC SET:
 # Copy this data into your visualization script
 # Count: 125
-# Metrics: agreement_ratio, group_top_frac, prm_margin
+# Metrics: agreement_ratio, consensus_support, prm_margin
 
 # True predictions (correctly identified uncertain)
 true_ABC = 25  # All three methods
-true_AB_only = 42  # agreement_ratio ∩ group_top_frac only
+true_AB_only = 42  # agreement_ratio ∩ consensus_support only
 true_AC_only = 25  # agreement_ratio ∩ prm_margin only
-true_BC_only = 3  # group_top_frac ∩ prm_margin only
+true_BC_only = 3  # consensus_support ∩ prm_margin only
 true_A_only = 0  # agreement_ratio only
-true_B_only = 25  # group_top_frac only
+true_B_only = 25  # consensus_support only
 true_C_only = 26  # prm_margin only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 4  # All three methods
-false_AB_only = 13  # agreement_ratio ∩ group_top_frac only
+false_AB_only = 13  # agreement_ratio ∩ consensus_support only
 false_AC_only = 8  # agreement_ratio ∩ prm_margin only
-false_BC_only = 1  # group_top_frac ∩ prm_margin only
+false_BC_only = 1  # consensus_support ∩ prm_margin only
 false_A_only = 8  # agreement_ratio only
-false_B_only = 12  # group_top_frac only
+false_B_only = 12  # consensus_support only
 false_C_only = 33  # prm_margin only
 
 ═══ VENN DIAGRAM DATA EXPORT (N=75) - ENTROPY FREQ SET ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=group_top_frac, B=agreement_ratio, C=entropy_freq
+Metrics: A=consensus_support, B=agreement_ratio, C=entropy_freq
 Selection Count: 75 each
 
                             Venn Diagram Regions Breakdown (N=75)                            
@@ -263,10 +263,10 @@ Selection Count: 75 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │    30 │        24 │          6 │  80.0% │   20.0% │
-│ group_top_frac ∩ agreement_ratio only │    16 │        16 │          0 │ 100.0% │    0.0% │
-│ group_top_frac ∩ entropy_freq only    │     0 │         0 │          0 │   0.0% │    0.0% │
+│ consensus_support ∩ agreement_ratio only │    16 │        16 │          0 │ 100.0% │    0.0% │
+│ consensus_support ∩ entropy_freq only    │     0 │         0 │          0 │   0.0% │    0.0% │
 │ agreement_ratio ∩ entropy_freq only   │    21 │        14 │          7 │  66.7% │   33.3% │
-│ group_top_frac only                   │    29 │        28 │          1 │  96.6% │    3.4% │
+│ consensus_support only                   │    29 │        28 │          1 │  96.6% │    3.4% │
 │ agreement_ratio only                  │     8 │         8 │          0 │ 100.0% │    0.0% │
 │ entropy_freq only                     │    24 │         3 │         21 │  12.5% │   87.5% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
@@ -274,30 +274,30 @@ Selection Count: 75 each
 RAW DATA FOR VENN DIAGRAM (N=75) - ENTROPY FREQ SET:
 # Copy this data into your visualization script
 # Count: 75
-# Metrics: group_top_frac, agreement_ratio, entropy_freq
+# Metrics: consensus_support, agreement_ratio, entropy_freq
 
 # True predictions (correctly identified uncertain)
 true_ABC = 24  # All three methods
-true_AB_only = 16  # group_top_frac ∩ agreement_ratio only
-true_AC_only = 0  # group_top_frac ∩ entropy_freq only
+true_AB_only = 16  # consensus_support ∩ agreement_ratio only
+true_AC_only = 0  # consensus_support ∩ entropy_freq only
 true_BC_only = 14  # agreement_ratio ∩ entropy_freq only
-true_A_only = 28  # group_top_frac only
+true_A_only = 28  # consensus_support only
 true_B_only = 8  # agreement_ratio only
 true_C_only = 3  # entropy_freq only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 6  # All three methods
-false_AB_only = 0  # group_top_frac ∩ agreement_ratio only
-false_AC_only = 0  # group_top_frac ∩ entropy_freq only
+false_AB_only = 0  # consensus_support ∩ agreement_ratio only
+false_AC_only = 0  # consensus_support ∩ entropy_freq only
 false_BC_only = 7  # agreement_ratio ∩ entropy_freq only
-false_A_only = 1  # group_top_frac only
+false_A_only = 1  # consensus_support only
 false_B_only = 0  # agreement_ratio only
 false_C_only = 21  # entropy_freq only
 
 ═══ VENN DIAGRAM DATA EXPORT (N=100) - ENTROPY FREQ SET ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=group_top_frac, B=agreement_ratio, C=entropy_freq
+Metrics: A=consensus_support, B=agreement_ratio, C=entropy_freq
 Selection Count: 100 each
 
                            Venn Diagram Regions Breakdown (N=100)                            
@@ -305,10 +305,10 @@ Selection Count: 100 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │    47 │        39 │          8 │  83.0% │   17.0% │
-│ group_top_frac ∩ agreement_ratio only │    24 │        24 │          0 │ 100.0% │    0.0% │
-│ group_top_frac ∩ entropy_freq only    │     5 │         0 │          5 │   0.0% │  100.0% │
+│ consensus_support ∩ agreement_ratio only │    24 │        24 │          0 │ 100.0% │    0.0% │
+│ consensus_support ∩ entropy_freq only    │     5 │         0 │          5 │   0.0% │  100.0% │
 │ agreement_ratio ∩ entropy_freq only   │    21 │        16 │          5 │  76.2% │   23.8% │
-│ group_top_frac only                   │    24 │        16 │          8 │  66.7% │   33.3% │
+│ consensus_support only                   │    24 │        16 │          8 │  66.7% │   33.3% │
 │ agreement_ratio only                  │     8 │         8 │          0 │ 100.0% │    0.0% │
 │ entropy_freq only                     │    27 │        11 │         16 │  40.7% │   59.3% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
@@ -316,30 +316,30 @@ Selection Count: 100 each
 RAW DATA FOR VENN DIAGRAM (N=100) - ENTROPY FREQ SET:
 # Copy this data into your visualization script
 # Count: 100
-# Metrics: group_top_frac, agreement_ratio, entropy_freq
+# Metrics: consensus_support, agreement_ratio, entropy_freq
 
 # True predictions (correctly identified uncertain)
 true_ABC = 39  # All three methods
-true_AB_only = 24  # group_top_frac ∩ agreement_ratio only
-true_AC_only = 0  # group_top_frac ∩ entropy_freq only
+true_AB_only = 24  # consensus_support ∩ agreement_ratio only
+true_AC_only = 0  # consensus_support ∩ entropy_freq only
 true_BC_only = 16  # agreement_ratio ∩ entropy_freq only
-true_A_only = 16  # group_top_frac only
+true_A_only = 16  # consensus_support only
 true_B_only = 8  # agreement_ratio only
 true_C_only = 11  # entropy_freq only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 8  # All three methods
-false_AB_only = 0  # group_top_frac ∩ agreement_ratio only
-false_AC_only = 5  # group_top_frac ∩ entropy_freq only
+false_AB_only = 0  # consensus_support ∩ agreement_ratio only
+false_AC_only = 5  # consensus_support ∩ entropy_freq only
 false_BC_only = 5  # agreement_ratio ∩ entropy_freq only
-false_A_only = 8  # group_top_frac only
+false_A_only = 8  # consensus_support only
 false_B_only = 0  # agreement_ratio only
 false_C_only = 16  # entropy_freq only
 
 ═══ VENN DIAGRAM DATA EXPORT (N=125) - ENTROPY FREQ SET ═══
 Detailed breakdown for True/False prediction overlaps:
 
-Metrics: A=group_top_frac, B=agreement_ratio, C=entropy_freq
+Metrics: A=consensus_support, B=agreement_ratio, C=entropy_freq
 Selection Count: 125 each
 
                            Venn Diagram Regions Breakdown (N=125)                            
@@ -347,10 +347,10 @@ Selection Count: 125 each
 ┃ Region                                ┃ Total ┃ True Pred ┃ False Pred ┃ True % ┃ False % ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
 │ Three-way (ABC)                       │    69 │        58 │         11 │  84.1% │   15.9% │
-│ group_top_frac ∩ agreement_ratio only │    15 │         9 │          6 │  60.0% │   40.0% │
-│ group_top_frac ∩ entropy_freq only    │    15 │         7 │          8 │  46.7% │   53.3% │
+│ consensus_support ∩ agreement_ratio only │    15 │         9 │          6 │  60.0% │   40.0% │
+│ consensus_support ∩ entropy_freq only    │    15 │         7 │          8 │  46.7% │   53.3% │
 │ agreement_ratio ∩ entropy_freq only   │    29 │        20 │          9 │  69.0% │   31.0% │
-│ group_top_frac only                   │    26 │        21 │          5 │  80.8% │   19.2% │
+│ consensus_support only                   │    26 │        21 │          5 │  80.8% │   19.2% │
 │ agreement_ratio only                  │    12 │         5 │          7 │  41.7% │   58.3% │
 │ entropy_freq only                     │    12 │         6 │          6 │  50.0% │   50.0% │
 └───────────────────────────────────────┴───────┴───────────┴────────────┴────────┴─────────┘
@@ -358,22 +358,22 @@ Selection Count: 125 each
 RAW DATA FOR VENN DIAGRAM (N=125) - ENTROPY FREQ SET:
 # Copy this data into your visualization script
 # Count: 125
-# Metrics: group_top_frac, agreement_ratio, entropy_freq
+# Metrics: consensus_support, agreement_ratio, entropy_freq
 
 # True predictions (correctly identified uncertain)
 true_ABC = 58  # All three methods
-true_AB_only = 9  # group_top_frac ∩ agreement_ratio only
-true_AC_only = 7  # group_top_frac ∩ entropy_freq only
+true_AB_only = 9  # consensus_support ∩ agreement_ratio only
+true_AC_only = 7  # consensus_support ∩ entropy_freq only
 true_BC_only = 20  # agreement_ratio ∩ entropy_freq only
-true_A_only = 21  # group_top_frac only
+true_A_only = 21  # consensus_support only
 true_B_only = 5  # agreement_ratio only
 true_C_only = 6  # entropy_freq only
 
 # False predictions (incorrectly identified uncertain)
 false_ABC = 11  # All three methods
-false_AB_only = 6  # group_top_frac ∩ agreement_ratio only
-false_AC_only = 8  # group_top_frac ∩ entropy_freq only
+false_AB_only = 6  # consensus_support ∩ agreement_ratio only
+false_AC_only = 8  # consensus_support ∩ entropy_freq only
 false_BC_only = 9  # agreement_ratio ∩ entropy_freq only
-false_A_only = 5  # group_top_frac only
+false_A_only = 5  # consensus_support only
 false_B_only = 7  # agreement_ratio only
 false_C_only = 6  # entropy_freq only

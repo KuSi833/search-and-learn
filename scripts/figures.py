@@ -98,7 +98,7 @@ def _compute_uncertainty_metrics(sample: Dict[str, Any]) -> Dict[str, Any]:
             "prm_std": 0.0,
             "prm_margin": 0.0,
             "prm_top_frac": 0.0,
-            "group_top_frac": 0.0,
+            "consensus_support": 0.0,
         }
 
     count_by_ans: Dict[str, int] = defaultdict(int)
@@ -121,10 +121,10 @@ def _compute_uncertainty_metrics(sample: Dict[str, Any]) -> Dict[str, Any]:
     if sum_scores > 0 and len(scores_grouped) > 0:
         weighted_probs = [max(0.0, s) / sum_scores for s in scores_grouped]
         entropy_weighted = _safe_entropy(weighted_probs)
-        group_top_frac = max(weighted_probs)
+        consensus_support = max(weighted_probs)
     else:
         entropy_weighted = 0.0
-        group_top_frac = 0.0
+        consensus_support = 0.0
 
     try:
         prm_max = max(float(x) for x in (agg_scores or [0.0]))
@@ -157,7 +157,7 @@ def _compute_uncertainty_metrics(sample: Dict[str, Any]) -> Dict[str, Any]:
         "prm_std": float(prm_std),
         "prm_margin": float(prm_margin),
         "prm_top_frac": float(prm_top_frac),
-        "group_top_frac": float(group_top_frac),
+        "consensus_support": float(consensus_support),
     }
 
 
@@ -167,7 +167,7 @@ DEFAULT_METRICS: Tuple[str, ...] = (
     "entropy_weighted",
     "prm_margin",
     "prm_top_frac",
-    "group_top_frac",
+    "consensus_support",
     "prm_std",
     "prm_mean",
 )

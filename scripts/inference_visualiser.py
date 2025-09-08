@@ -182,8 +182,8 @@ def print_report(
         "Normalized entropy of answer frequencies",
     )
     metrics_table.add_row(
-        "group_top_frac",
-        f"{uncertainty_metrics['group_top_frac']:.3f}",
+        "consensus_support",
+        f"{uncertainty_metrics['consensus_support']:.3f}",
         "PRM score fraction for top answer group",
     )
     console.print(Panel(metrics_table, box=box.ROUNDED))
@@ -639,7 +639,7 @@ def _select_uncertain_indices(
             "entropy_weighted",
             "prm_margin",
             "prm_top_frac",
-            "group_top_frac",
+            "consensus_support",
             "prm_std",
             "prm_mean",
         ]
@@ -853,7 +853,7 @@ def _compute_uncertainty_metrics(sample: Dict[str, Any]) -> Dict[str, Any]:
             "prm_std": 0.0,
             "prm_margin": 0.0,
             "prm_top_frac": 0.0,
-            "group_top_frac": 0.0,
+            "consensus_support": 0.0,
         }
 
     # Group by answer: counts and score sums
@@ -878,10 +878,10 @@ def _compute_uncertainty_metrics(sample: Dict[str, Any]) -> Dict[str, Any]:
     if sum_scores > 0 and len(scores_grouped) > 0:
         weighted_probs = [max(0.0, s) / sum_scores for s in scores_grouped]
         entropy_weighted = _safe_entropy(weighted_probs)
-        group_top_frac = max(weighted_probs)
+        consensus_support = max(weighted_probs)
     else:
         entropy_weighted = 0.0
-        group_top_frac = 0.0
+        consensus_support = 0.0
 
     # PRM statistics at completion level
     try:
@@ -915,7 +915,7 @@ def _compute_uncertainty_metrics(sample: Dict[str, Any]) -> Dict[str, Any]:
         "prm_std": float(prm_std),
         "prm_margin": float(prm_margin),
         "prm_top_frac": float(prm_top_frac),
-        "group_top_frac": float(group_top_frac),
+        "consensus_support": float(consensus_support),
     }
 
 
@@ -927,7 +927,7 @@ def _summarise_uncertainty(metrics: List[Dict[str, Any]], labels: List[bool]) ->
         "entropy_weighted",
         "prm_margin",
         "prm_top_frac",
-        "group_top_frac",
+        "consensus_support",
         "prm_std",
         "prm_mean",
     ]
@@ -1115,7 +1115,7 @@ def _recall_of_incorrect(
 )
 @click.option(
     "--metrics",
-    default="agreement_ratio,group_top_frac,prm_top_frac,prm_margin,prm_mean,hybrid(agreement_ratio+group_top_frac),hybrid(agreement_ratio+prm_margin)",
+    default="agreement_ratio,consensus_support,prm_top_frac,prm_margin,prm_mean,hybrid(agreement_ratio+consensus_support),hybrid(agreement_ratio+prm_margin)",
     type=str,
     help=(
         "Comma-separated list of metrics. Use 'hybrid(a+b+...)' to average uncertainty ranks."
@@ -1186,7 +1186,7 @@ def compare_selection(run_id: str, metrics: str, coverages: str) -> None:
 @click.option("--run-b-id", required=True, type=str, help="Alternative run id")
 @click.option(
     "--metric",
-    default="group_top_frac",
+    default="consensus_support",
     type=click.Choice(
         [
             "agreement_ratio",
@@ -1194,7 +1194,7 @@ def compare_selection(run_id: str, metrics: str, coverages: str) -> None:
             "entropy_weighted",
             "prm_margin",
             "prm_top_frac",
-            "group_top_frac",
+            "consensus_support",
             "prm_std",
             "prm_mean",
         ]
@@ -1410,7 +1410,7 @@ def cmd_export_compact(run_id: str, output_file: Optional[str]) -> None:
             "metrics_fields": [
                 "agreement_ratio",
                 "entropy_freq",
-                "group_top_frac",
+                "consensus_support",
                 "unique_answers",
                 "prm_mean",
                 "prm_std",
@@ -1485,7 +1485,7 @@ def cmd_export_compact(run_id: str, output_file: Optional[str]) -> None:
         metrics_row = [
             round(uncertainty_metrics["agreement_ratio"], 4),
             round(uncertainty_metrics["entropy_freq"], 4),
-            round(uncertainty_metrics["group_top_frac"], 4),
+            round(uncertainty_metrics["consensus_support"], 4),
             uncertainty_metrics["unique_answers"],
             round(uncertainty_metrics["prm_mean"], 4),
             round(uncertainty_metrics["prm_std"], 4),

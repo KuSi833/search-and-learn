@@ -10,7 +10,7 @@
       "mean_incorrect": 0.8551274678541307,
       "direction": "\u2193"
     },
-    "group_top_frac": {
+    "consensus_support": {
       "mean_correct": 0.9597050283633078,
       "mean_incorrect": 0.5753763675043859,
       "direction": "\u2191"
@@ -65,7 +65,7 @@
       90.14084507042253,
       91.54929577464789
     ],
-    "group_top_frac": [
+    "consensus_support": [
       52.11267605633803,
       78.87323943661971,
       88.73239436619718,
@@ -109,7 +109,7 @@
       32.0,
       26.0
     ],
-    "group_top_frac": [
+    "consensus_support": [
       74.0,
       56.0,
       42.0,
@@ -183,7 +183,7 @@
         185
       ]
     ],
-    "group_top_frac": [
+    "consensus_support": [
       [
         37,
         13
