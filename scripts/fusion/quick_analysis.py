@@ -43,6 +43,7 @@ def create_comparison_chart(results_summary: Dict[str, Any], output_dir: Path) -
 
     # Prepare data for smart fusion bars
     metrics = [r["metric"] for r in all_smart]
+    formatted_metrics = [metric.replace("_", " ").title() for metric in metrics]
     accuracies = [r["accuracy"] for r in all_smart]
 
     # Color bars: green for best, blue for others (using custom colors)
@@ -107,7 +108,7 @@ def create_comparison_chart(results_summary: Dict[str, Any], output_dir: Path) -
     ax.set_xlabel("Confidence Metric", fontsize=12)
     ax.set_ylabel("Accuracy (%)", fontsize=12)
     ax.set_xticks(range(len(metrics)))
-    ax.set_xticklabels(metrics, rotation=45, ha="right")
+    ax.set_xticklabels(formatted_metrics, rotation=45, ha="right")
     ax.set_ylim(0, max(accuracies) * 1.15)
     ax.grid(axis="y", linestyle=":", alpha=0.6)
 
@@ -167,6 +168,11 @@ def create_averaged_comparison_chart(
 
     # Extract sorted data
     metrics = [s["name"] for s in all_strategies]
+    # Format metric names nicely, but keep "Always Override" as is
+    formatted_metrics = [
+        metric.replace("_", " ").title() if metric != "Always Override" else metric
+        for metric in metrics
+    ]
     improvements = [s["improvement"] for s in all_strategies]
 
     # Color bars based on strategy type and performance
@@ -246,7 +252,7 @@ def create_averaged_comparison_chart(
     ax.set_xlabel("Strategy", fontsize=12)
     ax.set_ylabel("Improvement over Always Base (%)", fontsize=12)
     ax.set_xticks(range(len(metrics)))
-    ax.set_xticklabels(metrics, rotation=45, ha="right")
+    ax.set_xticklabels(formatted_metrics, rotation=45, ha="right")
 
     # Set y-limits to focus on improvement range with min/max error bars
     all_mins = [s["min"] for s in all_strategies]

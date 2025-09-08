@@ -6,20 +6,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Set
 
-try:
-    import numpy as np
-except ImportError:
-    np = None
-
-try:
-    from scipy import stats
-except ImportError:
-    stats = None
-
+import numpy as np
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+from scipy import stats
 from tqdm import tqdm
 
 from .fusion import (
