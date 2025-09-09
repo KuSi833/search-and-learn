@@ -153,7 +153,7 @@ if __name__ == "__main__":
     experiment_configs: List[ExperimentConfig] = []
 
     # for n in [4, 8, 16]:
-    for n in [4]:
+    for n in [4, 4, 4]:
         # for n in [16, 8, 4]:
         # for _ in range(3):
         for cfg in [CGAI_CONFIG]:
