@@ -38,6 +38,7 @@ from sal.profiler import Profiler
 from sal.search import (
     beam_search,
     best_of_n,
+    cgai,
     diagnostic_tts,
     dvts,
     gibbs,
@@ -66,6 +67,7 @@ APPROACHES = {
     "beam_search": beam_search,
     "dvts": dvts,
     "best_of_n": best_of_n,
+    "cgai": cgai,
     "qcts": qcts,
     "q2": q2,
     "diagnostic_tts": diagnostic_tts,
@@ -86,6 +88,13 @@ class ExperimentRunner:
         self.maybe_draft_llm = self._maybe_load_draft_llm(self.base_config.draft_config)
         self.prm = self._load_prm(self.base_config.prm_config)
         self.dataset = self._load_dataset(self.base_config.dataset_config)
+        # Add a stable index column for logging/selection reporting
+        self.dataset = self.dataset.map(
+            lambda x, idx: {"idx": idx},
+            with_indices=True,
+            desc="Indexing dataset",
+            load_from_cache_file=False,
+        )
 
         for experiment_config in experiment_configs:
             self._run_single_experiment(experiment_config)

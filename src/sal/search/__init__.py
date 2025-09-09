@@ -1,5 +1,6 @@
 from .beam_search import beam_search
 from .best_of_n import best_of_n
+from .cgai import cgai
 from .diagnostic_tts import diagnostic_tts
 from .diverse_verifier_tree_search import dvts
 from .gibbs import gibbs
