@@ -51,7 +51,7 @@ def create_complementarity_analysis():
     # Create clean Venn diagram
     venn = venn3(
         subsets=(A_only, B_only, AB_only, C_only, AC_only, BC_only, ABC),
-        set_labels=("Agreement Ratio", "Support Consensus", "Prm Margin"),
+        set_labels=("Agreement Ratio", "Support Consensus", "Entropy Frequency"),
         ax=ax,
     )
 
@@ -270,7 +270,12 @@ def create_ensemble_mechanism():
     """
     # Use count=100 data - need to get precision/recall for N=100
     # From selection.txt data at N=100: Agreement Ratio (0.559), Support Consensus (0.508), Prm Margin (0.450), Ensemble (0.663)
-    methods = ["Agreement\nRatio", "Support\nConsensus", "Prm Margin", "Ensemble"]
+    methods = [
+        "Agreement\nRatio",
+        "Support\nConsensus",
+        "Entropy\nFrequency",
+        "Ensemble",
+    ]
     # Approximate precision/recall values for N=100 (from the data patterns)
     precision = [0.870, 0.790, 0.700, 0.725]  # From count=100 data
     recall = [0.412, 0.374, 0.332, 0.611]  # From count=100 data
