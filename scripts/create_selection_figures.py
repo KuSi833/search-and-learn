@@ -51,7 +51,7 @@ def create_complementarity_analysis():
     # Create clean Venn diagram
     venn = venn3(
         subsets=(A_only, B_only, AB_only, C_only, AC_only, BC_only, ABC),
-        set_labels=("Agreement Ratio", "Support Consensus", "Prm Margin"),
+        set_labels=("Agreement Ratio", "Support Consensus", "Entropy Frequency"),
         ax=ax,
     )
 
@@ -111,10 +111,10 @@ def create_complementarity_analysis():
 
     plt.tight_layout()
     plt.savefig(
-        output_dir / "complementarity_analysis.png", dpi=300, bbox_inches="tight"
+        output_dir / "complementarity_analysis.pdf", dpi=300, bbox_inches="tight"
     )
     plt.close()
-    print("✓ Created complementarity_analysis.png")
+    print("✓ Created complementarity_analysis.pdf")
 
 
 def create_true_false_overlap():
@@ -258,9 +258,9 @@ def create_true_false_overlap():
     ax2.set_frame_on(False)
 
     plt.tight_layout()
-    plt.savefig(output_dir / "true_false_overlap.png", dpi=300, bbox_inches="tight")
+    plt.savefig(output_dir / "true_false_overlap.pdf", dpi=300, bbox_inches="tight")
     plt.close()
-    print("✓ Created true_false_overlap.png")
+    print("✓ Created true_false_overlap.pdf")
 
 
 def create_ensemble_mechanism():
@@ -270,7 +270,12 @@ def create_ensemble_mechanism():
     """
     # Use count=100 data - need to get precision/recall for N=100
     # From selection.txt data at N=100: Agreement Ratio (0.559), Support Consensus (0.508), Prm Margin (0.450), Ensemble (0.663)
-    methods = ["Agreement\nRatio", "Support\nConsensus", "Prm Margin", "Ensemble"]
+    methods = [
+        "Agreement\nRatio",
+        "Support\nConsensus",
+        "Entropy\nFrequency",
+        "Ensemble",
+    ]
     # Approximate precision/recall values for N=100 (from the data patterns)
     precision = [0.870, 0.790, 0.700, 0.725]  # From count=100 data
     recall = [0.412, 0.374, 0.332, 0.611]  # From count=100 data
@@ -345,9 +350,9 @@ def create_ensemble_mechanism():
     ax2.set_axisbelow(True)
 
     plt.tight_layout()
-    plt.savefig(output_dir / "ensemble_mechanism.png", dpi=300, bbox_inches="tight")
+    plt.savefig(output_dir / "ensemble_mechanism.pdf", dpi=300, bbox_inches="tight")
     plt.close()
-    print("✓ Created ensemble_mechanism.png")
+    print("✓ Created ensemble_mechanism.pdf")
 
 
 if __name__ == "__main__":
@@ -359,8 +364,8 @@ if __name__ == "__main__":
 
     print(f"\nAll figures saved to: {output_dir}")
     print("\nFigure locations:")
-    print("1. complementarity_analysis.png - Venn diagram showing metric overlap")
+    print("1. complementarity_analysis.pdf - Venn diagram showing metric overlap")
     print(
-        "2. true_false_overlap.png - Side-by-side Venn diagrams for True/False predictions"
+        "2. true_false_overlap.pdf - Side-by-side Venn diagrams for True/False predictions"
     )
-    print("3. ensemble_mechanism.png - Precision-recall and F1 score comparison")
+    print("3. ensemble_mechanism.pdf - Precision-recall and F1 score comparison")

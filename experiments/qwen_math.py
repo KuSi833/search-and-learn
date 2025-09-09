@@ -57,7 +57,7 @@ if __name__ == "__main__":
     )
     # PRM_CONFIG = PRMConfig(path="Skywork/Skywork-o1-Open-PRM-Qwen-2.5-1.5B")
 
-    WANDB_CONFIG = WandbConfig(tags=set(["baseline", "filter-duplicates"]))
+    WANDB_CONFIG = WandbConfig(tags=set(["baseline", "cgai"]))
     # WANDB_CONFIG = WandbConfig(tags=set(["fusion-baseline"]))
 
     # DATASET_CONFIG = DatasetConfig.from_subset_file(
@@ -152,8 +152,8 @@ if __name__ == "__main__":
 
     experiment_configs: List[ExperimentConfig] = []
 
-    for n in [4, 8, 16]:
-        # for n in [32]:
+    # for n in [4, 8, 16]:
+    for n in [4, 4, 4]:
         # for n in [16, 8, 4]:
         # for _ in range(3):
         for cfg in [CGAI_CONFIG]:

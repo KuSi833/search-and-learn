@@ -47,7 +47,8 @@ class RemoteConfig:
     uv_path: str = "/homes/km1124/.local/bin/uv"
     remotes_to_exclude: Set[str] = field(
         default_factory=lambda: {
-            "linnet",
+            # "linnet",
+            "merlin",
         }
     )
     # remotes_to_exclude: Set[str] = field(default_factory=lambda: set())
