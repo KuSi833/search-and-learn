@@ -15,7 +15,7 @@
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal, Optional, Set
+from typing import Dict, Literal, Optional, Set, Tuple
 
 from sal.utils.constants import (
     BENCHMARK_SUBSETS_ROOT,
@@ -188,6 +188,21 @@ class EvaluationConfig:
 
 
 @dataclass
+class ConfidenceSelectionConfig:
+    # Thresholds for uncertainty metrics used in CGAI selection
+    # Operator is one of "<=", ">="
+    thresholds: Dict[str, Tuple[Literal["<=", ">="], float]] = field(
+        default_factory=lambda: {
+            "consensus_support": ("<=", 0.5),
+            "agreement_ratio": ("<=", 0.5),
+            "entropy_freq": (">=", 0.8),
+        }
+    )
+    # Multiplier for additional compute during recomputation (hyperparameter scaling)
+    recompute_n_multiplier: int = 2
+
+
+@dataclass
 class BaseConfig:
     """Configuration that remains constant across all experiments"""
 
@@ -224,6 +239,7 @@ class ExperimentConfig:
         "diagnostic_tts",
         "particles",
         "gibbs",
+        "cgai",
     ] = "best_of_n"
 
     # Chat template related options
@@ -235,6 +251,9 @@ class ExperimentConfig:
     filter_duplicates: bool = False
     sort_completed: bool = False
     seed: int = 0
+    confidence_selection: ConfidenceSelectionConfig = field(
+        default_factory=ConfidenceSelectionConfig
+    )
 
     def __post_init__(self):
         if self.approach in ["dvts", "qcts", "q2", "diagnostic_tts"]:

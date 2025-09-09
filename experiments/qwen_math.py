@@ -14,7 +14,6 @@ from sal.config import (
     WandbConfig,
 )
 from sal.test_time_compute import get_project_root, run
-from sal.utils.constants import Benchmarks
 from sal.utils.experiment import get_model_base_path
 
 if __name__ == "__main__":
@@ -133,13 +132,31 @@ if __name__ == "__main__":
         wandb_config=WANDB_CONFIG,
     )
 
+    # Confidence-Guided Adaptive Inference (CGAI)
+    CGAI_CONFIG = ExperimentConfig(
+        filter_duplicates=True,
+        sort_completed=True,
+        approach="cgai",
+        search_config=SearchConfig(
+            n=4,
+            temperature=0.7,
+            top_p=0.8,
+            prm_batch_size=4,
+            search_batch_size=1,
+            max_tokens=2048,
+            agg_strategy="prod",
+        ),
+        # Use defaults from ConfidenceSelectionConfig in config.py
+        wandb_config=WANDB_CONFIG,
+    )
+
     experiment_configs: List[ExperimentConfig] = []
 
     for n in [4, 8, 16]:
         # for n in [32]:
         # for n in [16, 8, 4]:
         # for _ in range(3):
-        for cfg in [DVTS_CONFIG]:
+        for cfg in [CGAI_CONFIG]:
             # for cfg in [BEAM_SEARCH_CONFIG]:
             # for cfg in [BEST_OF_N_CONFIG, BEAM_SEARCH_CONFIG, DVTS_CONFIG]:
             # for cfg in [BEST_OF_N_CONFIG]:
