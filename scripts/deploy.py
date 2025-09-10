@@ -49,6 +49,7 @@ class RemoteConfig:
         default_factory=lambda: {
             "linnet",
             "merlin",
+            "gpuvm21",
         }
     )
     # remotes_to_exclude: Set[str] = field(default_factory=lambda: set())

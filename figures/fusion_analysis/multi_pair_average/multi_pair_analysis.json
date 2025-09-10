@@ -1,7 +1,11 @@
 {
   "experiment_info": {
-    "num_pairs": 2,
+    "num_pairs": 3,
     "pairs_analyzed": [
+      [
+        500,
+        100
+      ],
       [
         500,
         50
@@ -15,83 +19,232 @@
   "averaged_results": [
     {
       "metric": "agreement_ratio",
-      "improvement": 1.2000000000000028,
-      "std": 0.0,
+      "improvement": 3.5333333333333363,
+      "std": 3.2998316455372216,
       "min": 1.2000000000000028,
-      "max": 1.2000000000000028,
-      "count": 2,
-      "accuracy": 87.2
-    },
-    {
-      "metric": "prm_mean",
-      "improvement": 0.7999999999999972,
-      "std": 0.20000000000000284,
-      "min": 0.5999999999999943,
-      "max": 1.0,
-      "count": 2,
-      "accuracy": 86.8
+      "max": 8.200000000000003,
+      "count": 3,
+      "accuracy": 84.86666666666666
     },
     {
       "metric": "consensus_support",
-      "improvement": 0.7000000000000028,
-      "std": 0.09999999999999432,
+      "improvement": 3.400000000000001,
+      "std": 3.8192494899739984,
       "min": 0.6000000000000085,
-      "max": 0.7999999999999972,
-      "count": 2,
-      "accuracy": 86.7
+      "max": 8.799999999999997,
+      "count": 3,
+      "accuracy": 84.73333333333333
+    },
+    {
+      "metric": "prm_mean",
+      "improvement": 2.7333333333333294,
+      "std": 2.739018477889884,
+      "min": 0.5999999999999943,
+      "max": 6.599999999999994,
+      "count": 3,
+      "accuracy": 84.06666666666666
     },
     {
       "metric": "prm_std",
-      "improvement": 0.6000000000000014,
-      "std": 0.19999999999999574,
+      "improvement": 1.0666666666666675,
+      "std": 0.6798692684790365,
       "min": 0.4000000000000057,
-      "max": 0.7999999999999972,
-      "count": 2,
-      "accuracy": 86.6
-    },
-    {
-      "metric": "entropy_freq",
-      "improvement": 0.10000000000000142,
-      "std": 0.10000000000000142,
-      "min": 0.0,
-      "max": 0.20000000000000284,
-      "count": 2,
-      "accuracy": 86.1
-    },
-    {
-      "metric": "entropy_weighted",
-      "improvement": 0.0,
-      "std": 0.20000000000000284,
-      "min": -0.20000000000000284,
-      "max": 0.20000000000000284,
-      "count": 2,
-      "accuracy": 86.0
-    },
-    {
-      "metric": "prm_margin",
-      "improvement": -0.10000000000000142,
-      "std": 0.10000000000000142,
-      "min": -0.20000000000000284,
-      "max": 0.0,
-      "count": 2,
-      "accuracy": 85.9
+      "max": 2.0,
+      "count": 3,
+      "accuracy": 82.39999999999999
     },
     {
       "metric": "prm_top_frac",
-      "improvement": -0.20000000000000284,
-      "std": 0.0,
+      "improvement": 0.5333333333333314,
+      "std": 1.037089945740271,
       "min": -0.20000000000000284,
-      "max": -0.20000000000000284,
-      "count": 2,
-      "accuracy": 85.8
+      "max": 2.0,
+      "count": 3,
+      "accuracy": 81.86666666666666
+    },
+    {
+      "metric": "entropy_weighted",
+      "improvement": 0.13333333333333522,
+      "std": 0.24944382578493296,
+      "min": -0.20000000000000284,
+      "max": 0.4000000000000057,
+      "count": 3,
+      "accuracy": 81.46666666666667
+    },
+    {
+      "metric": "prm_margin",
+      "improvement": 0.1333333333333305,
+      "std": 0.3399346342395173,
+      "min": -0.20000000000000284,
+      "max": 0.5999999999999943,
+      "count": 3,
+      "accuracy": 81.46666666666665
+    },
+    {
+      "metric": "entropy_freq",
+      "improvement": 0.06666666666666761,
+      "std": 0.09428090415820768,
+      "min": 0.0,
+      "max": 0.20000000000000284,
+      "count": 3,
+      "accuracy": 81.39999999999999
     }
   ],
-  "always_base": 86.0,
-  "always_rerun_when_possible": 86.80000000000001,
-  "always_override_improvement": 0.8000000000000043,
-  "always_override_improvement_std": 0.19999999999999574,
+  "always_base": 81.33333333333333,
+  "always_rerun_when_possible": 84.86666666666666,
+  "always_override_improvement": 3.5333333333333363,
+  "always_override_improvement_std": 3.8689648342791734,
   "best_metric": "agreement_ratio",
   "individual_pair_results": [
+    {
+      "experiment_info": {
+        "total_samples": 500,
+        "rerun_samples": 100,
+        "base_accuracy_overall": 72.0,
+        "rerun_accuracy_on_subset": 66.0
+      },
+      "strategies": {
+        "always_base": {
+          "description": "Always use base run",
+          "accuracy": 72.0,
+          "vs_base": 0.0
+        },
+        "always_rerun_when_possible": {
+          "description": "Use rerun on 100 samples, base on remaining 400",
+          "accuracy": 81.0,
+          "vs_base": 9.0,
+          "measured": null,
+          "conversions": {
+            "T_to_T": 20,
+            "F_to_F": 33,
+            "T_to_F": 1,
+            "F_to_T": 46
+          }
+        },
+        "smart_fusion_best": {
+          "description": "Use consensus_support confidence to decide",
+          "accuracy": 80.8,
+          "vs_base": 8.799999999999997,
+          "metric": "consensus_support",
+          "overrides_used": 94,
+          "flips_positive": 45,
+          "flips_negative": 1,
+          "net_flips": 44,
+          "conversions": {
+            "T_to_T": 19,
+            "F_to_F": 29,
+            "T_to_F": 1,
+            "F_to_T": 45
+          }
+        }
+      },
+      "all_smart_results": [
+        {
+          "metric": "consensus_support",
+          "accuracy": 80.8,
+          "vs_base": 8.799999999999997,
+          "overrides_used": 94,
+          "conversions": {
+            "T_to_T": 19,
+            "F_to_F": 29,
+            "T_to_F": 1,
+            "F_to_T": 45
+          }
+        },
+        {
+          "metric": "agreement_ratio",
+          "accuracy": 80.2,
+          "vs_base": 8.200000000000003,
+          "overrides_used": 79,
+          "conversions": {
+            "T_to_T": 19,
+            "F_to_F": 17,
+            "T_to_F": 1,
+            "F_to_T": 42
+          }
+        },
+        {
+          "metric": "prm_mean",
+          "accuracy": 78.6,
+          "vs_base": 6.599999999999994,
+          "overrides_used": 61,
+          "conversions": {
+            "T_to_T": 15,
+            "F_to_F": 11,
+            "T_to_F": 1,
+            "F_to_T": 34
+          }
+        },
+        {
+          "metric": "prm_top_frac",
+          "accuracy": 74.0,
+          "vs_base": 2.0,
+          "overrides_used": 35,
+          "conversions": {
+            "T_to_T": 4,
+            "F_to_F": 21,
+            "T_to_F": 0,
+            "F_to_T": 10
+          }
+        },
+        {
+          "metric": "prm_std",
+          "accuracy": 74.0,
+          "vs_base": 2.0,
+          "overrides_used": 38,
+          "conversions": {
+            "T_to_T": 5,
+            "F_to_F": 23,
+            "T_to_F": 0,
+            "F_to_T": 10
+          }
+        },
+        {
+          "metric": "prm_margin",
+          "accuracy": 72.6,
+          "vs_base": 0.5999999999999943,
+          "overrides_used": 15,
+          "conversions": {
+            "T_to_T": 2,
+            "F_to_F": 10,
+            "T_to_F": 0,
+            "F_to_T": 3
+          }
+        },
+        {
+          "metric": "entropy_weighted",
+          "accuracy": 72.4,
+          "vs_base": 0.4000000000000057,
+          "overrides_used": 12,
+          "conversions": {
+            "T_to_T": 2,
+            "F_to_F": 8,
+            "T_to_F": 0,
+            "F_to_T": 2
+          }
+        },
+        {
+          "metric": "entropy_freq",
+          "accuracy": 72.0,
+          "vs_base": 0.0,
+          "overrides_used": 1,
+          "conversions": {
+            "T_to_T": 1,
+            "F_to_F": 0,
+            "T_to_F": 0,
+            "F_to_T": 0
+          }
+        }
+      ],
+      "always_base": 72.0,
+      "always_rerun_when_possible": 81.0,
+      "best_smart_fusion": {
+        "accuracy": 80.8,
+        "metric": "consensus_support",
+        "improvement_over_base": 8.799999999999997,
+        "improvement_over_always_rerun": -0.20000000000000284
+      }
+    },
     {
       "experiment_info": {
         "total_samples": 500,
