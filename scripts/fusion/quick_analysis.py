@@ -117,11 +117,11 @@ def create_comparison_chart(results_summary: Dict[str, Any], output_dir: Path) -
 
     plt.tight_layout()
     plt.savefig(
-        output_dir / "fusion_strategy_comparison.png", dpi=200, bbox_inches="tight"
+        output_dir / "fusion_strategy_comparison.pdf", dpi=200, bbox_inches="tight"
     )
     plt.close()
 
-    print(f"Saved chart to: {output_dir / 'fusion_strategy_comparison.png'}")
+    print(f"Saved chart to: {output_dir / 'fusion_strategy_comparison.pdf'}")
 
 
 def create_averaged_comparison_chart(
@@ -273,14 +273,14 @@ def create_averaged_comparison_chart(
 
     plt.tight_layout()
     plt.savefig(
-        output_dir / "fusion_strategy_comparison_averaged.png",
+        output_dir / "fusion_strategy_comparison_averaged.pdf",
         dpi=200,
         bbox_inches="tight",
     )
     plt.close()
 
     print(
-        f"Saved averaged chart to: {output_dir / 'fusion_strategy_comparison_averaged.png'}"
+        f"Saved averaged chart to: {output_dir / 'fusion_strategy_comparison_averaged.pdf'}"
     )
 
 

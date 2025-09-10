@@ -434,7 +434,7 @@ def create_percentile_violin_plots(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     output_file = (
-        output_dir / f"split_violins_percentile_{percentile}pct_{'_'.join(run_ids)}.png"
+        output_dir / f"split_violins_percentile_{percentile}pct_{'_'.join(run_ids)}.pdf"
     )
     plt.savefig(output_file, dpi=200, bbox_inches="tight")
 

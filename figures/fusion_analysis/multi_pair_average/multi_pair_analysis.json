@@ -1,23 +1,7 @@
 {
   "experiment_info": {
-    "num_pairs": 6,
+    "num_pairs": 2,
     "pairs_analyzed": [
-      [
-        500,
-        100
-      ],
-      [
-        500,
-        50
-      ],
-      [
-        500,
-        100
-      ],
-      [
-        500,
-        100
-      ],
       [
         500,
         50
@@ -30,680 +14,84 @@
   },
   "averaged_results": [
     {
-      "metric": "consensus_support",
-      "improvement": 2.06666666666667,
-      "std": 3.021405118299907,
-      "min": 0.4000000000000057,
-      "max": 8.799999999999997,
-      "count": 6,
-      "accuracy": 85.83333333333334
-    },
-    {
       "metric": "agreement_ratio",
-      "improvement": 2.000000000000002,
-      "std": 2.8023799409311607,
-      "min": 0.0,
-      "max": 8.200000000000003,
-      "count": 6,
-      "accuracy": 85.76666666666667
+      "improvement": 1.2000000000000028,
+      "std": 0.0,
+      "min": 1.2000000000000028,
+      "max": 1.2000000000000028,
+      "count": 2,
+      "accuracy": 87.2
     },
     {
       "metric": "prm_mean",
-      "improvement": 1.5333333333333314,
-      "std": 2.28521820013368,
-      "min": 0.0,
-      "max": 6.599999999999994,
-      "count": 6,
-      "accuracy": 85.3
+      "improvement": 0.7999999999999972,
+      "std": 0.20000000000000284,
+      "min": 0.5999999999999943,
+      "max": 1.0,
+      "count": 2,
+      "accuracy": 86.8
+    },
+    {
+      "metric": "consensus_support",
+      "improvement": 0.7000000000000028,
+      "std": 0.09999999999999432,
+      "min": 0.6000000000000085,
+      "max": 0.7999999999999972,
+      "count": 2,
+      "accuracy": 86.7
     },
     {
       "metric": "prm_std",
-      "improvement": 0.43333333333333474,
-      "std": 0.8673074554171786,
-      "min": -0.7999999999999972,
-      "max": 2.0,
-      "count": 6,
-      "accuracy": 84.2
-    },
-    {
-      "metric": "prm_top_frac",
-      "improvement": 0.3333333333333333,
-      "std": 0.7630348761506403,
-      "min": -0.20000000000000284,
-      "max": 2.0,
-      "count": 6,
-      "accuracy": 84.1
-    },
-    {
-      "metric": "prm_margin",
-      "improvement": 0.13333333333333286,
-      "std": 0.29814239699997247,
-      "min": -0.20000000000000284,
-      "max": 0.5999999999999943,
-      "count": 6,
-      "accuracy": 83.9
-    },
-    {
-      "metric": "entropy_weighted",
-      "improvement": -0.06666666666666288,
-      "std": 0.5120763831912419,
-      "min": -0.7999999999999972,
-      "max": 0.6000000000000085,
-      "count": 6,
-      "accuracy": 83.7
+      "improvement": 0.6000000000000014,
+      "std": 0.19999999999999574,
+      "min": 0.4000000000000057,
+      "max": 0.7999999999999972,
+      "count": 2,
+      "accuracy": 86.6
     },
     {
       "metric": "entropy_freq",
-      "improvement": -0.1666666666666643,
-      "std": 0.3144660377352196,
-      "min": -0.7999999999999972,
+      "improvement": 0.10000000000000142,
+      "std": 0.10000000000000142,
+      "min": 0.0,
       "max": 0.20000000000000284,
-      "count": 6,
-      "accuracy": 83.6
+      "count": 2,
+      "accuracy": 86.1
+    },
+    {
+      "metric": "entropy_weighted",
+      "improvement": 0.0,
+      "std": 0.20000000000000284,
+      "min": -0.20000000000000284,
+      "max": 0.20000000000000284,
+      "count": 2,
+      "accuracy": 86.0
+    },
+    {
+      "metric": "prm_margin",
+      "improvement": -0.10000000000000142,
+      "std": 0.10000000000000142,
+      "min": -0.20000000000000284,
+      "max": 0.0,
+      "count": 2,
+      "accuracy": 85.9
+    },
+    {
+      "metric": "prm_top_frac",
+      "improvement": -0.20000000000000284,
+      "std": 0.0,
+      "min": -0.20000000000000284,
+      "max": -0.20000000000000284,
+      "count": 2,
+      "accuracy": 85.8
     }
   ],
-  "always_base": 83.76666666666667,
-  "always_rerun_when_possible": 85.56666666666666,
-  "always_override_improvement": 1.8000000000000018,
-  "always_override_improvement_std": 3.24345494804537,
-  "best_metric": "consensus_support",
+  "always_base": 86.0,
+  "always_rerun_when_possible": 86.80000000000001,
+  "always_override_improvement": 0.8000000000000043,
+  "always_override_improvement_std": 0.19999999999999574,
+  "best_metric": "agreement_ratio",
   "individual_pair_results": [
-    {
-      "experiment_info": {
-        "total_samples": 500,
-        "rerun_samples": 100,
-        "base_accuracy_overall": 72.0,
-        "rerun_accuracy_on_subset": 66.0
-      },
-      "strategies": {
-        "always_base": {
-          "description": "Always use base run",
-          "accuracy": 72.0,
-          "vs_base": 0.0
-        },
-        "always_rerun_when_possible": {
-          "description": "Use rerun on 100 samples, base on remaining 400",
-          "accuracy": 81.0,
-          "vs_base": 9.0,
-          "measured": null,
-          "conversions": {
-            "T_to_T": 20,
-            "F_to_F": 33,
-            "T_to_F": 1,
-            "F_to_T": 46
-          }
-        },
-        "smart_fusion_best": {
-          "description": "Use consensus_support confidence to decide",
-          "accuracy": 80.8,
-          "vs_base": 8.799999999999997,
-          "metric": "consensus_support",
-          "overrides_used": 94,
-          "flips_positive": 45,
-          "flips_negative": 1,
-          "net_flips": 44,
-          "conversions": {
-            "T_to_T": 19,
-            "F_to_F": 29,
-            "T_to_F": 1,
-            "F_to_T": 45
-          }
-        }
-      },
-      "all_smart_results": [
-        {
-          "metric": "consensus_support",
-          "accuracy": 80.8,
-          "vs_base": 8.799999999999997,
-          "overrides_used": 94,
-          "conversions": {
-            "T_to_T": 19,
-            "F_to_F": 29,
-            "T_to_F": 1,
-            "F_to_T": 45
-          }
-        },
-        {
-          "metric": "agreement_ratio",
-          "accuracy": 80.2,
-          "vs_base": 8.200000000000003,
-          "overrides_used": 79,
-          "conversions": {
-            "T_to_T": 19,
-            "F_to_F": 17,
-            "T_to_F": 1,
-            "F_to_T": 42
-          }
-        },
-        {
-          "metric": "prm_mean",
-          "accuracy": 78.6,
-          "vs_base": 6.599999999999994,
-          "overrides_used": 61,
-          "conversions": {
-            "T_to_T": 15,
-            "F_to_F": 11,
-            "T_to_F": 1,
-            "F_to_T": 34
-          }
-        },
-        {
-          "metric": "prm_top_frac",
-          "accuracy": 74.0,
-          "vs_base": 2.0,
-          "overrides_used": 35,
-          "conversions": {
-            "T_to_T": 4,
-            "F_to_F": 21,
-            "T_to_F": 0,
-            "F_to_T": 10
-          }
-        },
-        {
-          "metric": "prm_std",
-          "accuracy": 74.0,
-          "vs_base": 2.0,
-          "overrides_used": 38,
-          "conversions": {
-            "T_to_T": 5,
-            "F_to_F": 23,
-            "T_to_F": 0,
-            "F_to_T": 10
-          }
-        },
-        {
-          "metric": "prm_margin",
-          "accuracy": 72.6,
-          "vs_base": 0.5999999999999943,
-          "overrides_used": 15,
-          "conversions": {
-            "T_to_T": 2,
-            "F_to_F": 10,
-            "T_to_F": 0,
-            "F_to_T": 3
-          }
-        },
-        {
-          "metric": "entropy_weighted",
-          "accuracy": 72.4,
-          "vs_base": 0.4000000000000057,
-          "overrides_used": 12,
-          "conversions": {
-            "T_to_T": 2,
-            "F_to_F": 8,
-            "T_to_F": 0,
-            "F_to_T": 2
-          }
-        },
-        {
-          "metric": "entropy_freq",
-          "accuracy": 72.0,
-          "vs_base": 0.0,
-          "overrides_used": 1,
-          "conversions": {
-            "T_to_T": 1,
-            "F_to_F": 0,
-            "T_to_F": 0,
-            "F_to_T": 0
-          }
-        }
-      ],
-      "always_base": 72.0,
-      "always_rerun_when_possible": 81.0,
-      "best_smart_fusion": {
-        "accuracy": 80.8,
-        "metric": "consensus_support",
-        "improvement_over_base": 8.799999999999997,
-        "improvement_over_always_rerun": -0.20000000000000284
-      }
-    },
-    {
-      "experiment_info": {
-        "total_samples": 500,
-        "rerun_samples": 50,
-        "base_accuracy_overall": 86.6,
-        "rerun_accuracy_on_subset": 30.0
-      },
-      "strategies": {
-        "always_base": {
-          "description": "Always use base run",
-          "accuracy": 86.6,
-          "vs_base": 0.0
-        },
-        "always_rerun_when_possible": {
-          "description": "Use rerun on 50 samples, base on remaining 450",
-          "accuracy": 86.6,
-          "vs_base": 0.0,
-          "measured": null,
-          "conversions": {
-            "T_to_T": 8,
-            "F_to_F": 28,
-            "T_to_F": 7,
-            "F_to_T": 7
-          }
-        },
-        "smart_fusion_best": {
-          "description": "Use agreement_ratio confidence to decide",
-          "accuracy": 87.2,
-          "vs_base": 0.6000000000000085,
-          "metric": "agreement_ratio",
-          "overrides_used": 27,
-          "flips_positive": 6,
-          "flips_negative": 3,
-          "net_flips": 3,
-          "conversions": {
-            "T_to_T": 8,
-            "F_to_F": 10,
-            "T_to_F": 3,
-            "F_to_T": 6
-          }
-        }
-      },
-      "all_smart_results": [
-        {
-          "metric": "agreement_ratio",
-          "accuracy": 87.2,
-          "vs_base": 0.6000000000000085,
-          "overrides_used": 27,
-          "conversions": {
-            "T_to_T": 8,
-            "F_to_F": 10,
-            "T_to_F": 3,
-            "F_to_T": 6
-          }
-        },
-        {
-          "metric": "consensus_support",
-          "accuracy": 87.2,
-          "vs_base": 0.6000000000000085,
-          "overrides_used": 30,
-          "conversions": {
-            "T_to_T": 6,
-            "F_to_F": 13,
-            "T_to_F": 4,
-            "F_to_T": 7
-          }
-        },
-        {
-          "metric": "prm_margin",
-          "accuracy": 87.0,
-          "vs_base": 0.4000000000000057,
-          "overrides_used": 6,
-          "conversions": {
-            "T_to_T": 0,
-            "F_to_F": 4,
-            "T_to_F": 0,
-            "F_to_T": 2
-          }
-        },
-        {
-          "metric": "prm_std",
-          "accuracy": 87.0,
-          "vs_base": 0.4000000000000057,
-          "overrides_used": 26,
-          "conversions": {
-            "T_to_T": 4,
-            "F_to_F": 16,
-            "T_to_F": 2,
-            "F_to_T": 4
-          }
-        },
-        {
-          "metric": "prm_top_frac",
-          "accuracy": 86.8,
-          "vs_base": 0.20000000000000284,
-          "overrides_used": 3,
-          "conversions": {
-            "T_to_T": 0,
-            "F_to_F": 2,
-            "T_to_F": 0,
-            "F_to_T": 1
-          }
-        },
-        {
-          "metric": "prm_mean",
-          "accuracy": 86.6,
-          "vs_base": 0.0,
-          "overrides_used": 19,
-          "conversions": {
-            "T_to_T": 5,
-            "F_to_F": 8,
-            "T_to_F": 3,
-            "F_to_T": 3
-          }
-        },
-        {
-          "metric": "entropy_freq",
-          "accuracy": 86.4,
-          "vs_base": -0.19999999999998863,
-          "overrides_used": 5,
-          "conversions": {
-            "T_to_T": 0,
-            "F_to_F": 4,
-            "T_to_F": 1,
-            "F_to_T": 0
-          }
-        },
-        {
-          "metric": "entropy_weighted",
-          "accuracy": 86.0,
-          "vs_base": -0.5999999999999943,
-          "overrides_used": 14,
-          "conversions": {
-            "T_to_T": 1,
-            "F_to_F": 10,
-            "T_to_F": 3,
-            "F_to_T": 0
-          }
-        }
-      ],
-      "always_base": 86.6,
-      "always_rerun_when_possible": 86.6,
-      "best_smart_fusion": {
-        "accuracy": 87.2,
-        "metric": "agreement_ratio",
-        "improvement_over_base": 0.6000000000000085,
-        "improvement_over_always_rerun": 0.6000000000000085
-      }
-    },
-    {
-      "experiment_info": {
-        "total_samples": 500,
-        "rerun_samples": 100,
-        "base_accuracy_overall": 86.2,
-        "rerun_accuracy_on_subset": 45.0
-      },
-      "strategies": {
-        "always_base": {
-          "description": "Always use base run",
-          "accuracy": 86.2,
-          "vs_base": 0.0
-        },
-        "always_rerun_when_possible": {
-          "description": "Use rerun on 100 samples, base on remaining 400",
-          "accuracy": 86.0,
-          "vs_base": -0.20000000000000284,
-          "measured": null,
-          "conversions": {
-            "T_to_T": 34,
-            "F_to_F": 43,
-            "T_to_F": 12,
-            "F_to_T": 11
-          }
-        },
-        "smart_fusion_best": {
-          "description": "Use consensus_support confidence to decide",
-          "accuracy": 87.4,
-          "vs_base": 1.2000000000000028,
-          "metric": "consensus_support",
-          "overrides_used": 36,
-          "flips_positive": 6,
-          "flips_negative": 0,
-          "net_flips": 6,
-          "conversions": {
-            "T_to_T": 19,
-            "F_to_F": 11,
-            "T_to_F": 0,
-            "F_to_T": 6
-          }
-        }
-      },
-      "all_smart_results": [
-        {
-          "metric": "consensus_support",
-          "accuracy": 87.4,
-          "vs_base": 1.2000000000000028,
-          "overrides_used": 36,
-          "conversions": {
-            "T_to_T": 19,
-            "F_to_F": 11,
-            "T_to_F": 0,
-            "F_to_T": 6
-          }
-        },
-        {
-          "metric": "agreement_ratio",
-          "accuracy": 87.0,
-          "vs_base": 0.7999999999999972,
-          "overrides_used": 34,
-          "conversions": {
-            "T_to_T": 20,
-            "F_to_F": 8,
-            "T_to_F": 1,
-            "F_to_T": 5
-          }
-        },
-        {
-          "metric": "prm_mean",
-          "accuracy": 86.6,
-          "vs_base": 0.3999999999999915,
-          "overrides_used": 52,
-          "conversions": {
-            "T_to_T": 15,
-            "F_to_F": 23,
-            "T_to_F": 6,
-            "F_to_T": 8
-          }
-        },
-        {
-          "metric": "prm_top_frac",
-          "accuracy": 86.2,
-          "vs_base": 0.0,
-          "overrides_used": 2,
-          "conversions": {
-            "T_to_T": 0,
-            "F_to_F": 2,
-            "T_to_F": 0,
-            "F_to_T": 0
-          }
-        },
-        {
-          "metric": "prm_margin",
-          "accuracy": 86.0,
-          "vs_base": -0.20000000000000284,
-          "overrides_used": 6,
-          "conversions": {
-            "T_to_T": 0,
-            "F_to_F": 5,
-            "T_to_F": 1,
-            "F_to_T": 0
-          }
-        },
-        {
-          "metric": "entropy_freq",
-          "accuracy": 85.4,
-          "vs_base": -0.7999999999999972,
-          "overrides_used": 27,
-          "conversions": {
-            "T_to_T": 8,
-            "F_to_F": 11,
-            "T_to_F": 6,
-            "F_to_T": 2
-          }
-        },
-        {
-          "metric": "entropy_weighted",
-          "accuracy": 85.4,
-          "vs_base": -0.7999999999999972,
-          "overrides_used": 45,
-          "conversions": {
-            "T_to_T": 10,
-            "F_to_F": 23,
-            "T_to_F": 8,
-            "F_to_T": 4
-          }
-        },
-        {
-          "metric": "prm_std",
-          "accuracy": 85.4,
-          "vs_base": -0.7999999999999972,
-          "overrides_used": 45,
-          "conversions": {
-            "T_to_T": 13,
-            "F_to_F": 22,
-            "T_to_F": 7,
-            "F_to_T": 3
-          }
-        }
-      ],
-      "always_base": 86.2,
-      "always_rerun_when_possible": 86.0,
-      "best_smart_fusion": {
-        "accuracy": 87.4,
-        "metric": "consensus_support",
-        "improvement_over_base": 1.2000000000000028,
-        "improvement_over_always_rerun": 1.4000000000000057
-      }
-    },
-    {
-      "experiment_info": {
-        "total_samples": 500,
-        "rerun_samples": 100,
-        "base_accuracy_overall": 85.8,
-        "rerun_accuracy_on_subset": 44.0
-      },
-      "strategies": {
-        "always_base": {
-          "description": "Always use base run",
-          "accuracy": 85.8,
-          "vs_base": 0.0
-        },
-        "always_rerun_when_possible": {
-          "description": "Use rerun on 100 samples, base on remaining 400",
-          "accuracy": 86.2,
-          "vs_base": 0.4000000000000057,
-          "measured": null,
-          "conversions": {
-            "T_to_T": 32,
-            "F_to_F": 46,
-            "T_to_F": 10,
-            "F_to_T": 12
-          }
-        },
-        "smart_fusion_best": {
-          "description": "Use entropy_weighted confidence to decide",
-          "accuracy": 86.4,
-          "vs_base": 0.6000000000000085,
-          "metric": "entropy_weighted",
-          "overrides_used": 40,
-          "flips_positive": 6,
-          "flips_negative": 3,
-          "net_flips": 3,
-          "conversions": {
-            "T_to_T": 9,
-            "F_to_F": 22,
-            "T_to_F": 3,
-            "F_to_T": 6
-          }
-        }
-      },
-      "all_smart_results": [
-        {
-          "metric": "entropy_weighted",
-          "accuracy": 86.4,
-          "vs_base": 0.6000000000000085,
-          "overrides_used": 40,
-          "conversions": {
-            "T_to_T": 9,
-            "F_to_F": 22,
-            "T_to_F": 3,
-            "F_to_T": 6
-          }
-        },
-        {
-          "metric": "prm_mean",
-          "accuracy": 86.4,
-          "vs_base": 0.6000000000000085,
-          "overrides_used": 40,
-          "conversions": {
-            "T_to_T": 12,
-            "F_to_F": 21,
-            "T_to_F": 2,
-            "F_to_T": 5
-          }
-        },
-        {
-          "metric": "consensus_support",
-          "accuracy": 86.2,
-          "vs_base": 0.4000000000000057,
-          "overrides_used": 48,
-          "conversions": {
-            "T_to_T": 19,
-            "F_to_F": 19,
-            "T_to_F": 4,
-            "F_to_T": 6
-          }
-        },
-        {
-          "metric": "prm_margin",
-          "accuracy": 86.0,
-          "vs_base": 0.20000000000000284,
-          "overrides_used": 8,
-          "conversions": {
-            "T_to_T": 2,
-            "F_to_F": 5,
-            "T_to_F": 0,
-            "F_to_T": 1
-          }
-        },
-        {
-          "metric": "prm_top_frac",
-          "accuracy": 86.0,
-          "vs_base": 0.20000000000000284,
-          "overrides_used": 2,
-          "conversions": {
-            "T_to_T": 0,
-            "F_to_F": 1,
-            "T_to_F": 0,
-            "F_to_T": 1
-          }
-        },
-        {
-          "metric": "agreement_ratio",
-          "accuracy": 85.8,
-          "vs_base": 0.0,
-          "overrides_used": 41,
-          "conversions": {
-            "T_to_T": 15,
-            "F_to_F": 18,
-            "T_to_F": 4,
-            "F_to_T": 4
-          }
-        },
-        {
-          "metric": "entropy_freq",
-          "accuracy": 85.6,
-          "vs_base": -0.20000000000000284,
-          "overrides_used": 13,
-          "conversions": {
-            "T_to_T": 7,
-            "F_to_F": 3,
-            "T_to_F": 2,
-            "F_to_T": 1
-          }
-        },
-        {
-          "metric": "prm_std",
-          "accuracy": 85.6,
-          "vs_base": -0.20000000000000284,
-          "overrides_used": 51,
-          "conversions": {
-            "T_to_T": 14,
-            "F_to_F": 26,
-            "T_to_F": 6,
-            "F_to_T": 5
-          }
-        }
-      ],
-      "always_base": 85.8,
-      "always_rerun_when_possible": 86.2,
-      "best_smart_fusion": {
-        "accuracy": 86.4,
-        "metric": "entropy_weighted",
-        "improvement_over_base": 0.6000000000000085,
-        "improvement_over_always_rerun": 0.20000000000000284
-      }
-    },
     {
       "experiment_info": {
         "total_samples": 500,
